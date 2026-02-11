@@ -20,11 +20,17 @@ app.post("/compare", (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
-app.listen(PORT, () => {
+if (!PORT) {
+  console.error("PORT not defined");
+  process.exit(1);
+}
+
+app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port " + PORT);
 });
+
 
 /*const { getZomatoPrice } = require("./services/zomatoService");
 const { getSwiggyPrice } = require("./services/swiggyService");
@@ -35,7 +41,7 @@ const cors = require("cors");
 const app = express();
 
 // middlewares
-app.use(cors());
+app.use(cors());hij
 app.use(express.json());
 
 // test route
