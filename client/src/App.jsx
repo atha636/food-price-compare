@@ -19,7 +19,8 @@ function App() {
     setResult(null);
 
     try {
-      const response = await axios.post("http://localhost:5000/compare", {
+      const response = await axios.post("https://food-price-compare-1.onrender.com", {
+
         item,
         city,
       });
