@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 
-function App() {
+export default function App() {
   const [item, setItem] = useState("");
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
@@ -10,7 +10,7 @@ function App() {
 
   const handleCompare = async () => {
     if (!item || !city) {
-      setError("Please enter both food item and city.");
+      setError("Please enter food item and city.");
       return;
     }
 
@@ -19,12 +19,10 @@ function App() {
     setResult(null);
 
     try {
-      const response = await axios.post("https://food-price-compare-1.onrender.com/compare", {
-
-
-        item,
-        city,
-      });
+      const response = await axios.post(
+        "https://food-price-compare-1.onrender.com/compare",
+        { item, city }
+      );
 
       setResult(response.data);
     } catch (err) {
@@ -35,133 +33,86 @@ function App() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f9fafb",
-        padding: "40px",
-        fontFamily: "Arial",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "500px",
-          margin: "auto",
-          backgroundColor: "white",
-          padding: "30px",
-          borderRadius: "8px",
-          boxShadow: "0 10px 20px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h1 style={{ textAlign: "center" }}>Food Price Comparison</h1>
-        <p style={{ textAlign: "center", color: "#555" }}>
-          Compare prices between Zomato and Swiggy
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center p-6">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8">
 
-        <input
-          type="text"
-          placeholder="Food item (e.g. Pizza)"
-          value={item}
-          onChange={(e) => setItem(e.target.value)}
-          style={inputStyle}
-        />
-
-        <input
-          type="text"
-          placeholder="City (e.g. Indore)"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          style={inputStyle}
-        />
-
-        <button
-          onClick={handleCompare}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "12px",
-            backgroundColor: loading ? "#9ca3af" : "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: loading ? "not-allowed" : "pointer",
-            fontSize: "16px",
-          }}
-        >
-          {loading ? "Comparing prices..." : "Compare Prices"}
-        </button>
-
-        {error && (
-          <p style={{ color: "red", marginTop: "15px", textAlign: "center" }}>
-            {error}
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-slate-800">
+            PriceCompare
+          </h1>
+          <p className="text-slate-500 mt-2">
+            Compare food prices instantly
           </p>
-        )}
+        </div>
 
-        {!result && !loading && !error && (
-          <p
-            style={{
-              marginTop: "20px",
-              textAlign: "center",
-              color: "#6b7280",
-            }}
+        {/* Inputs */}
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder="Food item (e.g. Pizza)"
+            value={item}
+            onChange={(e) => setItem(e.target.value)}
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+
+          <input
+            type="text"
+            placeholder="City (e.g. Indore)"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+
+          <button
+            onClick={handleCompare}
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 transition text-white font-semibold py-3 rounded-xl disabled:bg-slate-400"
           >
-            Enter details and click compare to see prices.
-          </p>
+            {loading ? "Comparing..." : "Compare Prices"}
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <p className="text-red-500 text-center mt-4">{error}</p>
         )}
 
+        {/* Results */}
         {result && (
-          <div style={{ marginTop: "25px" }}>
-            <h3 style={{ textAlign: "center" }}>Comparison Result</h3>
-
-            <PriceRow
+          <div className="mt-8 space-y-4">
+            <PriceCard
               name="Zomato"
               price={result.zomato}
               cheapest={result.cheapest === "zomato"}
             />
-
-            <PriceRow
+            <PriceCard
               name="Swiggy"
               price={result.swiggy}
               cheapest={result.cheapest === "swiggy"}
             />
           </div>
         )}
+
       </div>
     </div>
   );
 }
 
-function PriceRow({ name, price, cheapest }) {
+function PriceCard({ name, price, cheapest }) {
   return (
     <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "12px",
-        marginTop: "10px",
-        borderRadius: "6px",
-        backgroundColor: cheapest ? "#ecfdf5" : "#f3f4f6",
-        border: cheapest ? "1px solid #10b981" : "1px solid #e5e7eb",
-      }}
+      className={`flex justify-between items-center p-4 rounded-xl border transition ${
+        cheapest
+          ? "bg-green-50 border-green-500 shadow-md"
+          : "bg-slate-100 border-slate-200"
+      }`}
     >
-      <strong>{name}</strong>
-      <span>
+      <span className="font-semibold text-slate-700">{name}</span>
+      <span className="font-bold text-slate-900">
         ₹{price} {cheapest && "🟢 Cheapest"}
       </span>
     </div>
   );
 }
-<p className="text-xs text-center text-slate-400 mt-6">
-  Disclaimer: Prices shown are indicative and may vary on Zomato or Swiggy.
-</p>
 
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px",
-  marginBottom: "12px",
-  borderRadius: "6px",
-  border: "1px solid #d1d5db",
-};
-
-export default App;
