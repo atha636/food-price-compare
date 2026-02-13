@@ -1,5 +1,17 @@
 import { useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
+import CountUp from "react-countup";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+
 
 export default function App() {
   const [item, setItem] = useState("");
@@ -79,40 +91,116 @@ export default function App() {
         )}
 
         {/* Results */}
-        {result && (
-          <div className="mt-8 space-y-4">
-            <PriceCard
-              name="Zomato"
-              price={result.zomato}
-              cheapest={result.cheapest === "zomato"}
-            />
-            <PriceCard
-              name="Swiggy"
-              price={result.swiggy}
-              cheapest={result.cheapest === "swiggy"}
-            />
-          </div>
-        )}
+      
+       {result && (() => {
+  const maxPrice = Math.max(result.zomato, result.swiggy);
+  const difference = Math.abs(result.zomato - result.swiggy);
+  const cheaperPlatform =
+    result.zomato < result.swiggy ? "Zomato" : "Swiggy";
+    const chartData = [
+  { name: "Zomato", price: result.zomato },
+  { name: "Swiggy", price: result.swiggy },
+];
+
+
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="mt-8 space-y-6"
+    >
+      <div className="text-center bg-white/10 border border-white/20 rounded-xl p-4">
+    <p className="text-sm text-slate-300">
+      💰 {cheaperPlatform} is ₹{difference} cheaper
+    </p>
+  </div>
+      <PriceCard
+        name="Zomato"
+        price={result.zomato}
+        cheapest={result.cheapest === "zomato"}
+        maxPrice={maxPrice}
+      />
+      <PriceCard
+        name="Swiggy"
+        price={result.swiggy}
+        cheapest={result.cheapest === "swiggy"}
+        maxPrice={maxPrice}
+      />
+      <div className="mt-6 bg-slate-100 p-4 rounded-xl border border-slate-300 flex justify-center">
+  <BarChart
+    width={300}
+    height={180}
+    data={chartData}
+  >
+    <XAxis 
+      dataKey="name" 
+      stroke="#475569"
+      tick={{ fontSize: 12 }}
+    />
+    <YAxis 
+      stroke="#475569"
+      tick={{ fontSize: 12 }}
+    />
+    <Tooltip />
+    <Bar
+      dataKey="price"
+      fill="#3b82f6"
+      radius={[6, 6, 0, 0]}
+    />
+  </BarChart>
+</div>
+
+    </motion.div>
+  );
+})()}
 
       </div>
     </div>
   );
 }
 
-function PriceCard({ name, price, cheapest }) {
+function PriceCard({ name, price, cheapest, maxPrice }) {
+  const percentage = (price / maxPrice) * 100;
+
   return (
     <div
-      className={`flex justify-between items-center p-4 rounded-xl border transition ${
+      className={`relative flex flex-col p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 ${
         cheapest
-          ? "bg-green-50 border-green-500 shadow-md"
-          : "bg-slate-100 border-slate-200"
+          ? "bg-green-500/20 border border-green-400 shadow-lg shadow-green-500/30"
+          : "bg-white/10 border border-white/20"
       }`}
     >
-      <span className="font-semibold text-slate-700">{name}</span>
-      <span className="font-bold text-slate-900">
-        ₹{price} {cheapest && "🟢 Cheapest"}
-      </span>
+      <div className="flex justify-between items-center">
+        <span className="text-lg font-semibold">{name}</span>
+
+        {cheapest && (
+          <span className="text-xs bg-green-500 text-white px-3 py-1 rounded-full">
+            BEST PRICE
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3 text-3xl font-bold">
+       ₹
+<CountUp
+  end={price}
+  duration={1}
+  separator=","
+/>
+
+      </div>
+
+      {/* Comparison Bar */}
+      <div className="mt-4 h-3 bg-white/10 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${
+            cheapest ? "bg-green-400" : "bg-blue-400"
+          }`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
     </div>
   );
 }
-
