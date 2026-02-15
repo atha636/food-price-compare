@@ -12,113 +12,35 @@ app.get("/", (req, res) => {
 
 
 app.post("/compare", (req, res) => {
-  const { item, city, distance = 3 } = req.body;
-
-  // Base item prices (simple mock database)
-  const basePrices = {
-    pizza: 200,
-    burger: 150,
-    biryani: 180,
-    pasta: 220,
-  };
-
-  const basePrice =
-    basePrices[item?.toLowerCase()] || 200;
-
-  // City multiplier
-  const cityMultiplierMap = {
-    mumbai: 1.15,
-    delhi: 1.1,
-    bangalore: 1.12,
-    indore: 1.0,
-  };
-
-  const cityMultiplier =
-    cityMultiplierMap[city?.toLowerCase()] || 1.05;
-
-  // Time-based surge
-  const hour = new Date().getHours();
-  const surge =
-    hour >= 19 && hour <= 22 ? 1.15 : 1.0;
-
-  // Platform calculations
-  function calculatePrice({
-    commission,
-    deliveryFee,
-    distanceFeePerKm,
-  }) {
-    const commissionAmount = basePrice * commission;
-    const distanceFee = distance * distanceFeePerKm;
-
-    const final =
-      (basePrice +
-        commissionAmount +
-        deliveryFee +
-        distanceFee) *
-      surge *
-      cityMultiplier;
-
-    return Math.round(final);
-  }
-
-  const zomatoPrice = calculatePrice({
-    commission: 0.18,
-    deliveryFee: 30,
-    distanceFeePerKm: 5,
-  });
-
-  const swiggyPrice = calculatePrice({
-    commission: 0.2,
-    deliveryFee: 25,
-    distanceFeePerKm: 6,
-  });
-
-  res.json({
-    item,
-    city,
-    surgeApplied: surge > 1,
-    zomato: zomatoPrice,
-    swiggy: swiggyPrice,
-    cheapest:
-      zomatoPrice < swiggyPrice
-        ? "zomato"
-        : "swiggy",
-  });
-});
-
-
-const PORT = process.env.PORT;
-
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("Server running on port " + PORT);
-});
-
-
-/*const { getZomatoPrice } = require("./services/zomatoService");
-const { getSwiggyPrice } = require("./services/swiggyService");
-
-const express = require("express");
-const cors = require("cors");
-
-const app = express();
-
-// middlewares
-app.use(cors());hij
-app.use(express.json());
-
-// test route
-app.get("/", (req, res) => {
-  res.send("Backend is running");
-});
-
-// compare API (dummy data for now)
-app.post("/compare", (req, res) => {
   const { item, city } = req.body;
 
-  const zomatoPrice = getZomatoPrice(item, city);
-const swiggyPrice = getSwiggyPrice(item, city);
+  const calculatePrice = (item, city, platform) => {
+    const basePrices = {
+      pizza: 180,
+      burger: 120,
+      pasta: 200,
+      biryani: 220,
+    };
 
+    const cityMultiplier = {
+      indore: 1,
+      delhi: 1.2,
+      mumbai: 1.3,
+      jaipur: 1.1,
+    };
+
+    const platformFee = platform === "zomato" ? 15 : 10;
+
+    const base = basePrices[item?.toLowerCase()] || 150;
+    const cityFactor = cityMultiplier[city?.toLowerCase()] || 1;
+
+    const randomFactor = Math.floor(Math.random() * 20);
+
+    return Math.round(base * cityFactor + platformFee + randomFactor);
+  };
+
+  const zomatoPrice = calculatePrice(item, city, "zomato");
+  const swiggyPrice = calculatePrice(item, city, "swiggy");
 
   res.json({
     item,
@@ -129,10 +51,10 @@ const swiggyPrice = getSwiggyPrice(item, city);
   });
 });
 
-// start server
-const PORT = process.env.PORT || 5000;
+
+const PORT = process.env.PORT;
+
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server running on port " + PORT);
 });
-*/
