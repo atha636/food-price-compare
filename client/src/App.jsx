@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import CountUp from "react-countup";
@@ -18,7 +18,27 @@ export default function App() {
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
+
+
+   useEffect(() => {
+    const savedHistory = localStorage.getItem("searchHistory");
+    if (savedHistory) {
+      setHistory(JSON.parse(savedHistory));
+    }
+  }, []);
+  useEffect(() => {
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme === "dark") {
+    setDarkMode(true);
+  }
+}, []);
+useEffect(() => {
+  localStorage.setItem("theme", darkMode ? "dark" : "light");
+}, [darkMode]);
+
 
   const handleCompare = async () => {
     if (!item || !city) {
@@ -37,6 +57,15 @@ export default function App() {
       );
 
       setResult(response.data);
+      setHistory((prev) => {
+  const updated = [{ item, city }, ...prev];
+  const limited = updated.slice(0, 5);
+
+  localStorage.setItem("searchHistory", JSON.stringify(limited));
+
+  return limited;
+});
+
     } catch (err) {
       setError("Unable to fetch prices. Please try again.");
     } finally {
@@ -45,17 +74,58 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8">
+  <div
+  className={`min-h-screen flex items-center justify-center p-6 transition-all duration-500 ${
+    darkMode ? "bg-black" : "bg-white"
+  }`}
+>
+   <h2 className="text-xl font-bold">
+      {darkMode ? "DARK MODE ACTIVE" : "LIGHT MODE ACTIVE"}
+    </h2>
+
+      <div
+  className={`w-full max-w-lg mx-auto rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
+    darkMode
+      ? "bg-gray-800 text-white"
+      : "bg-white text-slate-800"
+  }`}
+>
+<div className="flex justify-end mb-4">
+  <button
+    onClick={() => setDarkMode(!darkMode)}
+    className="text-sm px-3 py-1 rounded-full border transition"
+  >
+    {darkMode ? "☀ Light" : "🌙 Dark"}
+  </button>
+</div>
+
 
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-slate-800">
+          <h1 className={`text-3xl font-bold ${
+  darkMode ? "text-white" : "text-slate-800"
+}`}>
+
             PriceCompare
           </h1>
-          <p className="text-slate-500 mt-2">
+          <p className={`mt-2 ${
+  darkMode ? "text-slate-300" : "text-slate-500"
+}`}>
+
             Compare food prices instantly
           </p>
+          <div className="mt-3 flex justify-center">
+  <span
+    className={`text-xs px-3 py-1 rounded-full transition ${
+      darkMode
+        ? "bg-blue-500/20 text-blue-300"
+        : "bg-blue-100 text-blue-600"
+    }`}
+  >
+    Live Price Comparison Engine
+  </span>
+</div>
+
         </div>
 
         {/* Inputs */}
@@ -65,7 +135,12 @@ export default function App() {
             placeholder="Food item (e.g. Pizza)"
             value={item}
             onChange={(e) => setItem(e.target.value)}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+            className={`w-full rounded-xl px-4 py-3 outline-none transition ${
+  darkMode
+    ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
+    : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
+}`}
+
           />
 
           <input
@@ -73,16 +148,54 @@ export default function App() {
             placeholder="City (e.g. Indore)"
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+           className={`w-full rounded-xl px-4 py-3 outline-none transition ${
+  darkMode
+    ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
+    : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
+}`}
+
           />
 
           <button
-            onClick={handleCompare}
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 transition text-white font-semibold py-3 rounded-xl disabled:bg-slate-400"
-          >
-            {loading ? "Comparing..." : "Compare Prices"}
-          </button>
+  onClick={handleCompare}
+  disabled={loading}
+  className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition ${
+    darkMode
+      ? "bg-blue-500 hover:bg-blue-600 text-white"
+      : "bg-blue-600 hover:bg-blue-700 text-white"
+  } disabled:opacity-60`}
+>
+  {loading && (
+    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+  )}
+  {loading ? "Comparing..." : "Compare Prices"}
+</button>
+
+          {history.length > 0 && (
+  <div className="mt-6">
+    <p className="text-sm text-slate-500 mb-2">Recent Searches</p>
+    <div className="flex flex-wrap gap-2">
+      {history.map((search, index) => (
+        <button
+          key={index}
+          onClick={() => {
+            setItem(search.item);
+            setCity(search.city);
+          }}
+          className={`text-xs px-3 py-1 rounded-full transition ${
+  darkMode
+    ? "bg-white/10 hover:bg-white/20 text-white"
+    : "bg-slate-200 hover:bg-slate-300 text-slate-800"
+}`}
+
+        >
+          {search.item} - {search.city}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+
         </div>
 
         {/* Error */}
@@ -106,9 +219,10 @@ export default function App() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+animate={{ opacity: 1, y: 0, scale: 1 }}
+transition={{ duration: 0.5 }}
+
       className="mt-8 space-y-6"
     >
       <div className="text-center bg-white/10 border border-white/20 rounded-xl p-4">
@@ -118,17 +232,25 @@ export default function App() {
   </div>
       <PriceCard
         name="Zomato"
+        logo="https://b.zmtcdn.com/images/logo/zomato_logo_2017.png"
         price={result.zomato}
         cheapest={result.cheapest === "zomato"}
         maxPrice={maxPrice}
       />
       <PriceCard
         name="Swiggy"
+        logo="https://upload.wikimedia.org/wikipedia/commons/1/13/Swiggy_logo.png"
         price={result.swiggy}
         cheapest={result.cheapest === "swiggy"}
         maxPrice={maxPrice}
       />
-      <div className="mt-6 bg-slate-100 p-4 rounded-xl border border-slate-300 flex justify-center">
+      <div
+  className={`mt-6 p-4 rounded-xl flex justify-center ${
+    darkMode
+      ? "bg-white/10 border border-white/20"
+      : "bg-slate-100 border border-slate-300"
+  }`}
+>
   <BarChart
     width={300}
     height={180}
@@ -161,7 +283,7 @@ export default function App() {
   );
 }
 
-function PriceCard({ name, price, cheapest, maxPrice }) {
+function PriceCard({ name, price, cheapest, maxPrice, logo }) {
   const percentage = (price / maxPrice) * 100;
 
   return (
@@ -173,7 +295,15 @@ function PriceCard({ name, price, cheapest, maxPrice }) {
       }`}
     >
       <div className="flex justify-between items-center">
-        <span className="text-lg font-semibold">{name}</span>
+        <div className="flex items-center gap-2">
+ <img
+  src={logo}
+  alt={name}
+  className="w-5 h-5 object-contain"
+/>
+
+  <span className="text-lg font-semibold">{name}</span>
+</div>
 
         {cheapest && (
           <span className="text-xs bg-green-500 text-white px-3 py-1 rounded-full">
