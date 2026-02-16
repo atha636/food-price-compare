@@ -1,3 +1,5 @@
+import Particles from "react-tsparticles";
+import { loadFull } from "tsparticles";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -21,6 +23,10 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
+  const particlesInit = async (main) => {
+  await loadFull(main);
+};
+
 
 
    useEffect(() => {
@@ -43,6 +49,7 @@ useEffect(() => {
   const handleCompare = async () => {
     if (!item || !city) {
       setError("Please enter food item and city.");
+      
       return;
     }
 
@@ -75,16 +82,47 @@ useEffect(() => {
 
   return (
   <div
-  className={`min-h-screen flex items-center justify-center p-6 transition-all duration-500 ${
+  className={`relative min-h-screen w-screen flex items-center justify-center overflow-hidden transition-all duration-500 ${
     darkMode ? "bg-black" : "bg-white"
   }`}
 >
+  {darkMode && (
+  <Particles
+    id="tsparticles"
+    init={particlesInit}
+    options={{
+      fullScreen: { enable: false },
+      background: { color: "transparent" },
+      particles: {
+  number: { value: 60 },
+  color: { value: "#ffffff" },
+  size: { value: 3 },
+  opacity: { value: 0.8 },
+  move: {
+    enable: true,
+    speed: 1,
+  },
+}
+,
+    }}
+    className="absolute inset-0 z-0"
+  />
+)}
+
+  {darkMode && (
+  <>
+    <div className="absolute w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-3xl animate-pulse top-[-100px] left-[-100px]" />
+    <div className="absolute w-[400px] h-[400px] bg-purple-500/20 rounded-full blur-3xl animate-pulse bottom-[-100px] right-[-100px]" />
+  </>
+)}
+
+
    <h2 className="text-xl font-bold">
       {darkMode ? "DARK MODE ACTIVE" : "LIGHT MODE ACTIVE"}
     </h2>
 
       <div
-  className={`w-full max-w-lg mx-auto rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
+  className={`z-10 w-full max-w-lg mx-auto rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
     darkMode
       ? "bg-gray-800 text-white"
       : "bg-white text-slate-800"
@@ -159,11 +197,15 @@ useEffect(() => {
           <button
   onClick={handleCompare}
   disabled={loading}
-  className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition ${
-    darkMode
-      ? "bg-blue-500 hover:bg-blue-600 text-white"
-      : "bg-blue-600 hover:bg-blue-700 text-white"
-  } disabled:opacity-60`}
+  className={` w-full flex items-center justify-center gap-2
+  font-semibold py-3 rounded-xl text-white
+  transition-all duration-300
+  bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600
+  bg-[length:200%_200%]
+  animate-[gradient_4s_ease_infinite]
+  hover:scale-[1.03]
+  hover:shadow-xl hover:shadow-blue-500/40
+  disabled:opacity-60`}
 >
   {loading && (
     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -314,12 +356,15 @@ function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
 
   return (
     <div
-      className={`relative flex flex-col p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 ${
-        cheapest
-          ? "bg-green-500/20 border border-green-400 shadow-lg shadow-green-500/30"
-          : "bg-white/10 border border-white/20"
-      }`}
-    >
+  className={`relative overflow-hidden flex flex-col p-5 rounded-2xl transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1 ${
+    cheapest
+      ? "bg-green-500/20 border border-green-400 shadow-lg shadow-green-500/30"
+      : "bg-white/10 border border-white/20"
+  }`}
+>
+  {/* shimmer layer */}
+  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
+
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
  <img
