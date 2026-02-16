@@ -231,23 +231,19 @@ transition={{ duration: 0.5 }}
     </p>
   </div>
       <PriceCard
-  name="Zomato"
-  logo="https://b.zmtcdn.com/images/logo/zomato_logo_2017.png"
-  price={result.zomato}
-  time={result.zomatoTime}
-  cheapest={result.cheapest === "zomato"}
-  maxPrice={maxPrice}
-/>
-
+        name="Zomato"
+        logo="https://b.zmtcdn.com/images/logo/zomato_logo_2017.png"
+        price={result.zomato}
+        cheapest={result.cheapest === "zomato"}
+        maxPrice={maxPrice}
+      />
       <PriceCard
-  name="Swiggy"
-  logo="https://upload.wikimedia.org/wikipedia/commons/1/13/Swiggy_logo.png"
-  price={result.swiggy}
-  time={result.swiggyTime}
-  cheapest={result.cheapest === "swiggy"}
-  maxPrice={maxPrice}
-/>
-
+        name="Swiggy"
+        logo="https://upload.wikimedia.org/wikipedia/commons/1/13/Swiggy_logo.png"
+        price={result.swiggy}
+        cheapest={result.cheapest === "swiggy"}
+        maxPrice={maxPrice}
+      />
       <div
   className={`mt-6 p-4 rounded-xl flex justify-center ${
     darkMode
@@ -287,7 +283,7 @@ transition={{ duration: 0.5 }}
   );
 }
 
-function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
+function PriceCard({ name, price, cheapest, maxPrice, logo }) {
   const percentage = (price / maxPrice) * 100;
 
   return (
@@ -325,9 +321,6 @@ function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
 />
 
       </div>
-      <p className="text-sm mt-1 opacity-80">
-  ⏱ {time} mins
-</p>
 
       {/* Comparison Bar */}
       <div className="mt-4 h-3 bg-white/10 rounded-full overflow-hidden">
