@@ -208,6 +208,20 @@ useEffect(() => {
        {result && (() => {
   const maxPrice = Math.max(result.zomato, result.swiggy);
   const difference = Math.abs(result.zomato - result.swiggy);
+  const timeDifference = Math.abs(result.zomatoTime - result.swiggyTime);
+
+let insight = "";
+
+if (result.cheapest === result.fastest) {
+  insight = `${result.cheapest.charAt(0).toUpperCase() + result.cheapest.slice(1)} is both cheaper and faster. Best choice!`;
+} else if (difference <= 10) {
+  insight = "Both platforms offer similar pricing. Choose based on delivery time.";
+} else if (result.cheapest === "zomato") {
+  insight = `Zomato is ₹${difference} cheaper but ${timeDifference} mins difference in delivery.`;
+} else {
+  insight = `Swiggy is ₹${difference} cheaper but ${timeDifference} mins difference in delivery.`;
+}
+
   const cheaperPlatform =
     result.zomato < result.swiggy ? "Zomato" : "Swiggy";
     const chartData = [
@@ -230,6 +244,14 @@ transition={{ duration: 0.5 }}
       💰 {cheaperPlatform} is ₹{difference} cheaper
     </p>
   </div>
+  <div className={`p-4 rounded-xl text-sm ${
+  darkMode
+    ? "bg-blue-500/20 text-blue-200 border border-blue-400/30"
+    : "bg-blue-50 text-blue-700 border border-blue-200"
+}`}>
+  💡 {insight}
+</div>
+
       <PriceCard
   name="Zomato"
   logo="https://b.zmtcdn.com/images/logo/zomato_logo_2017.png"
