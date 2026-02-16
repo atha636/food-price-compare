@@ -41,14 +41,19 @@ app.post("/compare", (req, res) => {
 
   const zomatoPrice = calculatePrice(item, city, "zomato");
   const swiggyPrice = calculatePrice(item, city, "swiggy");
+  
 
   res.json({
-    item,
-    city,
-    zomato: zomatoPrice,
-    swiggy: swiggyPrice,
-    cheapest: zomatoPrice < swiggyPrice ? "zomato" : "swiggy",
-  });
+  item,
+  city,
+  zomato: zomatoPrice,
+  swiggy: swiggyPrice,
+  zomatoTime,
+  swiggyTime,
+  cheapest: zomatoPrice < swiggyPrice ? "zomato" : "swiggy",
+  fastest: zomatoTime < swiggyTime ? "zomato" : "swiggy",
+});
+
 });
 
 
