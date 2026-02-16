@@ -41,14 +41,21 @@ app.post("/compare", (req, res) => {
 
   const zomatoPrice = calculatePrice(item, city, "zomato");
   const swiggyPrice = calculatePrice(item, city, "swiggy");
+  const zomatoTime = Math.floor(25 + Math.random() * 10);
+const swiggyTime = Math.floor(20 + Math.random() * 15);
 
-  res.json({
-    item,
-    city,
-    zomato: zomatoPrice,
-    swiggy: swiggyPrice,
-    cheapest: zomatoPrice < swiggyPrice ? "zomato" : "swiggy",
-  });
+
+ res.json({
+  item,
+  city,
+  zomato: zomatoPrice,
+  swiggy: swiggyPrice,
+  zomatoTime,
+  swiggyTime,
+  cheapest: zomatoPrice < swiggyPrice ? "zomato" : "swiggy",
+  fastest: zomatoTime < swiggyTime ? "zomato" : "swiggy",
+});
+
 });
 
 
