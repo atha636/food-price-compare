@@ -63,7 +63,7 @@ useEffect(() => {
     try {
       const response = await axios.post(
         "https://food-price-compare-1.onrender.com/compare",
-        { item, city }
+        { item, city,serviceType }
       );
 
       setResult(response.data);
