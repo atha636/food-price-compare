@@ -1,5 +1,6 @@
-import Particles from "react-tsparticles";
-import { loadFull } from "tsparticles";
+import Particles from "@tsparticles/react";
+import { loadSlim } from "@tsparticles/slim";
+
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -23,9 +24,11 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
-  const particlesInit = async (main) => {
-  await loadFull(main);
+  const [serviceType, setServiceType] = useState("food");
+  const particlesInit = async (engine) => {
+  await loadSlim(engine);
 };
+
 
 
 
@@ -96,7 +99,7 @@ useEffect(() => {
       particles: {
   number: { value: 60 },
   color: { value: "#ffffff" },
-  size: { value: 3 },
+  size: { value: 6 },
   opacity: { value: 0.8 },
   move: {
     enable: true,
@@ -106,6 +109,8 @@ useEffect(() => {
 ,
     }}
     className="absolute inset-0 z-0"
+
+
   />
 )}
 
@@ -122,7 +127,7 @@ useEffect(() => {
     </h2>
 
       <div
-  className={`z-10 w-full max-w-lg mx-auto rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
+  className={`relative z-10 w-full max-w-lg mx-auto rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
     darkMode
       ? "bg-gray-800 text-white"
       : "bg-white text-slate-800"
@@ -136,6 +141,25 @@ useEffect(() => {
     {darkMode ? "☀ Light" : "🌙 Dark"}
   </button>
 </div>
+{/* Service Selector */}
+<div className="flex justify-center gap-3 mb-6">
+  {["food", "grocery", "ride"].map((type) => (
+    <button
+      key={type}
+      onClick={() => setServiceType(type)}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+        serviceType === type
+          ? "bg-blue-600 text-white shadow-lg"
+          : "bg-white/10 text-gray-400 hover:bg-white/20"
+      }`}
+    >
+      {type === "food" && "🍔 Food"}
+      {type === "grocery" && "🛒 Grocery"}
+      {type === "ride" && "🚗 Ride"}
+    </button>
+  ))}
+</div>
+
 
 
         {/* Header */}

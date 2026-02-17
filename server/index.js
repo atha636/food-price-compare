@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
 
 
 app.post("/compare", (req, res) => {
-  const { item, city } = req.body;
+  const { item, city, serviceType } = req.body;
 
   const calculatePrice = (item, city, platform) => {
     const basePrices = {
@@ -39,15 +39,48 @@ app.post("/compare", (req, res) => {
     return Math.round(base * cityFactor + platformFee + randomFactor);
   };
 
-  const zomatoPrice = calculatePrice(item, city, "zomato");
-  const swiggyPrice = calculatePrice(item, city, "swiggy");
-  const zomatoTime = Math.floor(25 + Math.random() * 10);
-const swiggyTime = Math.floor(20 + Math.random() * 15);
+  let zomatoPrice;
+let swiggyPrice;
+let zomatoTime;
+let swiggyTime;
 
+if (serviceType === "food") {
+  zomatoPrice = calculatePrice(item, city, "zomato");
+  swiggyPrice = calculatePrice(item, city, "swiggy");
 
- res.json({
+  zomatoTime = Math.floor(25 + Math.random() * 10);
+  swiggyTime = Math.floor(20 + Math.random() * 15);
+}
+
+else if (serviceType === "grocery") {
+  zomatoPrice = Math.floor(500 + Math.random() * 300); // Blinkit
+  swiggyPrice = Math.floor(480 + Math.random() * 350); // Instamart
+
+  zomatoTime = Math.floor(10 + Math.random() * 10);
+  swiggyTime = Math.floor(8 + Math.random() * 12);
+}
+
+else if (serviceType === "ride") {
+  zomatoPrice = Math.floor(150 + Math.random() * 200); // Uber
+  swiggyPrice = Math.floor(140 + Math.random() * 220); // Ola
+
+  zomatoTime = Math.floor(3 + Math.random() * 5);
+  swiggyTime = Math.floor(2 + Math.random() * 6);
+}
+
+else {
+  // fallback (default food)
+  zomatoPrice = calculatePrice(item, city, "zomato");
+  swiggyPrice = calculatePrice(item, city, "swiggy");
+
+  zomatoTime = Math.floor(25 + Math.random() * 10);
+  swiggyTime = Math.floor(20 + Math.random() * 15);
+}
+
+res.json({
   item,
   city,
+  serviceType,
   zomato: zomatoPrice,
   swiggy: swiggyPrice,
   zomatoTime,
@@ -55,6 +88,7 @@ const swiggyTime = Math.floor(20 + Math.random() * 15);
   cheapest: zomatoPrice < swiggyPrice ? "zomato" : "swiggy",
   fastest: zomatoTime < swiggyTime ? "zomato" : "swiggy",
 });
+
 
 });
 
