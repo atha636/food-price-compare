@@ -129,7 +129,14 @@ useEffect(() => {
     </h2>
     
 {serviceType === "food" && result?.zomatoList && (
-  <div className="hidden lg:block w-64 bg-white/5 backdrop-blur-md rounded-2xl p-4 max-h-[500px] overflow-y-auto">
+  <div
+  className={`hidden lg:block w-64 rounded-2xl p-4 max-h-[500px] overflow-y-auto ${
+    darkMode
+      ? "bg-white/5 backdrop-blur-md text-slate-200"
+      : "bg-white shadow-md text-slate-800"
+  }`}
+>
+
     <h3 className="text-red-400 font-bold mb-3 text-center">Zomato</h3>
     {result.zomatoList.map((rest, index) => (
       <div
@@ -304,7 +311,8 @@ useEffect(() => {
 
         {/* Results */}
       
-       {result && (() => {
+       {result && result.serviceType !== "food" && (() => {
+
   const maxPrice = Math.max(result.zomato, result.swiggy);
   const difference = Math.abs(result.zomato - result.swiggy);
   const timeDifference = Math.abs(result.zomatoTime - result.swiggyTime);
