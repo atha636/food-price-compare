@@ -67,6 +67,8 @@ useEffect(() => {
       );
 
       setResult(response.data);
+      console.log("API RESPONSE:", response.data);
+
       setHistory((prev) => {
   const updated = [{ item, city }, ...prev];
   const limited = updated.slice(0, 5);
@@ -85,7 +87,7 @@ useEffect(() => {
 
   return (
   <div
-  className={`relative min-h-screen w-screen flex items-center justify-center overflow-hidden transition-all duration-500 ${
+  className={`relative min-h-screen w-screen flex items-center justify-center gap-8 px-6 overflow-hidden transition-all duration-500 ${
     darkMode ? "bg-black" : "bg-white"
   }`}
 >
@@ -125,6 +127,21 @@ useEffect(() => {
    <h2 className="text-xl font-bold">
       {darkMode ? "DARK MODE ACTIVE" : "LIGHT MODE ACTIVE"}
     </h2>
+    
+{serviceType === "food" && result?.zomatoList && (
+  <div className="hidden lg:block w-64 bg-white/5 backdrop-blur-md rounded-2xl p-4 max-h-[500px] overflow-y-auto">
+    <h3 className="text-red-400 font-bold mb-3 text-center">Zomato</h3>
+    {result.zomatoList.map((rest, index) => (
+      <div
+        key={index}
+        className="flex justify-between py-2 border-b border-white/10 text-sm"
+      >
+        <span>{rest.name}</span>
+        <span>₹{rest.price}</span>
+      </div>
+    ))}
+  </div>
+)}
 
       <div
   className={`relative z-10 w-full max-w-lg mx-auto rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
@@ -133,6 +150,20 @@ useEffect(() => {
       : "bg-white text-slate-800"
   }`}
 >
+  {serviceType === "food" && result?.swiggyList && (
+  <div className="hidden lg:block w-64 bg-white/5 backdrop-blur-md rounded-2xl p-4 max-h-[500px] overflow-y-auto">
+    <h3 className="text-orange-400 font-bold mb-3 text-center">Swiggy</h3>
+    {result.swiggyList.map((rest, index) => (
+      <div
+        key={index}
+        className="flex justify-between py-2 border-b border-white/10 text-sm"
+      >
+        <span>{rest.name}</span>
+        <span>₹{rest.price}</span>
+      </div>
+    ))}
+  </div>
+)}
 <div className="flex justify-end mb-4">
   <button
     onClick={() => setDarkMode(!darkMode)}
@@ -141,6 +172,8 @@ useEffect(() => {
     {darkMode ? "☀ Light" : "🌙 Dark"}
   </button>
 </div>
+
+
 {/* Service Selector */}
 <div className="flex justify-center gap-3 mb-6">
   {["food", "grocery", "ride"].map((type) => (
