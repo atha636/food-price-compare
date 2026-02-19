@@ -138,22 +138,41 @@ useEffect(() => {
 >
 
     <h3 className="text-red-400 font-bold mb-3 text-center">Zomato</h3>
-    {result.zomatoList.map((rest, index) => (
-      <div
-        key={index}
-        className="flex justify-between py-2 border-b border-white/10 text-sm"
-      >
-        <div className="py-3 border-b border-white/10 text-sm">
-  <div className="flex justify-between font-medium">
-    <span>{rest.name}</span>
-    <span>₹{rest.price}</span>
-  </div>
+    {[...result.swiggyList]
+  .sort((a, b) => a.price - b.price)
+  .map((rest, index) => (
 
-  <div className="flex justify-between text-xs mt-1 opacity-80">
-    <span>⭐ {rest.rating}</span>
+  <div
+  key={index}
+  className={`w-full py-3 border-b text-sm transition ${
+    index === 0
+      ? "bg-green-500/10 border-green-400/30 rounded-lg"
+      : "border-white/10"
+  }`}
+>
+
+    <div className="flex justify-between items-center w-full">
+      <span className="font-medium text-left">
+        {rest.name}
+      </span>
+
+       <div className="flex items-center gap-2">
+          {index === 0 && (
+            <span className="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full">
+              BEST
+            </span>
+          )}
+          <span className="font-semibold">
+            ₹{rest.price}
+          </span>
+        </div>
+    </div>
+
+    <div className="flex justify-between text-xs mt-1 opacity-80 w-full">
+      <span>⭐ {rest.rating}</span>
     <span>{rest.time} mins</span>
   </div>
-</div>
+
 
       </div>
     ))}
@@ -170,22 +189,41 @@ useEffect(() => {
   {serviceType === "food" && result?.swiggyList && (
   <div className="hidden lg:block w-64 bg-white/5 backdrop-blur-md rounded-2xl p-4 max-h-[500px] overflow-y-auto">
     <h3 className="text-orange-400 font-bold mb-3 text-center">Swiggy</h3>
-    {result.swiggyList.map((rest, index) => (
-      <div
-        key={index}
-        className="flex justify-between py-2 border-b border-white/10 text-sm"
-      >
-        <div className="py-3 border-b border-white/10 text-sm">
-  <div className="flex justify-between font-medium">
-    <span>{rest.name}</span>
-    <span>₹{rest.price}</span>
-  </div>
+    {[...result.zomatoList]
+  .sort((a, b) => a.price - b.price)
+  .map((rest, index) => (
 
-  <div className="flex justify-between text-xs mt-1 opacity-80">
-    <span>⭐ {rest.rating}</span>
+       <div
+  key={index}
+  className={`w-full py-3 border-b text-sm transition ${
+    index === 0
+      ? "bg-green-500/10 border-green-400/30 rounded-lg"
+      : "border-white/10"
+  }`}
+>
+    <div className="flex justify-between items-center w-full">
+      <span className="font-medium text-left">
+        {rest.name}
+      </span>
+
+       <div className="flex items-center gap-2">
+          {index === 0 && (
+            <span className="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full">
+              BEST
+            </span>
+          )}
+          <span className="font-semibold">
+            ₹{rest.price}
+          </span>
+        </div>
+    </div>
+
+    <div className="flex justify-between text-xs mt-1 opacity-80 w-full">
+      <span>⭐ {rest.rating}</span>
     <span>{rest.time} mins</span>
   </div>
-</div>
+
+
 
       </div>
     ))}
