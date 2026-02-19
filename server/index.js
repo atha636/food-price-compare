@@ -56,14 +56,19 @@ app.post("/compare", (req, res) => {
     ];
 
     const zomatoList = zomatoRestaurants.map(name => ({
-      name,
-      price: calculatePrice(item, city, "zomato"),
-    }));
+  name,
+  price: calculatePrice(item, city, "zomato"),
+  rating: (3.5 + Math.random() * 1.5).toFixed(1), // 3.5 - 5.0
+  time: Math.floor(20 + Math.random() * 15) // 20-35 mins
+}));
 
-    const swiggyList = swiggyRestaurants.map(name => ({
-      name,
-      price: calculatePrice(item, city, "swiggy"),
-    }));
+const swiggyList = swiggyRestaurants.map(name => ({
+  name,
+  price: calculatePrice(item, city, "swiggy"),
+  rating: (3.5 + Math.random() * 1.5).toFixed(1),
+  time: Math.floor(18 + Math.random() * 18)
+}));
+
 
     return res.json({
       serviceType,

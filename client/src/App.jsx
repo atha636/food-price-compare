@@ -143,8 +143,18 @@ useEffect(() => {
         key={index}
         className="flex justify-between py-2 border-b border-white/10 text-sm"
       >
-        <span>{rest.name}</span>
-        <span>₹{rest.price}</span>
+        <div className="py-3 border-b border-white/10 text-sm">
+  <div className="flex justify-between font-medium">
+    <span>{rest.name}</span>
+    <span>₹{rest.price}</span>
+  </div>
+
+  <div className="flex justify-between text-xs mt-1 opacity-80">
+    <span>⭐ {rest.rating}</span>
+    <span>{rest.time} mins</span>
+  </div>
+</div>
+
       </div>
     ))}
   </div>
@@ -165,8 +175,18 @@ useEffect(() => {
         key={index}
         className="flex justify-between py-2 border-b border-white/10 text-sm"
       >
-        <span>{rest.name}</span>
-        <span>₹{rest.price}</span>
+        <div className="py-3 border-b border-white/10 text-sm">
+  <div className="flex justify-between font-medium">
+    <span>{rest.name}</span>
+    <span>₹{rest.price}</span>
+  </div>
+
+  <div className="flex justify-between text-xs mt-1 opacity-80">
+    <span>⭐ {rest.rating}</span>
+    <span>{rest.time} mins</span>
+  </div>
+</div>
+
       </div>
     ))}
   </div>
