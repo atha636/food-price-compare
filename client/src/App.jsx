@@ -25,12 +25,48 @@ export default function App() {
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   const [serviceType, setServiceType] = useState("food");
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [sortBy, setSortBy] = useState("price");
   const particlesInit = async (engine) => {
   await loadSlim(engine);
 };
+const handleGetLocation = () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported");
+    return;
+  }
 
+  setDetectingLocation(true);
 
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
 
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+        );
+        const data = await res.json();
+
+        const detectedCity =
+          data.address.city ||
+          data.address.town ||
+          data.address.state ||
+          "";
+
+        setCity(detectedCity);
+      } catch (err) {
+        console.error("Location fetch error", err);
+      } finally {
+        setDetectingLocation(false);
+      }
+    },
+    () => {
+      setDetectingLocation(false);
+      alert("Location permission denied");
+    }
+  );
+};
 
    useEffect(() => {
     const savedHistory = localStorage.getItem("searchHistory");
@@ -52,7 +88,7 @@ useEffect(() => {
   const handleCompare = async () => {
     if (!item || !city) {
       setError("Please enter food item and city.");
-      
+
       return;
     }
 
@@ -303,18 +339,39 @@ useEffect(() => {
 
           />
 
-          <input
-            type="text"
-            placeholder="City (e.g. Indore)"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-           className={`w-full rounded-xl px-4 py-3 outline-none transition ${
-  darkMode
-    ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
-    : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
-}`}
+          <div className="flex gap-2">
 
-          />
+
+  <input
+    type="text"
+    placeholder="City (e.g. Indore)"
+    value={city}
+    onChange={(e) => setCity(e.target.value)}
+    className={`w-full rounded-xl px-4 py-3 outline-none transition ${
+      darkMode
+        ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
+        : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
+    }`}
+  />
+
+  <button
+    type="button"
+    onClick={handleGetLocation}
+    className={`px-4 rounded-xl transition ${
+      darkMode
+        ? "bg-blue-500 hover:bg-blue-600 text-white"
+        : "bg-blue-600 hover:bg-blue-700 text-white"
+    }`}
+  >
+    {detectingLocation ? (
+  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+) : (
+  "📍"
+)}
+
+  </button>
+</div>
+  
 
           <button
   onClick={handleCompare}
