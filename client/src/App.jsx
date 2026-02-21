@@ -166,15 +166,23 @@ useEffect(() => {
     
 {serviceType === "food" && result?.zomatoList && (
   <div
-  className={`hidden lg:block w-64 rounded-2xl p-4 max-h-[500px] overflow-y-auto ${
+  className={`hidden lg:block w-80 rounded-2xl p-4 max-h-[500px] overflow-y-auto ${
     darkMode
       ? "bg-white/5 backdrop-blur-md text-slate-200"
       : "bg-white shadow-md text-slate-800"
   }`}
 >
 
-    <h3 className="text-red-400 font-bold mb-3 text-center">Zomato</h3>
-    {[...result.swiggyList]
+    <h3
+  className={`sticky top-0 z-10 py-3 text-center font-bold backdrop-blur-md ${
+    darkMode
+      ? "bg-gray-900/80 text-red-400"
+      : "bg-white/80 text-orange-500"
+  }`}
+>
+  Zomato
+</h3>
+    {[...result.zomatoList]
   .sort((a, b) => a.price - b.price)
   .map((rest, index) => (
 
@@ -186,6 +194,69 @@ useEffect(() => {
       : "border-white/10"
   }`}
 >
+  <motion.div
+  key={index}
+  layout
+  whileHover={{ scale: 1.03 }}
+  transition={{ type: "spring", stiffness: 200 }}
+  className={`relative w-full p-4 mb-4 rounded-2xl overflow-hidden transition-all duration-300 ${
+    darkMode
+      ? "bg-white/5 backdrop-blur-md border border-white/10"
+      : "bg-white shadow-md border border-slate-200"
+  } ${
+    index === 0
+      ? "ring-2 ring-green-400 shadow-green-400/30"
+      : ""
+  }`}
+>
+  {/* Image Section */}
+<div className="relative h-40 rounded-xl overflow-hidden mb-3">
+
+  <img
+    src={`https://loremflickr.com/600/400/${item}?random=${index}`}
+    alt={rest.name}
+    className="w-full h-full object-cover"
+  />
+
+  {/* Dark Gradient Overlay */}
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+
+  {/* Restaurant Name */}
+  <div className="absolute bottom-2 left-3 text-white font-semibold text-sm">
+    {rest.name}
+  </div>
+
+  {/* Rating Badge */}
+  <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+    ⭐ {rest.rating}
+  </div>
+
+  {/* BEST Badge */}
+  {index === 0 && (
+    <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+      BEST DEAL
+    </div>
+  )}
+
+</div>
+
+{/* Bottom Section */}
+<div className="flex justify-between items-center">
+
+  <div className="text-sm opacity-80">
+    ⏱ {rest.time} mins
+  </div>
+
+  <div className="text-lg font-bold text-blue-500">
+    ₹
+    <CountUp end={rest.price} duration={1} />
+  </div>
+
+</div>
+
+{/* Subtle Shimmer */}
+<div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
+</motion.div>
 
     <div className="flex justify-between items-center w-full">
       <span className="font-medium text-left">
@@ -223,9 +294,17 @@ useEffect(() => {
   }`}
 >
   {serviceType === "food" && result?.swiggyList && (
-  <div className="hidden lg:block w-64 bg-white/5 backdrop-blur-md rounded-2xl p-4 max-h-[500px] overflow-y-auto">
-    <h3 className="text-orange-400 font-bold mb-3 text-center">Swiggy</h3>
-    {[...result.zomatoList]
+  <div className="hidden lg:block w-80 bg-white/5 backdrop-blur-md rounded-2xl p-4 max-h-[500px] overflow-y-auto">
+   <h3
+  className={`sticky top-0 z-10 py-3 text-center font-bold backdrop-blur-md ${
+    darkMode
+      ? "bg-gray-900/80 text-orange-400"
+      : "bg-white/80 text-orange-500"
+  }`}
+>
+  Swiggy
+</h3>
+    {[...result.swiggyList]
   .sort((a, b) => a.price - b.price)
   .map((rest, index) => (
 
@@ -237,6 +316,69 @@ useEffect(() => {
       : "border-white/10"
   }`}
 >
+  <motion.div
+  key={index}
+  layout
+  whileHover={{ scale: 1.03 }}
+  transition={{ type: "spring", stiffness: 200 }}
+  className={`relative w-full p-4 mb-4 rounded-2xl overflow-hidden transition-all duration-300 ${
+    darkMode
+      ? "bg-white/5 backdrop-blur-md border border-white/10"
+      : "bg-white shadow-md border border-slate-200"
+  } ${
+    index === 0
+      ? "ring-2 ring-green-400 shadow-green-400/30"
+      : ""
+  }`}
+>
+  {/* Image Section */}
+<div className="relative h-40 rounded-xl overflow-hidden mb-3">
+
+  <img
+    src={`https://loremflickr.com/600/400/food?random=${index}`}
+    alt={rest.name}
+    className="w-full h-full object-cover"
+  />
+
+  {/* Dark Gradient Overlay */}
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+
+  {/* Restaurant Name */}
+  <div className="absolute bottom-2 left-3 text-white font-semibold text-sm">
+    {rest.name}
+  </div>
+
+  {/* Rating Badge */}
+  <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+    ⭐ {rest.rating}
+  </div>
+
+  {/* BEST Badge */}
+  {index === 0 && (
+    <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+      BEST DEAL
+    </div>
+  )}
+
+</div>
+
+{/* Bottom Section */}
+<div className="flex justify-between items-center">
+
+  <div className="text-sm opacity-80">
+    ⏱ {rest.time} mins
+  </div>
+
+  <div className="text-lg font-bold text-blue-500">
+    ₹
+    <CountUp end={rest.price} duration={1} />
+  </div>
+
+</div>
+
+{/* Subtle Shimmer */}
+<div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
+</motion.div>
     <div className="flex justify-between items-center w-full">
       <span className="font-medium text-left">
         {rest.name}
