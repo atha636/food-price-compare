@@ -26,6 +26,7 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [serviceType, setServiceType] = useState("food");
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [mobilePlatform, setMobilePlatform] = useState("zomato");
   const [sortBy, setSortBy] = useState("price");
   const particlesInit = async (engine) => {
   await loadSlim(engine);
@@ -123,7 +124,7 @@ useEffect(() => {
 
   return (
   <div
-  className={`relative min-h-screen w-screen flex items-center justify-center gap-8 px-6 overflow-hidden transition-all duration-500 ${
+  className={`relative min-h-screen w-full flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 px-4 lg:px-8 overflow-hidden transition-all duration-500 ${
     darkMode
   ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black"
   : "bg-gradient-to-br from-slate-100 via-white to-blue-50"
@@ -291,9 +292,38 @@ useEffect(() => {
       </div>
     </motion.div>
 )}
+{/* Mobile Platform Toggle */}
+{serviceType === "food" && result && (
+  <div className="flex lg:hidden justify-center gap-4 mb-4">
+
+    <button
+      onClick={() => setMobilePlatform("zomato")}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+        mobilePlatform === "zomato"
+          ? "bg-red-500 text-white"
+          : "bg-white/20 text-gray-600"
+      }`}
+    >
+      Zomato
+    </button>
+
+    <button
+      onClick={() => setMobilePlatform("swiggy")}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+        mobilePlatform === "swiggy"
+          ? "bg-orange-500 text-white"
+          : "bg-white/20 text-gray-600"
+      }`}
+    >
+      Swiggy
+    </button>
+
+  </div>
+)}
 {serviceType === "food" && result?.zomatoList && (
   <div
-  className={`hidden lg:block w-80 rounded-2xl p-4 max-h-[500px] overflow-y-auto ${
+  className={`${mobilePlatform === "zomato" ? "block" : "hidden"
+    } lg:block w-full lg:w-80 rounded-2xl p-4 lg:max-h-[550px] lg:overflow-y-auto ${
     darkMode
       ? "bg-white/5 backdrop-blur-md text-slate-200"
       : "bg-white shadow-md text-slate-800"
@@ -309,10 +339,17 @@ useEffect(() => {
 >
   Zomato
 </h3>
-    {[...result.zomatoList]
-  .sort((a, b) => a.price - b.price)
-  .map((rest, index) => (
 
+    {loading ? (
+  <>
+    <SkeletonCard />
+    <SkeletonCard />
+    <SkeletonCard />
+  </>
+) : 
+  [...result.zomatoList]
+    .sort((a, b) => a.price - b.price)
+    .map((rest, index) => (
   <div
   key={index}
  className={`w-full py-3 border-b text-sm transition-all duration-300 
@@ -425,7 +462,11 @@ cursor-pointer ${
   }`}
 >
   {serviceType === "food" && result?.swiggyList && (
-  <div className="hidden lg:block w-80 bg-white/5 backdrop-blur-md rounded-2xl p-4 max-h-[500px] overflow-y-auto">
+ <div
+  className={`${
+    mobilePlatform === "swiggy" ? "block" : "hidden"
+  } lg:block w-full lg:w-80 rounded-2xl p-4 lg:max-h-[550px] lg:overflow-y-auto`}
+>
    <h3
   className={`sticky top-0 z-10 py-3 text-center font-bold backdrop-blur-md ${
     darkMode
@@ -435,9 +476,17 @@ cursor-pointer ${
 >
   Swiggy
 </h3>
-    {[...result.swiggyList]
-  .sort((a, b) => a.price - b.price)
-  .map((rest, index) => (
+
+    {loading ? (
+  <>
+    <SkeletonCard />
+    <SkeletonCard />
+    <SkeletonCard />
+  </>
+) : 
+  [...result.zomatoList]
+    .sort((a, b) => a.price - b.price)
+    .map((rest, index) => (
 
        <div
   key={index}
@@ -818,6 +867,7 @@ function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
       : "bg-white/10 border border-white/20"
   }`}
 >
+  
   {/* shimmer layer */}
   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
 
@@ -861,6 +911,25 @@ function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
           style={{ width: `${percentage}%` }}
         />
       </div>
+    </div>
+  );
+}
+function SkeletonCard() {
+  return (
+    <div className="relative w-full p-4 mb-6 rounded-2xl overflow-hidden bg-white/40 backdrop-blur-md">
+
+      {/* Image Placeholder */}
+      <div className="h-40 rounded-xl bg-slate-300 mb-3" />
+
+      {/* Bottom Placeholder */}
+      <div className="flex justify-between items-center">
+        <div className="h-4 w-24 bg-slate-300 rounded" />
+        <div className="h-4 w-16 bg-slate-300 rounded" />
+      </div>
+
+      {/* Shimmer Effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
+
     </div>
   );
 }
