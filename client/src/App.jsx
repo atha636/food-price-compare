@@ -124,7 +124,9 @@ useEffect(() => {
   return (
   <div
   className={`relative min-h-screen w-screen flex items-center justify-center gap-8 px-6 overflow-hidden transition-all duration-500 ${
-    darkMode ? "bg-black" : "bg-white"
+    darkMode
+  ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black"
+  : "bg-gradient-to-br from-slate-100 via-white to-blue-50"
   }`}
 >
   {darkMode && (
@@ -164,6 +166,131 @@ useEffect(() => {
       {darkMode ? "DARK MODE ACTIVE" : "LIGHT MODE ACTIVE"}
     </h2>
     
+    {serviceType === "food" &&
+  result?.zomatoList &&
+  result?.swiggyList && (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="hidden lg:flex justify-center mt-12"
+    >
+      <div
+        className={`px-6 py-3 rounded-xl shadow-lg text-sm font-medium ${
+          darkMode
+            ? "bg-blue-500/20 text-blue-200 border border-blue-400/30"
+            : "bg-white text-slate-700 border border-slate-200"
+        }`}
+      >
+        {(() => {
+  const zomatoBest = result.zomatoList.reduce((a, b) =>
+    a.price < b.price ? a : b
+  );
+
+  const swiggyBest = result.swiggyList.reduce((a, b) =>
+    a.price < b.price ? a : b
+  );
+
+  const zomatoFastest = result.zomatoList.reduce((a, b) =>
+    a.time < b.time ? a : b
+  );
+
+  const swiggyFastest = result.swiggyList.reduce((a, b) =>
+    a.time < b.time ? a : b
+  );
+
+  const priceDifference = Math.abs(
+    zomatoBest.price - swiggyBest.price
+  );
+
+  const timeDifference = Math.abs(
+    zomatoFastest.time - swiggyFastest.time
+  );
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+
+      {/* Price Insight */}
+      <span>
+        {zomatoBest.price < swiggyBest.price
+          ? `🔥 Zomato saves you ₹${priceDifference}`
+          : swiggyBest.price < zomatoBest.price
+          ? `🔥 Swiggy saves you ₹${priceDifference}`
+          : "⚖️ Both platforms have similar pricing"}
+      </span>
+
+      {/* Time Insight */}
+      <span className="text-xs opacity-80">
+        {zomatoFastest.time < swiggyFastest.time
+          ? `⚡ Zomato delivers ${timeDifference} mins faster`
+          : swiggyFastest.time < zomatoFastest.time
+          ? `⚡ Swiggy delivers ${timeDifference} mins faster`
+          : "⏱ Delivery time is similar on both platforms"}
+      </span>
+{/* Price Comparison Meter */}
+<div className="w-full mt-3">
+
+  {(() => {
+    const zomatoBest = result.zomatoList.reduce((a, b) =>
+      a.price < b.price ? a : b
+    );
+    const swiggyBest = result.swiggyList.reduce((a, b) =>
+      a.price < b.price ? a : b
+    );
+
+    const maxPrice = Math.max(
+      zomatoBest.price,
+      swiggyBest.price
+    );
+
+    const zomatoPercent =
+      (zomatoBest.price / maxPrice) * 100;
+
+    const swiggyPercent =
+      (swiggyBest.price / maxPrice) * 100;
+
+    return (
+      <div className="space-y-2 mt-2">
+
+        {/* Zomato Bar */}
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span>Zomato</span>
+            <span>₹{zomatoBest.price}</span>
+          </div>
+          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-red-500 transition-all duration-700"
+              style={{ width: `${zomatoPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Swiggy Bar */}
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span>Swiggy</span>
+            <span>₹{swiggyBest.price}</span>
+          </div>
+          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-orange-500 transition-all duration-700"
+              style={{ width: `${swiggyPercent}%` }}
+            />
+          </div>
+        </div>
+
+      </div>
+    );
+  })()}
+
+</div>
+    </div>
+  );
+})()}
+      </div>
+    </motion.div>
+)}
 {serviceType === "food" && result?.zomatoList && (
   <div
   className={`hidden lg:block w-80 rounded-2xl p-4 max-h-[500px] overflow-y-auto ${
@@ -188,7 +315,9 @@ useEffect(() => {
 
   <div
   key={index}
-  className={`w-full py-3 border-b text-sm transition ${
+ className={`w-full py-3 border-b text-sm transition-all duration-300 
+hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 
+cursor-pointer ${
     index === 0
       ? "bg-green-500/10 border-green-400/30 rounded-lg"
       : "border-white/10"
@@ -212,11 +341,13 @@ useEffect(() => {
   {/* Image Section */}
 <div className="relative h-40 rounded-xl overflow-hidden mb-3">
 
+<div className="overflow-hidden rounded-lg">
   <img
     src={`https://loremflickr.com/600/400/${item}?random=${index}`}
     alt={rest.name}
-    className="w-full h-full object-cover"
+    className="w-full h-40 object-cover rounded-lg transition-transform duration-500 hover:scale-110"
   />
+  </div>
 
   {/* Dark Gradient Overlay */}
   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
@@ -310,7 +441,9 @@ useEffect(() => {
 
        <div
   key={index}
-  className={`w-full py-3 border-b text-sm transition ${
+  className={`w-full py-3 border-b text-sm transition-all duration-300 
+hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 
+cursor-pointer ${
     index === 0
       ? "bg-green-500/10 border-green-400/30 rounded-lg"
       : "border-white/10"
@@ -333,12 +466,13 @@ useEffect(() => {
 >
   {/* Image Section */}
 <div className="relative h-40 rounded-xl overflow-hidden mb-3">
-
+<div className="overflow-hidden rounded-lg">
   <img
     src={`https://loremflickr.com/600/400/food?random=${index}`}
     alt={rest.name}
-    className="w-full h-full object-cover"
+    className="w-full h-40 object-cover rounded-lg transition-transform duration-500 hover:scale-110"
   />
+  </div>
 
   {/* Dark Gradient Overlay */}
   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
