@@ -181,6 +181,24 @@ useEffect(() => {
           : "bg-gradient-to-br from-slate-100 via-white to-blue-50"
       }`}
     >
+      {winner && (
+  <motion.div
+    initial={{ opacity: 0, y: -20, scale: 0.9 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: 0.4 }}
+    className="fixed top-6 right-6 z-50"
+  >
+    <div
+      className={`px-5 py-2 rounded-full shadow-2xl text-sm font-semibold backdrop-blur-md border ${
+        winner === "zomato"
+          ? "bg-red-500/20 text-red-300 border-red-400/30 shadow-red-500/40"
+          : "bg-orange-500/20 text-orange-300 border-orange-400/30 shadow-orange-500/40"
+      }`}
+    >
+      🏆 {winner === "zomato" ? "Zomato Wins" : "Swiggy Wins"}
+    </div>
+  </motion.div>
+)}
       {darkMode && (
         <Particles
           id="tsparticles"
