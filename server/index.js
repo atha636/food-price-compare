@@ -2,28 +2,48 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
-const User = require("./models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const User = require("./models/User");
 
 const app = express();
-const authRoutes = require("./routes/auth");
 
+/* ==============================
+   MIDDLEWARE (MUST BE ON TOP)
+============================== */
+app.use(cors());
+app.use(express.json());
 
+/* ==============================
+   ROUTES
+============================== */
+
+// Health check
+app.get("/", (req, res) => {
+  res.send("Backend is running");
+});
+
+/* ==============================
+   SIGNUP ROUTE
+============================== */
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // check if user exists
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // hash password
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // create new user
+    // Create user
     const user = new User({
       name,
       email,
@@ -37,19 +57,14 @@ app.post("/signup", async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Server error" });
+    console.error("SIGNUP ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
 });
-app.use(cors());
-app.use(express.json());
-app.use("/api", authRoutes);
 
-app.get("/", (req, res) => {
-  res.send("Backend is running");
-});
-
-
+/* ==============================
+   COMPARE ROUTE (Your Existing Logic)
+============================== */
 app.post("/compare", (req, res) => {
   const { item, city, serviceType } = req.body;
 
@@ -95,30 +110,29 @@ app.post("/compare", (req, res) => {
     ];
 
     const zomatoList = zomatoRestaurants.map(name => ({
-  name,
-  price: calculatePrice(item, city, "zomato"),
-  rating: (3.5 + Math.random() * 1.5).toFixed(1), // 3.5 - 5.0
-  time: Math.floor(20 + Math.random() * 15) // 20-35 mins
-}));
+      name,
+      price: calculatePrice(item, city, "zomato"),
+      rating: (3.5 + Math.random() * 1.5).toFixed(1),
+      time: Math.floor(20 + Math.random() * 15),
+    }));
 
-const swiggyList = swiggyRestaurants.map(name => ({
-  name,
-  price: calculatePrice(item, city, "swiggy"),
-  rating: (3.5 + Math.random() * 1.5).toFixed(1),
-  time: Math.floor(18 + Math.random() * 18)
-}));
-
+    const swiggyList = swiggyRestaurants.map(name => ({
+      name,
+      price: calculatePrice(item, city, "swiggy"),
+      rating: (3.5 + Math.random() * 1.5).toFixed(1),
+      time: Math.floor(18 + Math.random() * 18),
+    }));
 
     return res.json({
       serviceType,
       item,
       city,
       zomatoList,
-      swiggyList
+      swiggyList,
     });
   }
 
-  // Grocery & Ride logic (unchanged)
+  // Grocery & Ride
   let zomatoPrice = Math.floor(200 + Math.random() * 200);
   let swiggyPrice = Math.floor(180 + Math.random() * 200);
   let zomatoTime = Math.floor(10 + Math.random() * 10);
@@ -137,11 +151,17 @@ const swiggyList = swiggyRestaurants.map(name => ({
   });
 });
 
-
-const PORT = process.env.PORT || 5000;
+/* ==============================
+   DATABASE CONNECTION
+============================== */
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ MongoDB Error:", err));
+
+/* ==============================
+   SERVER START
+============================== */
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port " + PORT);
