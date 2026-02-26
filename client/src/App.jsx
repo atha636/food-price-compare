@@ -17,6 +17,7 @@ import {
 
 
 export default function App() {
+  const [user, setUser] = useState(null);
   const [item, setItem] = useState("");
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
@@ -140,29 +141,63 @@ useEffect(() => {
   localStorage.setItem("theme", darkMode ? "dark" : "light");
 }, [darkMode]);
 useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    setIsLoggedIn(true);
-  }
-}, []);
+  const fetchUser = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-const handleLogin = async () => {
     try {
-      const res = await axios.post(
-        "https://food-price-compare-1.onrender.com/login",
-        { email, password }
+      const res = await axios.get(
+        "https://food-price-compare-1.onrender.com/me",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
-      localStorage.setItem("token", res.data.token);
       setIsLoggedIn(true);
-      setAuthError("");
+      setUser(res.data);
     } catch (err) {
-      setAuthError("Invalid email or password");
+      localStorage.removeItem("token");
+      setIsLoggedIn(false);
     }
   };
+
+  fetchUser();
+}, []);
+const handleLogin = async () => {
+  try {
+    const res = await axios.post(
+      "https://food-price-compare-1.onrender.com/login",
+      { email, password }
+    );
+
+    const token = res.data.token;
+
+    localStorage.setItem("token", token);
+
+    // 🔥 Fetch user immediately after login
+    const userRes = await axios.get(
+      "https://food-price-compare-1.onrender.com/me",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setUser(userRes.data);
+    setIsLoggedIn(true);
+    setAuthError("");
+
+  } catch (err) {
+    setAuthError("Invalid email or password");
+  }
+};
 const handleLogout = () => {
   localStorage.removeItem("token");
   setIsLoggedIn(false);
+  setUser(null); 
 };
 
   const handleCompare = async () => {
@@ -620,6 +655,11 @@ const handleLogout = () => {
               </button>
             ))}
           </div>
+          {user && (
+  <div className="mb-4 text-sm text-green-400 font-medium">
+    👋 Welcome, {user.name}
+  </div>
+)}
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
