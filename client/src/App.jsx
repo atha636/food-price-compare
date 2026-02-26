@@ -555,7 +555,51 @@ const handleLogin = async () => {
   </button>
 </div>
 
-          {/* Service Selector */}
+          
+
+          {/* 🔐 LOGIN BLOCK START */}
+  {!isLoggedIn && (
+  <div className="mb-6 space-y-3">
+    <input
+      type="email"
+      placeholder="Email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      className={`w-full px-4 py-3 rounded-xl outline-none transition ${
+        darkMode
+          ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
+          : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
+      }`}
+    />
+
+    <input
+      type="password"
+      placeholder="Password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      className={`w-full px-4 py-3 rounded-xl outline-none transition ${
+        darkMode
+          ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
+          : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
+      }`}
+    />
+
+    <button
+      onClick={handleLogin}
+      className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 
+                 text-white py-3 rounded-xl font-semibold 
+                 hover:scale-[1.02] transition-all duration-300"
+    >
+      Login
+    </button>
+
+    {authError && (
+      <p className="text-red-500 text-sm">{authError}</p>
+    )}
+  </div>
+)}
+  {/* 🔐 LOGIN BLOCK END */}
+{/* Service Selector */}
           <div className="flex justify-center gap-3 mb-6">
             {["food", "grocery", "ride"].map((type) => (
               <button
@@ -573,38 +617,6 @@ const handleLogin = async () => {
               </button>
             ))}
           </div>
-
-          {/* 🔐 LOGIN BLOCK START */}
-  {!isLoggedIn && (
-    <div className="mb-6 space-y-3">
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full px-4 py-2 rounded-lg border"
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full px-4 py-2 rounded-lg border"
-      />
-      <button
-        onClick={handleLogin}
-        className="w-full bg-blue-600 text-white py-2 rounded-lg"
-      >
-        Login
-      </button>
-
-      {authError && (
-        <p className="text-red-500 text-sm">{authError}</p>
-      )}
-    </div>
-  )}
-  {/* 🔐 LOGIN BLOCK END */}
-
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
