@@ -95,10 +95,27 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: "Access denied. No token provided." });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verified; // store decoded data
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid or expired token." });
+  }
+};
 /* ==============================
    COMPARE ROUTE (Your Existing Logic)
 ============================== */
-app.post("/compare", (req, res) => {
+app.post("/compare", authMiddleware, (req, res) => {
   const { item, city, serviceType } = req.body;
 
   const calculatePrice = (item, city, platform) => {
