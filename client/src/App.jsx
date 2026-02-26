@@ -21,6 +21,10 @@ export default function App() {
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+const [password, setPassword] = useState("");
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [authError, setAuthError] = useState("");
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
@@ -135,6 +139,27 @@ const handleGetLocation = () => {
 useEffect(() => {
   localStorage.setItem("theme", darkMode ? "dark" : "light");
 }, [darkMode]);
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    setIsLoggedIn(true);
+  }
+}, []);
+
+const handleLogin = async () => {
+    try {
+      const res = await axios.post(
+        "https://food-price-compare-1.onrender.com/login",
+        { email, password }
+      );
+
+      localStorage.setItem("token", res.data.token);
+      setIsLoggedIn(true);
+      setAuthError("");
+    } catch (err) {
+      setAuthError("Invalid email or password");
+    }
+  };
 
 
   const handleCompare = async () => {
@@ -512,14 +537,23 @@ useEffect(() => {
             darkMode ? "bg-gray-800 text-white" : "bg-white text-slate-800"
           }`}
         >
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="text-sm px-3 py-1 rounded-full border transition"
-            >
-              {darkMode ? "☀ Light" : "🌙 Dark"}
-            </button>
-          </div>
+          <div className="flex justify-end mb-4 gap-2">
+  {isLoggedIn && (
+    <button
+      onClick={handleLogout}
+      className="px-3 py-1 bg-red-500 text-white rounded-full text-sm"
+    >
+      Logout
+    </button>
+  )}
+
+  <button
+    onClick={() => setDarkMode(!darkMode)}
+    className="text-sm px-3 py-1 rounded-full border transition"
+  >
+    {darkMode ? "☀ Light" : "🌙 Dark"}
+  </button>
+</div>
 
           {/* Service Selector */}
           <div className="flex justify-center gap-3 mb-6">
@@ -539,6 +573,37 @@ useEffect(() => {
               </button>
             ))}
           </div>
+
+          {/* 🔐 LOGIN BLOCK START */}
+  {!isLoggedIn && (
+    <div className="mb-6 space-y-3">
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full px-4 py-2 rounded-lg border"
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="w-full px-4 py-2 rounded-lg border"
+      />
+      <button
+        onClick={handleLogin}
+        className="w-full bg-blue-600 text-white py-2 rounded-lg"
+      >
+        Login
+      </button>
+
+      {authError && (
+        <p className="text-red-500 text-sm">{authError}</p>
+      )}
+    </div>
+  )}
+  {/* 🔐 LOGIN BLOCK END */}
 
           {/* Header */}
           <div className="text-center mb-6">
