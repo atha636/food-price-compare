@@ -160,7 +160,10 @@ const handleLogin = async () => {
       setAuthError("Invalid email or password");
     }
   };
-
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  setIsLoggedIn(false);
+};
 
   const handleCompare = async () => {
     if (!item || !city) {
