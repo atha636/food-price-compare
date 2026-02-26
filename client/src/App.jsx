@@ -143,16 +143,27 @@ useEffect(() => {
 
       return;
     }
+     const token = localStorage.getItem("token");
+
+  if (!token) {
+    setError("Please login first to compare prices.");
+    return;
+  }
 
     setError("");
     setLoading(true);
     setResult(null);
 
     try {
-      const response = await axios.post(
-        "https://food-price-compare-1.onrender.com/compare",
-        { item, city,serviceType }
-      );
+    const response = await axios.post(
+      "https://food-price-compare-1.onrender.com/compare",
+      { item, city, serviceType },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
       setResult(response.data);
       console.log("API RESPONSE:", response.data);
