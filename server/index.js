@@ -135,8 +135,12 @@ app.post("/save-search", authMiddleware, async (req, res) => {
 
     const user = await User.findById(req.user.id);
 
-    // 🔥 Fix: Create searchHistory if missing
-    if (!user.searchHistory) {
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 🔥 Ensure searchHistory exists
+    if (!Array.isArray(user.searchHistory)) {
       user.searchHistory = [];
     }
 
