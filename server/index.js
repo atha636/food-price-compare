@@ -135,6 +135,11 @@ app.post("/save-search", authMiddleware, async (req, res) => {
 
     const user = await User.findById(req.user.id);
 
+    // 🔥 Fix: Create searchHistory if missing
+    if (!user.searchHistory) {
+      user.searchHistory = [];
+    }
+
     user.searchHistory.unshift({
       item,
       city,
@@ -150,7 +155,7 @@ app.post("/save-search", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error("SAVE SEARCH ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   }
 });
 
