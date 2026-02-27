@@ -142,13 +142,22 @@ app.post("/save-search", authMiddleware, async (req, res) => {
 
     const user = await User.findById(req.user.id);
 
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 🔥 FIX — ensure array exists
+    if (!Array.isArray(user.searchHistory)) {
+      user.searchHistory = [];
+    }
+
     user.searchHistory.unshift({
       item,
       city,
       serviceType
     });
 
-    // Keep only last 5 searches
+    // Keep only last 5
     user.searchHistory = user.searchHistory.slice(0, 5);
 
     await user.save();
@@ -157,7 +166,7 @@ app.post("/save-search", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error("SAVE SEARCH ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   }
 });
 
