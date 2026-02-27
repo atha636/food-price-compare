@@ -237,7 +237,13 @@ const handleLogout = () => {
     // 🔥 Save search and then refresh history
 axios.post(
   "https://food-price-compare-1.onrender.com/save-search",
-  { item, city, serviceType },
+  {
+    item,
+    city,
+    serviceType,
+    winner,
+    bestPrice
+  },
   {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -845,6 +851,26 @@ const handleClearHistory = async () => {
     );
 
     setResult(response.data);
+    const zomatoBest = response.data.zomatoList?.reduce((a, b) =>
+  a.price < b.price ? a : b
+);
+
+const swiggyBest = response.data.swiggyList?.reduce((a, b) =>
+  a.price < b.price ? a : b
+);
+
+let winner = null;
+let bestPrice = null;
+
+if (zomatoBest && swiggyBest) {
+  if (zomatoBest.price < swiggyBest.price) {
+    winner = "zomato";
+    bestPrice = zomatoBest.price;
+  } else {
+    winner = "swiggy";
+    bestPrice = swiggyBest.price;
+  }
+}
 
   } catch (err) {
     console.log("History compare failed");

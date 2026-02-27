@@ -152,10 +152,12 @@ app.post("/save-search", authMiddleware, async (req, res) => {
     }
 
     user.searchHistory.unshift({
-      item,
-      city,
-      serviceType
-    });
+  item,
+  city,
+  serviceType,
+  winner: req.body.winner || null,
+  bestPrice: req.body.bestPrice || null
+});
 
     // Keep only last 5
     user.searchHistory = user.searchHistory.slice(0, 5);
