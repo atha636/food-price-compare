@@ -14,6 +14,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   }
+  
 }, { timestamps: true });
+searchHistory: [
+  {
+    item: String,
+    city: String,
+    serviceType: String,
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }
+],
 
 module.exports = mongoose.model("User", userSchema);
