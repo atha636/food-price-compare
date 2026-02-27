@@ -131,6 +131,8 @@ app.get("/me", authMiddleware, async (req, res) => {
 });
 app.post("/save-search", authMiddleware, async (req, res) => {
   try {
+    console.log("Save search body:", req.body);   // 👈 ADD THIS
+
     const { item, city, serviceType } = req.body;
 
     const user = await User.findById(req.user.id);
@@ -149,7 +151,7 @@ app.post("/save-search", authMiddleware, async (req, res) => {
 
     await user.save();
 
-    console.log("Search saved for user:", user._id);   // 👈 ADD THIS
+    console.log("Search saved for user:", user._id);
 
     res.json({ message: "Search saved" });
 
