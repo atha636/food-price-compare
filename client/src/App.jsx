@@ -125,12 +125,7 @@ const handleGetLocation = () => {
   );
 };
 
-   useEffect(() => {
-    const savedHistory = localStorage.getItem("searchHistory");
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory));
-    }
-  }, []);
+  
   useEffect(() => {
   const savedTheme = localStorage.getItem("theme");
   if (savedTheme === "dark") {
@@ -157,6 +152,8 @@ useEffect(() => {
 
       setIsLoggedIn(true);
       setUser(res.data);
+      setHistory(res.data.searchHistory || []);  // 🔥 ADD THIS LINE
+
     } catch (err) {
       localStorage.removeItem("token");
       setIsLoggedIn(false);
@@ -200,24 +197,24 @@ const handleLogout = () => {
   setUser(null); 
 };
 
-  const handleCompare = async () => {
-    if (!item || !city) {
-      setError("Please enter food item and city.");
+ const handleCompare = async () => {
+  if (!item || !city) {
+    setError("Please enter food item and city.");
+    return;
+  }
 
-      return;
-    }
-     const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
   if (!token) {
     setError("Please login first to compare prices.");
     return;
   }
 
-    setError("");
-    setLoading(true);
-    setResult(null);
+  setError("");
+  setLoading(true);
+  setResult(null);
 
-    try {
+  try {
     const response = await axios.post(
       "https://food-price-compare-1.onrender.com/compare",
       { item, city, serviceType },
@@ -228,24 +225,27 @@ const handleLogout = () => {
       }
     );
 
-      setResult(response.data);
-      console.log("API RESPONSE:", response.data);
+    setResult(response.data);
+    console.log("API RESPONSE:", response.data);
 
-      setHistory((prev) => {
-  const updated = [{ item, city }, ...prev];
-  const limited = updated.slice(0, 5);
+    // 🔥 Save search without blocking compare
+    axios.post(
+      "https://food-price-compare-1.onrender.com/save-search",
+      { item, city, serviceType },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).catch(err => console.log("Save failed:", err.response?.data));
 
-  localStorage.setItem("searchHistory", JSON.stringify(limited));
-
-  return limited;
-});
-
-    } catch (err) {
-      setError("Unable to fetch prices. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err) {
+    console.log("Compare failed:", err.response?.data);
+    setError("Unable to fetch prices. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div
