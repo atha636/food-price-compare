@@ -135,11 +135,6 @@ app.post("/save-search", authMiddleware, async (req, res) => {
 
     const user = await User.findById(req.user.id);
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // 🔥 Ensure searchHistory exists
     if (!Array.isArray(user.searchHistory)) {
       user.searchHistory = [];
     }
@@ -150,10 +145,11 @@ app.post("/save-search", authMiddleware, async (req, res) => {
       serviceType
     });
 
-    // Keep only last 5 searches
     user.searchHistory = user.searchHistory.slice(0, 5);
 
     await user.save();
+
+    console.log("Search saved for user:", user._id);   // 👈 ADD THIS
 
     res.json({ message: "Search saved" });
 
