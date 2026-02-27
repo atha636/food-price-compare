@@ -117,47 +117,23 @@ app.post("/login", async (req, res) => {
 });
 app.get("/me", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    let user = await User.findById(req.user.id).select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // 🔥 Ensure searchHistory always exists
+    if (!Array.isArray(user.searchHistory)) {
+      user.searchHistory = [];
+      await user.save();
+    }
+
     res.json(user);
+
   } catch (err) {
     console.error("ME ROUTE ERROR:", err);
     res.status(500).json({ message: "Server error" });
-  }
-});
-app.post("/save-search", authMiddleware, async (req, res) => {
-  try {
-    console.log("Save search body:", req.body);   // 👈 ADD THIS
-
-    const { item, city, serviceType } = req.body;
-
-    const user = await User.findById(req.user.id);
-
-    if (!Array.isArray(user.searchHistory)) {
-      user.searchHistory = [];
-    }
-
-    user.searchHistory.unshift({
-      item,
-      city,
-      serviceType
-    });
-
-    user.searchHistory = user.searchHistory.slice(0, 5);
-
-    await user.save();
-
-    console.log("Search saved for user:", user._id);
-
-    res.json({ message: "Search saved" });
-
-  } catch (err) {
-    console.error("SAVE SEARCH ERROR:", err);
-    res.status(500).json({ message: err.message });
   }
 });
 

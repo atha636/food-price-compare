@@ -150,13 +150,16 @@ useEffect(() => {
         }
       );
 
-      setIsLoggedIn(true);
       setUser(res.data);
-      setHistory(res.data.searchHistory || []);  // 🔥 ADD THIS LINE
+      setIsLoggedIn(true);
+
+      // 🔥 IMPORTANT — Load history from DB
+      setHistory(res.data.searchHistory || []);
 
     } catch (err) {
       localStorage.removeItem("token");
       setIsLoggedIn(false);
+      setUser(null);
     }
   };
 
@@ -170,10 +173,9 @@ const handleLogin = async () => {
     );
 
     const token = res.data.token;
-
     localStorage.setItem("token", token);
 
-    // 🔥 Fetch user immediately after login
+    // 🔥 Fetch user after login
     const userRes = await axios.get(
       "https://food-price-compare-1.onrender.com/me",
       {
@@ -186,6 +188,9 @@ const handleLogin = async () => {
     setUser(userRes.data);
     setIsLoggedIn(true);
     setAuthError("");
+
+    // 🔥 ADD THIS — load history
+    setHistory(userRes.data.searchHistory || []);
 
   } catch (err) {
     setAuthError("Invalid email or password");
@@ -229,16 +234,30 @@ const handleLogout = () => {
     console.log("API RESPONSE:", response.data);
 
     // 🔥 Save search without blocking compare
-    axios.post(
-      "https://food-price-compare-1.onrender.com/save-search",
-      { item, city, serviceType },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    ).catch(err => console.log("Save failed:", err.response?.data));
+    // 🔥 Save search and then refresh history
+axios.post(
+  "https://food-price-compare-1.onrender.com/save-search",
+  { item, city, serviceType },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+)
+.then(async () => {
+  // Fetch updated user to get new searchHistory
+  const res = await axios.get(
+    "https://food-price-compare-1.onrender.com/me",
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
+  setHistory(res.data.searchHistory || []);
+})
+.catch(err => console.log("Save failed:", err.response?.data));
   } catch (err) {
     console.log("Compare failed:", err.response?.data);
     setError("Unable to fetch prices. Please try again.");
