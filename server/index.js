@@ -169,6 +169,21 @@ app.post("/save-search", authMiddleware, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+app.delete("/clear-history", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    user.searchHistory = [];
+
+    await user.save();
+
+    res.json({ message: "History cleared" });
+
+  } catch (err) {
+    console.error("CLEAR HISTORY ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 /* ==============================
    COMPARE ROUTE (Your Existing Logic)

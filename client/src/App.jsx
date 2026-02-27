@@ -265,7 +265,25 @@ axios.post(
     setLoading(false);
   }
 };
+const handleClearHistory = async () => {
+  const token = localStorage.getItem("token");
 
+  try {
+    await axios.delete(
+      "https://food-price-compare-1.onrender.com/clear-history",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setHistory([]);
+
+  } catch (err) {
+    console.log("Failed to clear history");
+  }
+};
   return (
     <div
       className={`relative min-h-screen w-full overflow-hidden transition-all duration-500 ${
@@ -780,18 +798,61 @@ axios.post(
               )}
               {loading ? "Comparing..." : "Compare Prices"}
             </button>
-
+{loading && (
+  <p className="text-xs text-blue-400 mb-2">
+    Loading from history...
+  </p>
+)}
             {history.length > 0 && (
               <div className="mt-6">
-                <p className="text-sm text-slate-500 mb-2">Recent Searches</p>
+                <div className="flex justify-between items-center mb-2">
+  <p className="text-sm text-slate-500">Recent Searches</p>
+
+  <button
+    onClick={handleClearHistory}
+    className="text-xs text-red-400 hover:text-red-500"
+  >
+    Clear
+  </button>
+</div>
                 <div className="flex flex-wrap gap-2">
                   {history.map((search, index) => (
                     <button
                       key={index}
-                      onClick={() => {
-                        setItem(search.item);
-                        setCity(search.city);
-                      }}
+                      onClick={async () => {
+
+  setLoading(true);   // 🔥 ADD THIS
+  setError("");       // 🔥 clear old errors
+
+  setItem(search.item);
+  setCity(search.city);
+
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await axios.post(
+      "https://food-price-compare-1.onrender.com/compare",
+      {
+        item: search.item,
+        city: search.city,
+        serviceType: search.serviceType || "food"
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setResult(response.data);
+
+  } catch (err) {
+    console.log("History compare failed");
+    setError("Failed to load saved search.");
+  } finally {
+    setLoading(false);   // 🔥 ADD THIS
+  }
+}}
                       className={`text-xs px-3 py-1 rounded-full transition ${
                         darkMode
                           ? "bg-white/10 hover:bg-white/20 text-white"
