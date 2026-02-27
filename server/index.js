@@ -123,16 +123,40 @@ app.get("/me", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔥 Ensure searchHistory always exists
+    // Ensure searchHistory exists for old users
     if (!Array.isArray(user.searchHistory)) {
       user.searchHistory = [];
       await user.save();
     }
 
-    res.json(user);
+    res.json(user);   // 🔥 THIS WAS MISSING
 
   } catch (err) {
     console.error("ME ROUTE ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+app.post("/save-search", authMiddleware, async (req, res) => {
+  try {
+    const { item, city, serviceType } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    user.searchHistory.unshift({
+      item,
+      city,
+      serviceType
+    });
+
+    // Keep only last 5 searches
+    user.searchHistory = user.searchHistory.slice(0, 5);
+
+    await user.save();
+
+    res.json({ message: "Search saved" });
+
+  } catch (err) {
+    console.error("SAVE SEARCH ERROR:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
