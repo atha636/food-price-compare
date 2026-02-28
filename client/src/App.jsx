@@ -17,6 +17,7 @@ import {
 
 
 export default function App() {
+  
   const [user, setUser] = useState(null);
   const [item, setItem] = useState("");
   const [city, setCity] = useState("");
@@ -27,6 +28,7 @@ const [password, setPassword] = useState("");
 const [isLoggedIn, setIsLoggedIn] = useState(false);
 const [authError, setAuthError] = useState("");
   const [history, setHistory] = useState([]);
+  const [insights, setInsights] = useState(null);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   const [serviceType, setServiceType] = useState("food");
@@ -155,7 +157,17 @@ useEffect(() => {
 
       // 🔥 IMPORTANT — Load history from DB
       setHistory(res.data.searchHistory || []);
+            // 🔥 Fetch insights
+      const insightsRes = await axios.get(
+        "https://food-price-compare-1.onrender.com/insights",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
+      setInsights(insightsRes.data);
     } catch (err) {
       localStorage.removeItem("token");
       setIsLoggedIn(false);
@@ -722,6 +734,18 @@ const handleClearHistory = async () => {
           {user && (
   <div className="mb-4 text-sm text-green-400 font-medium">
     👋 Welcome, {user.name}
+  </div>
+)}
+{insights && (
+  <div className={`mb-4 p-3 rounded-xl text-sm ${
+    darkMode
+      ? "bg-blue-500/10 border border-blue-400/30 text-blue-300"
+      : "bg-blue-50 border border-blue-200 text-blue-700"
+  }`}>
+    📊 Your Insights <br/>
+    Total Searches: {insights.totalSearches} <br/>
+    Favourite Food: {insights.favouriteFood} <br/>
+    Favourite City: {insights.favouriteCity}
   </div>
 )}
           {/* Header */}

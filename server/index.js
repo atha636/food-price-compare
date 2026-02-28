@@ -171,6 +171,49 @@ app.post("/save-search", authMiddleware, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+app.get("/insights", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user || !user.searchHistory) {
+      return res.json({
+        totalSearches: 0,
+        favouriteFood: null,
+        favouriteCity: null,
+      });
+    }
+
+    const history = user.searchHistory;
+
+    const totalSearches = history.length;
+
+    const foodCount = {};
+    const cityCount = {};
+
+    history.forEach(search => {
+      foodCount[search.item] = (foodCount[search.item] || 0) + 1;
+      cityCount[search.city] = (cityCount[search.city] || 0) + 1;
+    });
+
+    const favouriteFood = Object.keys(foodCount).reduce((a, b) =>
+      foodCount[a] > foodCount[b] ? a : b
+    );
+
+    const favouriteCity = Object.keys(cityCount).reduce((a, b) =>
+      cityCount[a] > cityCount[b] ? a : b
+    );
+
+    res.json({
+      totalSearches,
+      favouriteFood,
+      favouriteCity
+    });
+
+  } catch (err) {
+    console.error("INSIGHTS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 app.delete("/clear-history", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
