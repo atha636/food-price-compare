@@ -195,13 +195,19 @@ app.get("/insights", authMiddleware, async (req, res) => {
       cityCount[search.city] = (cityCount[search.city] || 0) + 1;
     });
 
-    const favouriteFood = Object.keys(foodCount).reduce((a, b) =>
-      foodCount[a] > foodCount[b] ? a : b
-    );
+    const favouriteFood =
+  Object.keys(foodCount).length > 0
+    ? Object.keys(foodCount).reduce((a, b) =>
+        foodCount[a] > foodCount[b] ? a : b
+      )
+    : null;
 
-    const favouriteCity = Object.keys(cityCount).reduce((a, b) =>
-      cityCount[a] > cityCount[b] ? a : b
-    );
+const favouriteCity =
+  Object.keys(cityCount).length > 0
+    ? Object.keys(cityCount).reduce((a, b) =>
+        cityCount[a] > cityCount[b] ? a : b
+      )
+    : null;
 
     res.json({
       totalSearches,
