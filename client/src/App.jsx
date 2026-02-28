@@ -211,7 +211,9 @@ const handleLogin = async () => {
 const handleLogout = () => {
   localStorage.removeItem("token");
   setIsLoggedIn(false);
-  setUser(null); 
+  setUser(null);
+  setHistory([]);
+  setInsights(null);
 };
 
  const handleCompare = async () => {
