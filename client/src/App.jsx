@@ -23,9 +23,12 @@ export default function App() {
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [pendingCompare, setPendingCompare] = useState(false);
   const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
 const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [loginLoading, setLoginLoading] = useState(false);
 const [authError, setAuthError] = useState("");
   const [history, setHistory] = useState([]);
   const [insights, setInsights] = useState(null);
@@ -138,12 +141,14 @@ useEffect(() => {
   localStorage.setItem("theme", darkMode ? "dark" : "light");
 }, [darkMode]);
 useEffect(() => {
-  const fetchUser = async () => {
+  const autoLogin = async () => {
     const token = localStorage.getItem("token");
+
     if (!token) return;
 
     try {
-      const res = await axios.get(
+      // 🔥 Restore user
+      const userRes = await axios.get(
         "https://food-price-compare-1.onrender.com/me",
         {
           headers: {
@@ -152,12 +157,11 @@ useEffect(() => {
         }
       );
 
-      setUser(res.data);
+      setUser(userRes.data);
       setIsLoggedIn(true);
+      setHistory(userRes.data.searchHistory || []);
 
-      // 🔥 IMPORTANT — Load history from DB
-      setHistory(res.data.searchHistory || []);
-            // 🔥 Fetch insights
+      // 🔥 Restore insights
       const insightsRes = await axios.get(
         "https://food-price-compare-1.onrender.com/insights",
         {
@@ -168,16 +172,25 @@ useEffect(() => {
       );
 
       setInsights(insightsRes.data);
+
     } catch (err) {
+      console.log("Auto login failed");
+
+      // Token expired → logout silently
       localStorage.removeItem("token");
       setIsLoggedIn(false);
       setUser(null);
+      setHistory([]);
+      setInsights(null);
     }
   };
 
-  fetchUser();
+  autoLogin();
 }, []);
 const handleLogin = async () => {
+  setLoginLoading(true);
+  setAuthError("");
+
   try {
     const res = await axios.post(
       "https://food-price-compare-1.onrender.com/login",
@@ -199,23 +212,37 @@ const handleLogin = async () => {
 
     setUser(userRes.data);
     setIsLoggedIn(true);
-    setAuthError("");
-
-    // 🔥 ADD THIS — load history
     setHistory(userRes.data.searchHistory || []);
+
+    // 🔥 Run pending compare automatically
+    if (pendingCompare) {
+      setPendingCompare(false);
+      handleCompare();
+    }
+
+    // 🔥 Close popup AFTER everything done
+    setShowLoginPopup(false);
 
   } catch (err) {
     setAuthError("Invalid email or password");
+  } finally {
+    setLoginLoading(false);
   }
 };
+
 const handleLogout = () => {
   localStorage.removeItem("token");
+
   setIsLoggedIn(false);
   setUser(null);
   setHistory([]);
   setInsights(null);
-};
 
+  // 🔥 ADD THESE
+  setResult(null);
+  setItem("");
+  setCity("");
+};
  const handleCompare = async () => {
   if (!item || !city) {
     setError("Please enter food item and city.");
@@ -225,13 +252,15 @@ const handleLogout = () => {
   const token = localStorage.getItem("token");
 
   if (!token) {
-    setError("Please login first to compare prices.");
-    return;
-  }
+  setPendingCompare(true);   // remember user wanted to compare
+  setShowLoginPopup(true);
+  return;
+}
 
   setError("");
   setLoading(true);
   setResult(null);
+  
 
   try {
     const response = await axios.post(
@@ -673,48 +702,8 @@ const handleClearHistory = async () => {
 
           
 
-          {/* 🔐 LOGIN BLOCK START */}
-  {!isLoggedIn && (
-  <div className="mb-6 space-y-3">
-    <input
-      type="email"
-      placeholder="Email"
-      value={email}
-      onChange={(e) => setEmail(e.target.value)}
-      className={`w-full px-4 py-3 rounded-xl outline-none transition ${
-        darkMode
-          ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
-          : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
-      }`}
-    />
 
-    <input
-      type="password"
-      placeholder="Password"
-      value={password}
-      onChange={(e) => setPassword(e.target.value)}
-      className={`w-full px-4 py-3 rounded-xl outline-none transition ${
-        darkMode
-          ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
-          : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
-      }`}
-    />
-
-    <button
-      onClick={handleLogin}
-      className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 
-                 text-white py-3 rounded-xl font-semibold 
-                 hover:scale-[1.02] transition-all duration-300"
-    >
-      Login
-    </button>
-
-    {authError && (
-      <p className="text-red-500 text-sm">{authError}</p>
-    )}
-  </div>
-)}
-  {/* 🔐 LOGIN BLOCK END */}
+  
 {/* Service Selector */}
           <div className="flex justify-center gap-3 mb-6">
             {["food", "grocery", "ride"].map((type) => (
@@ -1117,7 +1106,51 @@ const handleClearHistory = async () => {
 
       </div>
       {/* ── END THREE-COLUMN ROW ── */}
+{showLoginPopup && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-80 shadow-xl">
+      
+      <h2 className="text-lg font-bold mb-4 text-center">
+        Login to Continue
+      </h2>
 
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full mb-3 px-3 py-2 border rounded"
+      />
+
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="w-full mb-3 px-3 py-2 border rounded"
+      />
+
+      <button
+  onClick={handleLogin}
+  disabled={loginLoading}
+  className="w-full bg-blue-600 text-white py-2 rounded mb-2 flex items-center justify-center gap-2 disabled:opacity-60"
+>
+  {loginLoading && (
+    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+  )}
+  {loginLoading ? "Logging in..." : "Login"}
+</button>
+
+      <button
+        onClick={() => setShowLoginPopup(false)}
+        className="w-full text-sm text-gray-500"
+      >
+        Cancel
+      </button>
+
+    </div>
+  </div>
+)}
     </div>
   );
 }
@@ -1173,6 +1206,7 @@ function SkeletonCard() {
         <div className="h-4 w-16 bg-slate-300 rounded" />
       </div>
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
+      
     </div>
   );
 }
