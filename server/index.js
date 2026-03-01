@@ -1,4 +1,6 @@
 require("dotenv").config();
+const { OAuth2Client } = require("google-auth-library");
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
@@ -113,6 +115,47 @@ app.post("/login", async (req, res) => {
   } catch (error) {
     console.error("LOGIN ERROR:", error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+app.post("/google-login", async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { email, name, sub } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = new User({
+        name,
+        email,
+        googleId: sub,
+      });
+
+      await user.save();
+    }
+
+    const jwtToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "Google login success",
+      token: jwtToken,
+    });
+
+  } catch (err) {
+    console.error("GOOGLE LOGIN ERROR:", err);
+    res.status(500).json({ message: "Google login failed" });
   }
 });
 app.get("/me", authMiddleware, async (req, res) => {

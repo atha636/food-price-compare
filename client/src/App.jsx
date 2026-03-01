@@ -1,6 +1,6 @@
 import Particles from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
-
+import { GoogleLogin } from "@react-oauth/google";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -1130,20 +1130,61 @@ const handleClearHistory = async () => {
         className="w-full mb-3 px-3 py-2 border rounded"
       />
 
+      {/* NORMAL LOGIN */}
       <button
-  onClick={handleLogin}
-  disabled={loginLoading}
-  className="w-full bg-blue-600 text-white py-2 rounded mb-2 flex items-center justify-center gap-2 disabled:opacity-60"
->
-  {loginLoading && (
-    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-  )}
-  {loginLoading ? "Logging in..." : "Login"}
-</button>
+        onClick={handleLogin}
+        disabled={loginLoading}
+        className="w-full bg-blue-600 text-white py-2 rounded mb-2 flex items-center justify-center gap-2 disabled:opacity-60"
+      >
+        {loginLoading && (
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        )}
+        {loginLoading ? "Logging in..." : "Login"}
+      </button>
+
+      {/* 🔽 ADD THIS GOOGLE SECTION 🔽 */}
+
+      <div className="text-center text-sm text-gray-400 my-2">OR</div>
+
+      <GoogleLogin
+        onSuccess={async (credentialResponse) => {
+          try {
+            const res = await axios.post(
+              "https://food-price-compare-1.onrender.com/google-login",
+              { token: credentialResponse.credential }
+            );
+
+            const token = res.data.token;
+            localStorage.setItem("token", token);
+
+            const userRes = await axios.get(
+              "https://food-price-compare-1.onrender.com/me",
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            setUser(userRes.data);
+            setIsLoggedIn(true);
+            setShowLoginPopup(false);
+            setHistory(userRes.data.searchHistory || []);
+
+          } catch (err) {
+            console.log("Google login failed");
+          }
+        }}
+        onError={() => {
+          console.log("Google Login Failed");
+        }}
+      />
+
+      {/* 🔼 END GOOGLE SECTION 🔼 */}
 
       <button
         onClick={() => setShowLoginPopup(false)}
-        className="w-full text-sm text-gray-500"
+        className="w-full text-sm text-gray-500 mt-3"
       >
         Cancel
       </button>

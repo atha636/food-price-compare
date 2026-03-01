@@ -14,8 +14,13 @@ const userSchema = new mongoose.Schema({
 
   password: {
     type: String,
-    required: true
+    required: false
   },
+  googleId: {
+    type: String,
+    default: null
+  },
+
 
   // 🔥 MUST be inside schema
   searchHistory: {
