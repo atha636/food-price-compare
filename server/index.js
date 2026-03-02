@@ -77,10 +77,7 @@ app.post("/signup", async (req, res) => {
 
     await user.save();
 
-    const verifyLink = `${process.env.FRONTEND_URL}/verify/${verificationToken}`;
-
-    await sendVerificationEmail(email, verifyLink);
-
+    await sendVerificationEmail(email, verificationToken);
     res.status(201).json({
       message: "Verification email sent"
     });
