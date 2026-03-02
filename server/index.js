@@ -7,6 +7,8 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("./models/User");
+const crypto = require("crypto");
+const sendVerificationEmail = require("./utils/sendEmail");
 
 const app = express();
 
@@ -53,51 +55,56 @@ const handleSignup = async () => {
   setAuthError("");
 
   try {
-    // 1️⃣ Signup
-    const signupRes = await axios.post(
+    const res = await axios.post(
       "https://food-price-compare-1.onrender.com/signup",
       { name, email, password }
     );
 
-    console.log("Signup success:", signupRes.data);
+    console.log("Signup success:", res.data);
 
-    // 2️⃣ Login after signup
-    const loginRes = await axios.post(
-      "https://food-price-compare-1.onrender.com/login",
-      { email, password }
-    );
+    // 🔥 DO NOT login now
+    setAuthError("Verification email sent. Please check your inbox 📩");
 
-    const token = loginRes.data.token;
-    localStorage.setItem("token", token);
+    // Clear form
+    setName("");
+    setEmail("");
+    setPassword("");
 
-    const userRes = await axios.get(
-      "https://food-price-compare-1.onrender.com/me",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    setUser(userRes.data);
-    setIsLoggedIn(true);
-    setHistory(userRes.data.searchHistory || []);
-    setShowLoginPopup(false);
+    // Switch to login mode
     setIsRegisterMode(false);
 
   } catch (err) {
-
     console.log("Signup ERROR:", err.response?.data);
 
     setAuthError(
       err.response?.data?.message || "Signup failed"
     );
-
   } finally {
     setLoginLoading(false);
   }
 };
 
+app.get("/verify/:token", async (req, res) => {
+  try {
+    const user = await User.findOne({
+      verificationToken: req.params.token
+    });
+
+    if (!user) {
+      return res.status(400).send("Invalid token");
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+
+    await user.save();
+
+    res.send("Email verified successfully");
+
+  } catch (err) {
+    res.status(500).send("Verification failed");
+  }
+});
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -107,6 +114,12 @@ app.post("/login", async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
+    if (!user.isVerified) {
+      return res.status(400).json({
+        message: "Please verify your email first"
+      });
+    }
+
 
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);

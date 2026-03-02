@@ -20,7 +20,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-
+isVerified: {
+  type: Boolean,
+  default: false
+},
+verificationToken: String,
 
   // 🔥 MUST be inside schema
   searchHistory: {
