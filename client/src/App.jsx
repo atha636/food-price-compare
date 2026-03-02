@@ -29,6 +29,8 @@ export default function App() {
 const [password, setPassword] = useState("");
 const [isLoggedIn, setIsLoggedIn] = useState(false);
 const [loginLoading, setLoginLoading] = useState(false);
+const [isRegisterMode, setIsRegisterMode] = useState(false);
+const [name, setName] = useState("");
 const [authError, setAuthError] = useState("");
   const [history, setHistory] = useState([]);
   const [insights, setInsights] = useState(null);
@@ -228,6 +230,48 @@ const handleLogin = async () => {
   } finally {
     setLoginLoading(false);
   }
+};
+const handleSignup = async () => {
+  setLoginLoading(true);
+  setAuthError("");
+
+  try {
+    // 1️⃣ Signup
+    await axios.post(
+      "https://food-price-compare-1.onrender.com/signup",
+      { name, email, password }
+    );
+
+    // 2️⃣ Login manually after signup
+    const res = await axios.post(
+      "https://food-price-compare-1.onrender.com/login",
+      { email, password }
+    );
+
+    const token = res.data.token;
+    localStorage.setItem("token", token);
+
+    // 3️⃣ Fetch user
+    const userRes = await axios.get(
+      "https://food-price-compare-1.onrender.com/me",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setUser(userRes.data);
+    setIsLoggedIn(true);
+    setHistory(userRes.data.searchHistory || []);
+    setShowLoginPopup(false);
+    setIsRegisterMode(false);
+
+  } catch (err) {
+    setAuthError("Signup failed");
+  }
+
+  setLoginLoading(false);
 };
 
 const handleLogout = () => {
@@ -1111,9 +1155,18 @@ const handleClearHistory = async () => {
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-80 shadow-xl">
       
       <h2 className="text-lg font-bold mb-4 text-center">
-        Login to Continue
-      </h2>
+  {isRegisterMode ? "Create Account" : "Login to Continue"}
+</h2>
 
+{isRegisterMode && (
+  <input
+    type="text"
+    placeholder="Full Name"
+    value={name}
+    onChange={(e) => setName(e.target.value)}
+    className="w-full mb-3 px-3 py-2 border rounded"
+  />
+)}
       <input
         type="email"
         placeholder="Email"
@@ -1132,15 +1185,17 @@ const handleClearHistory = async () => {
 
       {/* NORMAL LOGIN */}
       <button
-        onClick={handleLogin}
-        disabled={loginLoading}
-        className="w-full bg-blue-600 text-white py-2 rounded mb-2 flex items-center justify-center gap-2 disabled:opacity-60"
-      >
-        {loginLoading && (
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        )}
-        {loginLoading ? "Logging in..." : "Login"}
-      </button>
+  onClick={isRegisterMode ? handleSignup : handleLogin}
+  disabled={loginLoading}
+  className="w-full bg-blue-600 text-white py-2 rounded mb-2 flex items-center justify-center gap-2 disabled:opacity-60"
+>
+  {loginLoading && (
+    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+  )}
+  {loginLoading
+    ? (isRegisterMode ? "Creating..." : "Logging in...")
+    : (isRegisterMode ? "Register" : "Login")}
+</button>
 
       {/* 🔽 ADD THIS GOOGLE SECTION 🔽 */}
 
@@ -1182,12 +1237,25 @@ const handleClearHistory = async () => {
 
       {/* 🔼 END GOOGLE SECTION 🔼 */}
 
-      <button
-        onClick={() => setShowLoginPopup(false)}
-        className="w-full text-sm text-gray-500 mt-3"
-      >
-        Cancel
-      </button>
+      <p className="text-center text-sm text-gray-500 mt-3">
+  {isRegisterMode ? "Already have an account?" : "Don't have an account?"}
+  <span
+    onClick={() => setIsRegisterMode(!isRegisterMode)}
+    className="ml-1 text-blue-500 font-semibold cursor-pointer"
+  >
+    {isRegisterMode ? "Login" : "Register"}
+  </span>
+</p>
+
+<button
+  onClick={() => {
+    setShowLoginPopup(false);
+    setIsRegisterMode(false);
+  }}
+  className="w-full text-sm text-gray-500 mt-2"
+>
+  Cancel
+</button>
 
     </div>
   </div>

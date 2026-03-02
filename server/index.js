@@ -48,41 +48,55 @@ app.get("/", (req, res) => {
 /* ==============================
    SIGNUP ROUTE
 ============================== */
-app.post("/signup", async (req, res) => {
+const handleSignup = async () => {
+  setLoginLoading(true);
+  setAuthError("");
+
   try {
-    const { name, email, password } = req.body;
+    // 1️⃣ Signup
+    const signupRes = await axios.post(
+      "https://food-price-compare-1.onrender.com/signup",
+      { name, email, password }
+    );
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+    console.log("Signup success:", signupRes.data);
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+    // 2️⃣ Login after signup
+    const loginRes = await axios.post(
+      "https://food-price-compare-1.onrender.com/login",
+      { email, password }
+    );
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const token = loginRes.data.token;
+    localStorage.setItem("token", token);
 
-    // Create user
-    const user = new User({
-      name,
-      email,
-      password: hashedPassword,
-    });
+    const userRes = await axios.get(
+      "https://food-price-compare-1.onrender.com/me",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-    await user.save();
+    setUser(userRes.data);
+    setIsLoggedIn(true);
+    setHistory(userRes.data.searchHistory || []);
+    setShowLoginPopup(false);
+    setIsRegisterMode(false);
 
-    res.status(201).json({
-      message: "User registered successfully",
-    });
+  } catch (err) {
 
-  } catch (error) {
-    console.error("SIGNUP ERROR:", error);
-    res.status(500).json({ message: error.message });
+    console.log("Signup ERROR:", err.response?.data);
+
+    setAuthError(
+      err.response?.data?.message || "Signup failed"
+    );
+
+  } finally {
+    setLoginLoading(false);
   }
-});
+};
 
 app.post("/login", async (req, res) => {
   try {
