@@ -50,39 +50,46 @@ app.get("/", (req, res) => {
 /* ==============================
    SIGNUP ROUTE
 ============================== */
-const handleSignup = async () => {
-  setLoginLoading(true);
-  setAuthError("");
-
+app.post("/signup", async (req, res) => {
   try {
-    const res = await axios.post(
-      "https://food-price-compare-1.onrender.com/signup",
-      { name, email, password }
-    );
+    const { name, email, password } = req.body;
 
-    console.log("Signup success:", res.data);
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
 
-    // 🔥 DO NOT login now
-    setAuthError("Verification email sent. Please check your inbox 📩");
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
-    // Clear form
-    setName("");
-    setEmail("");
-    setPassword("");
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Switch to login mode
-    setIsRegisterMode(false);
+    const verificationToken = crypto.randomBytes(32).toString("hex");
 
-  } catch (err) {
-    console.log("Signup ERROR:", err.response?.data);
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      verificationToken,
+      isVerified: false
+    });
 
-    setAuthError(
-      err.response?.data?.message || "Signup failed"
-    );
-  } finally {
-    setLoginLoading(false);
+    await user.save();
+
+    const verifyLink = `${process.env.FRONTEND_URL}/verify/${verificationToken}`;
+
+    await sendVerificationEmail(email, verifyLink);
+
+    res.status(201).json({
+      message: "Verification email sent"
+    });
+
+  } catch (error) {
+    console.error("SIGNUP ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
-};
+});
 
 app.get("/verify/:token", async (req, res) => {
   try {
