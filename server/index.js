@@ -76,7 +76,7 @@ app.post("/signup", async (req, res) => {
     });
 
     await user.save();
-const verifyLink = `${process.env.FRONTEND_URL}/verify/${verificationToken}`;
+const verifyLink = `https://food-price-compare-1.onrender.com/verify/${verificationToken}`;
     sendVerificationEmail(email, verifyLink)
   .then(() => console.log("Verification email sent"))
   .catch(err => console.log("Email failed:", err));
