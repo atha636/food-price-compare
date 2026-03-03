@@ -1,32 +1,24 @@
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const sendVerificationEmail = async (to, link) => {
+  const msg = {
+    to,
+    from: process.env.EMAIL_USER, // must be verified in SendGrid
+    subject: "Verify your email",
+    html: `
+      <h2>Email Verification</h2>
+      <p>Click below to verify your account:</p>
+      <a href="${link}">Verify Email</a>
+    `,
+  };
+
   try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    const mailOptions = {
-      from: `"Food Compare" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: "Verify your email",
-      html: `
-        <h2>Email Verification</h2>
-        <p>Click below to verify your account:</p>
-        <a href="${link}" target="_blank">Verify Email</a>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    console.log("✅ Email sent to:", to);
-
-  } catch (err) {
-    console.error("❌ Email send error:", err);
+    await sgMail.send(msg);
+    console.log("✅ Email sent via SendGrid");
+  } catch (error) {
+    console.error("❌ SendGrid Error:", error.response?.body || error);
   }
 };
 
