@@ -1,6 +1,8 @@
 import Particles from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import { GoogleLogin } from "@react-oauth/google";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Verified from "./pages/Verified";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -399,13 +401,18 @@ const handleClearHistory = async () => {
   }
 };
   return (
-    <div
-      className={`relative min-h-screen w-full overflow-hidden transition-all duration-500 ${
-        darkMode
-          ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black"
-          : "bg-gradient-to-br from-slate-100 via-white to-blue-50"
-      }`}
-    >
+  <BrowserRouter>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <div
+            className={`relative min-h-screen w-full overflow-hidden transition-all duration-500 ${
+              darkMode
+                ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black"
+                : "bg-gradient-to-br from-slate-100 via-white to-blue-50"
+            }`}
+          >
       {winner && (
   <motion.div
     initial={{ opacity: 0, y: -20, scale: 0.9 }}
@@ -1260,8 +1267,15 @@ const handleClearHistory = async () => {
     </div>
   </div>
 )}
-    </div>
-  );
+              </div>
+        }
+      />
+
+      <Route path="/verified" element={<Verified />} />
+
+    </Routes>
+  </BrowserRouter>
+);
 }
 
 function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {

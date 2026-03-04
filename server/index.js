@@ -97,7 +97,9 @@ app.get("/verify/:token", async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).send("Invalid token");
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/verification-failed`
+      );
     }
 
     user.isVerified = true;
@@ -105,10 +107,11 @@ app.get("/verify/:token", async (req, res) => {
 
     await user.save();
 
-    res.send("Email verified successfully");
+    // Redirect to frontend success page
+    res.redirect(`${process.env.FRONTEND_URL}/verified`);
 
   } catch (err) {
-    res.status(500).send("Verification failed");
+    res.redirect(`${process.env.FRONTEND_URL}/verification-failed`);
   }
 });
 app.post("/login", async (req, res) => {
