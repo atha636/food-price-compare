@@ -3,6 +3,7 @@ import { loadSlim } from "@tsparticles/slim";
 import { GoogleLogin } from "@react-oauth/google";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Verified from "./pages/Verified";
+import Dashboard from "./pages/Dashboard";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -734,6 +735,14 @@ const handleClearHistory = async () => {
           }`}
         >
           <div className="flex justify-end mb-4 gap-2">
+            {isLoggedIn && (
+  <button
+    onClick={() => window.location.href = "/dashboard"}
+    className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm"
+  >
+    Dashboard
+  </button>
+)}
   {isLoggedIn && (
     <button
       onClick={handleLogout}
@@ -1272,7 +1281,7 @@ const handleClearHistory = async () => {
       />
 
       <Route path="/verified" element={<Verified />} />
-
+      <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
   </BrowserRouter>
 );
