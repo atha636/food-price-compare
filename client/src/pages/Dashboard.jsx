@@ -15,6 +15,8 @@ export default function Dashboard() {
   const [insights, setInsights] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
+  const [moneySaved, setMoneySaved] = useState(0);
+const [bestPlatform, setBestPlatform] = useState(null);
   useEffect(() => {
 
   const savedTheme = localStorage.getItem("theme");
@@ -61,6 +63,33 @@ const chartArray = Object.keys(foodCount).map(food => ({
 }));
 
 setChartData(chartArray);
+
+/* 🔥 MONEY SAVED CALCULATION */
+
+let totalSaved = 0;
+let zomatoWins = 0;
+let swiggyWins = 0;
+
+history.forEach(search => {
+
+  if (search.bestPrice) {
+    totalSaved += search.bestPrice * 0.1;
+  }
+
+  if (search.winner === "zomato") zomatoWins++;
+  if (search.winner === "swiggy") swiggyWins++;
+
+});
+
+setMoneySaved(Math.round(totalSaved));
+
+if (zomatoWins === 0 && swiggyWins === 0) {
+  setBestPlatform(null);
+} else {
+  setBestPlatform(
+    zomatoWins > swiggyWins ? "Zomato" : "Swiggy"
+  );
+}
 
     };
 
@@ -153,6 +182,43 @@ setChartData(chartArray);
         </div>
 
       </div>
+      {/* MONEY SAVED */}
+
+<div className="grid md:grid-cols-2 gap-6 mt-10">
+
+<div className={`p-6 rounded-2xl shadow text-center ${
+  darkMode
+    ? "bg-white/5 backdrop-blur-md border border-white/10"
+    : "bg-white"
+}`}>
+
+<h3 className="text-gray-500 text-sm">
+💰 Total Money Saved
+</h3>
+
+<p className="text-3xl font-bold mt-2 text-green-500">
+₹{moneySaved}
+</p>
+
+</div>
+
+<div className={`p-6 rounded-2xl shadow text-center ${
+  darkMode
+    ? "bg-white/5 backdrop-blur-md border border-white/10"
+    : "bg-white"
+}`}>
+
+<h3 className="text-gray-500 text-sm">
+🏆 Best Platform
+</h3>
+
+<p className="text-2xl font-semibold mt-2">
+{bestPlatform || "—"}
+</p>
+
+</div>
+
+</div>
       {/* SEARCH CHART */}
 
 <div className={`p-6 rounded-2xl shadow mt-10 ${
@@ -210,7 +276,7 @@ setChartData(chartArray);
 
     <tbody>
 
-      {user.searchHistory.map((search, index) => (
+      {(user.searchHistory || []).map((search, index) => (
 
         <tr key={index} className="border-b">
 
