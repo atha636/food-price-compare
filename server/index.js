@@ -217,7 +217,7 @@ app.get("/me", authMiddleware, async (req, res) => {
 });
 app.post("/save-search", authMiddleware, async (req, res) => {
   try {
-    const { item, city, serviceType } = req.body;
+    const { item, city, serviceType, winner, bestPrice } = req.body;
 
     const user = await User.findById(req.user.id);
 
