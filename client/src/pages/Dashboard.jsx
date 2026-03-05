@@ -8,9 +8,9 @@ import {
 } from "recharts";
 import { useEffect, useState } from "react";
 import axios from "axios";
-
+import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
-
+const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [insights, setInsights] = useState(null);
   const [chartData, setChartData] = useState([]);
@@ -100,11 +100,71 @@ if (zomatoWins === 0 && swiggyWins === 0) {
   if (!user || !insights) return <p className="p-10">Loading...</p>;
 
   return (
-    <div className={`min-h-screen p-8 transition-all duration-500 ${
+
+<div className={`min-h-screen flex ${
   darkMode
     ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white"
     : "bg-slate-100 text-slate-800"
 }`}>
+
+{/* SIDEBAR */}
+
+<div className={`w-64 min-h-screen p-6 ${
+  darkMode
+    ? "bg-black/30 border-r border-white/10"
+    : "bg-white border-r"
+}`}>
+
+<h2 className="text-2xl font-bold mb-10">
+PriceCompare
+</h2>
+
+<div className="space-y-4">
+
+<button
+onClick={()=>navigate("/dashboard")}
+className="block w-full text-left hover:opacity-80"
+>
+📊 Dashboard
+</button>
+
+<button
+onClick={()=>navigate("/analytics")}
+className="block w-full text-left hover:opacity-80"
+>
+📈 Analytics
+</button>
+
+<button
+onClick={()=>navigate("/history")}
+className="block w-full text-left hover:opacity-80"
+>
+🕓 History
+</button>
+
+<button
+onClick={()=>navigate("/settings")}
+className="block w-full text-left hover:opacity-80"
+>
+⚙ Settings
+</button>
+
+<button
+onClick={()=>{
+localStorage.removeItem("token");
+window.location.href="/";
+}}
+className="block w-full text-left text-red-500 hover:opacity-80"
+>
+🚪 Logout
+</button>
+
+</div>
+
+</div>
+{/* MAIN CONTENT */}
+
+<div className="flex-1 p-8">
 
       <h1 className="text-3xl font-bold mb-8">
         User Dashboard
@@ -294,6 +354,7 @@ if (zomatoWins === 0 && swiggyWins === 0) {
 
 </div>
 
+    </div>
     </div>
   );
 }

@@ -8,6 +8,9 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import CountUp from "react-countup";
+import Analytics from "./pages/Analytics";
+import History from "./pages/History";
+import Settings from "./pages/Settings";
 import {
   BarChart,
   Bar,
@@ -404,6 +407,10 @@ const handleClearHistory = async () => {
   return (
   <BrowserRouter>
     <Routes>
+      <Route path="/dashboard" element={<Dashboard />} />
+<Route path="/analytics" element={<Analytics />} />
+<Route path="/history" element={<History />} />
+<Route path="/settings" element={<Settings />} />
       <Route
         path="/"
         element={
