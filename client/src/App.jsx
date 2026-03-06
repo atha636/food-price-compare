@@ -366,7 +366,6 @@ await axios.post(
   }
 )
 .then(async () => {
-  // Fetch updated user to get new searchHistory
   const res = await axios.get(
     "https://food-price-compare-1.onrender.com/me",
     {
@@ -376,6 +375,7 @@ await axios.post(
     }
   );
 
+  setUser(res.data);   // ⭐ THIS WAS MISSING
   setHistory(res.data.searchHistory || []);
 })
 .catch(err => console.log("Save failed:", err.response?.data));
