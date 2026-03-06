@@ -45,6 +45,33 @@ const [authError, setAuthError] = useState("");
   const [serviceType, setServiceType] = useState("food");
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [mobilePlatform, setMobilePlatform] = useState("zomato");
+  const [theme, setTheme] = useState(
+  localStorage.getItem("theme") || "system"
+);
+useEffect(() => {
+
+const root = document.documentElement;
+
+if (theme === "dark") {
+  root.classList.add("dark");
+} 
+else if (theme === "light") {
+  root.classList.remove("dark");
+} 
+else {
+  // system mode
+  const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  if (systemDark) {
+    root.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+  }
+}
+
+localStorage.setItem("theme", theme);
+
+}, [theme]);
   const winner =
   serviceType === "food" && result
     ? (() => {
@@ -411,7 +438,10 @@ const handleClearHistory = async () => {
       <Route path="/dashboard" element={<Dashboard />} />
 <Route path="/analytics" element={<Analytics />} />
 <Route path="/history" element={<History />} />
-<Route path="/settings" element={<Settings />} />
+<Route
+path="/settings"
+element={<Settings theme={theme} setTheme={setTheme} />}
+/>
       <Route
         path="/"
         element={

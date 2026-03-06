@@ -67,7 +67,7 @@ fetchAnalytics();
 
 return(
 
-<div className="min-h-screen p-10 bg-slate-100">
+<div className="min-h-screen bg-slate-100 dark:bg-gray-900 text-slate-800 dark:text-white">
 
 <h1 className="text-3xl font-bold mb-10">
 📈 Platform Win Analytics
@@ -75,8 +75,7 @@ return(
 
 {/* PLATFORM WIN CHART */}
 
-<div className="bg-white p-6 rounded-2xl shadow">
-
+<div className="bg-white dark:bg-gray-900">
 <div className="h-80">
 
 <ResponsiveContainer width="100%" height="100%">
@@ -99,7 +98,7 @@ return(
 
 {/* TOP FOOD CHART */}
 
-<div className="bg-white p-6 rounded-2xl shadow mt-10">
+<div className="min-h-screen bg-slate-100 dark:bg-gray-900 text-slate-800 dark:text-white">
 
 <h2 className="text-xl font-semibold mb-4">
 🍕 Top Searched Foods

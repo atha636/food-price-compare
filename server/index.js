@@ -215,6 +215,49 @@ app.get("/me", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+app.put("/update-profile", authMiddleware, async (req, res) => {
+  try {
+
+    const { name, email } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+
+    await user.save();
+
+    res.json({
+      message: "Profile updated",
+      user
+    });
+
+  } catch (err) {
+    console.log("PROFILE UPDATE ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+app.delete("/delete-account", authMiddleware, async (req, res) => {
+
+  try {
+
+    await User.findByIdAndDelete(req.user.id);
+
+    res.json({ message: "Account deleted" });
+
+  } catch (err) {
+
+    console.log("DELETE ACCOUNT ERROR:", err);
+
+    res.status(500).json({ message: "Server error" });
+
+  }
+
+});
 app.post("/save-search", authMiddleware, async (req, res) => {
   try {
     const { item, city, serviceType, winner, bestPrice } = req.body;
