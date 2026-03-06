@@ -349,7 +349,8 @@ if (zomatoBest && swiggyBest) {
     bestPrice = swiggyBest.price;
   }
 }
-
+console.log("WINNER:", winner);
+console.log("BEST PRICE:", bestPrice);
 await axios.post(
   "https://food-price-compare-1.onrender.com/save-search",
   {
