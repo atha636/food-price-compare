@@ -332,7 +332,12 @@ const swiggyBest = response.data.swiggyList?.reduce((a, b) =>
   a.price < b.price ? a : b
 );
 
-let winner = null;
+
+    console.log("API RESPONSE:", response.data);
+
+    // 🔥 Save search without blocking compare
+    // 🔥 Save search and then refresh history
+    let winner = null;
 let bestPrice = null;
 
 if (zomatoBest && swiggyBest) {
@@ -345,10 +350,6 @@ if (zomatoBest && swiggyBest) {
   }
 }
 
-    console.log("API RESPONSE:", response.data);
-
-    // 🔥 Save search without blocking compare
-    // 🔥 Save search and then refresh history
 await axios.post(
   "https://food-price-compare-1.onrender.com/save-search",
   {

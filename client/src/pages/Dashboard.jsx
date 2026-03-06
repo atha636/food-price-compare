@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 export default function Dashboard() {
 const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -16,6 +17,7 @@ const navigate = useNavigate();
   const [chartData, setChartData] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
   const [moneySaved, setMoneySaved] = useState(0);
+  const location = useLocation();
 const [bestPlatform, setBestPlatform] = useState(null);
   useEffect(() => {
 
@@ -123,28 +125,44 @@ PriceCompare
 
 <button
 onClick={()=>navigate("/dashboard")}
-className="block w-full text-left hover:opacity-80"
+className={`block w-full text-left px-3 py-2 rounded-lg transition ${
+  location.pathname === "/dashboard"
+    ? "bg-blue-500 text-white"
+    : "hover:bg-white/10"
+}`}
 >
 📊 Dashboard
 </button>
 
 <button
 onClick={()=>navigate("/analytics")}
-className="block w-full text-left hover:opacity-80"
+className={`block w-full text-left px-3 py-2 rounded-lg transition ${
+  location.pathname === "/analytics"
+    ? "bg-blue-500 text-white"
+    : "hover:bg-white/10"
+}`}
 >
 📈 Analytics
 </button>
 
 <button
 onClick={()=>navigate("/history")}
-className="block w-full text-left hover:opacity-80"
+className={`block w-full text-left px-3 py-2 rounded-lg transition ${
+  location.pathname === "/history"
+    ? "bg-blue-500 text-white"
+    : "hover:bg-white/10"
+}`}
 >
 🕓 History
 </button>
 
 <button
 onClick={()=>navigate("/settings")}
-className="block w-full text-left hover:opacity-80"
+className={`block w-full text-left px-3 py-2 rounded-lg transition ${
+  location.pathname === "/settings"
+    ? "bg-blue-500 text-white"
+    : "hover:bg-white/10"
+}`}
 >
 ⚙ Settings
 </button>
