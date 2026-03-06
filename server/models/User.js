@@ -28,19 +28,21 @@ verificationToken: String,
 
   // 🔥 MUST be inside schema
   searchHistory: {
-    type: [
-      {
-        item: String,
-        city: String,
-        serviceType: String,
-        date: {
-          type: Date,
-          default: Date.now
-        }
+  type: [
+    {
+      item: String,
+      city: String,
+      serviceType: String,
+      winner: String,
+      bestPrice: Number,
+      date: {
+        type: Date,
+        default: Date.now
       }
-    ],
-    default: []
-  }
+    }
+  ],
+  default: []
+}
 
 }, { timestamps: true });
 

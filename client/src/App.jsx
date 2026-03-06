@@ -324,23 +324,20 @@ const handleLogout = () => {
     );
 
     setResult(response.data);
-    const zomatoBest = response.data.zomatoList?.reduce((a, b) =>
-  a.price < b.price ? a : b
-);
-
-const swiggyBest = response.data.swiggyList?.reduce((a, b) =>
-  a.price < b.price ? a : b
-);
-
-
-    console.log("API RESPONSE:", response.data);
-
-    // 🔥 Save search without blocking compare
-    // 🔥 Save search and then refresh history
+     console.log("API RESPONSE:", response.data);
     let winner = null;
 let bestPrice = null;
 
-if (zomatoBest && swiggyBest) {
+if (response.data.serviceType === "food") {
+
+  const zomatoBest = response.data.zomatoList.reduce((a, b) =>
+    a.price < b.price ? a : b
+  );
+
+  const swiggyBest = response.data.swiggyList.reduce((a, b) =>
+    a.price < b.price ? a : b
+  );
+
   if (zomatoBest.price < swiggyBest.price) {
     winner = "zomato";
     bestPrice = zomatoBest.price;
@@ -348,9 +345,11 @@ if (zomatoBest && swiggyBest) {
     winner = "swiggy";
     bestPrice = swiggyBest.price;
   }
+
 }
 console.log("WINNER:", winner);
 console.log("BEST PRICE:", bestPrice);
+console.log("Saving search:", item, city, winner, bestPrice);
 await axios.post(
   "https://food-price-compare-1.onrender.com/save-search",
   {
