@@ -12,6 +12,7 @@ import {
 export default function Analytics() {
 
 const [chartData,setChartData] = useState([]);
+const [foodChart,setFoodChart] = useState([]);
 
 useEffect(()=>{
 
@@ -29,7 +30,20 @@ Authorization:`Bearer ${token}`
 );
 
 const history = res.data.searchHistory || [];
+const foodCount = {};
 
+history.forEach(search => {
+
+foodCount[search.item] = (foodCount[search.item] || 0) + 1;
+
+});
+
+const foodArray = Object.keys(foodCount).map(food => ({
+food,
+count: foodCount[food]
+}));
+
+setFoodChart(foodArray);
 let zomatoWins = 0;
 let swiggyWins = 0;
 
@@ -59,6 +73,8 @@ return(
 📈 Platform Win Analytics
 </h1>
 
+{/* PLATFORM WIN CHART */}
+
 <div className="bg-white p-6 rounded-2xl shadow">
 
 <div className="h-80">
@@ -72,6 +88,34 @@ return(
 <Tooltip/>
 
 <Bar dataKey="wins" fill="#3b82f6"/>
+
+</BarChart>
+
+</ResponsiveContainer>
+
+</div>
+
+</div>
+
+{/* TOP FOOD CHART */}
+
+<div className="bg-white p-6 rounded-2xl shadow mt-10">
+
+<h2 className="text-xl font-semibold mb-4">
+🍕 Top Searched Foods
+</h2>
+
+<div className="h-80">
+
+<ResponsiveContainer width="100%" height="100%">
+
+<BarChart data={foodChart}>
+
+<XAxis dataKey="food"/>
+<YAxis/>
+<Tooltip/>
+
+<Bar dataKey="count" fill="#10b981"/>
 
 </BarChart>
 
