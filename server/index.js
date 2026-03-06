@@ -234,8 +234,8 @@ app.post("/save-search", authMiddleware, async (req, res) => {
   item,
   city,
   serviceType,
-  winner: req.body.winner || null,
-  bestPrice: req.body.bestPrice || null
+  winner,
+bestPrice
 });
 
     // Keep only last 5
