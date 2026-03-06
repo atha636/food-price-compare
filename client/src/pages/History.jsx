@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Trash2 } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
 export default function History(){
 
 const [history,setHistory] = useState([]);
 const [search,setSearch] = useState("");
+const navigate = useNavigate();
 
 useEffect(()=>{
 
@@ -77,7 +78,7 @@ No searches found.
 
 <div
 key={index}
-className="p-5 rounded-2xl shadow bg-white dark:bg-gray-800 relative"
+className="p-5 rounded-2xl shadow bg-white dark:bg-gray-800 relative transition hover:scale-[1.02] hover:shadow-xl"
 >
 
 <button
@@ -87,7 +88,7 @@ bg-red-50 dark:bg-red-500/10
 hover:bg-red-100 dark:hover:bg-red-500/20
 transition"
 >
-<Trash2 size={18} className="text-red-500"/>
+<Trash2 size={20} strokeWidth={2.5} className="text-red-500"/>
 </button>
 
 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
@@ -121,6 +122,21 @@ No winner
 <p className="text-xs mt-3 text-slate-400">
 {new Date(searchItem.date).toLocaleDateString()}
 </p>
+
+<button
+onClick={()=>{
+navigate("/",{
+state:{
+item: searchItem.item,
+city: searchItem.city,
+serviceType: searchItem.serviceType
+}
+});
+}}
+className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-sm transition"
+>
+Compare Again
+</button>
 
 </div>
 

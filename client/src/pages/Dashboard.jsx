@@ -18,6 +18,20 @@ const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(false);
   const [moneySaved, setMoneySaved] = useState(0);
   const location = useLocation();
+  const getFoodIcon = (food) => {
+  const item = food?.toLowerCase();
+
+  if (item.includes("pizza")) return "🍕";
+  if (item.includes("burger")) return "🍔";
+  if (item.includes("biryani")) return "🍛";
+  if (item.includes("pasta")) return "🍝";
+  if (item.includes("momos")) return "🥟";
+  if (item.includes("sandwich")) return "🥪";
+  if (item.includes("cake")) return "🍰";
+  if (item.includes("coffee")) return "☕";
+
+  return "🍽️"; // default icon
+};
 const [bestPlatform, setBestPlatform] = useState(null);
   useEffect(() => {
 
@@ -111,23 +125,23 @@ if (zomatoWins === 0 && swiggyWins === 0) {
 
 {/* SIDEBAR */}
 
-<div className={`w-64 min-h-screen p-6 ${
+<div className={`w-64 min-h-screen p-6 backdrop-blur-xl ${
   darkMode
-    ? "bg-black/30 border-r border-white/10"
+    ? "bg-black/40 border-r border-white/10"
     : "bg-white border-r"
 }`}>
 
-<h2 className="text-2xl font-bold mb-10">
-PriceCompare
+<h2 className="text-2xl font-bold mb-10 tracking-wide">
+🚀 PriceCompare
 </h2>
 
-<div className="space-y-4">
+<div className="space-y-3">
 
 <button
 onClick={()=>navigate("/dashboard")}
-className={`block w-full text-left px-3 py-2 rounded-lg transition ${
+className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
   location.pathname === "/dashboard"
-    ? "bg-blue-500 text-white"
+    ? "bg-blue-600 text-white shadow-lg"
     : "hover:bg-white/10"
 }`}
 >
@@ -136,9 +150,9 @@ className={`block w-full text-left px-3 py-2 rounded-lg transition ${
 
 <button
 onClick={()=>navigate("/analytics")}
-className={`block w-full text-left px-3 py-2 rounded-lg transition ${
+className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
   location.pathname === "/analytics"
-    ? "bg-blue-500 text-white"
+    ? "bg-blue-600 text-white"
     : "hover:bg-white/10"
 }`}
 >
@@ -147,9 +161,9 @@ className={`block w-full text-left px-3 py-2 rounded-lg transition ${
 
 <button
 onClick={()=>navigate("/history")}
-className={`block w-full text-left px-3 py-2 rounded-lg transition ${
+className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
   location.pathname === "/history"
-    ? "bg-blue-500 text-white"
+    ? "bg-blue-600 text-white"
     : "hover:bg-white/10"
 }`}
 >
@@ -158,9 +172,9 @@ className={`block w-full text-left px-3 py-2 rounded-lg transition ${
 
 <button
 onClick={()=>navigate("/settings")}
-className={`block w-full text-left px-3 py-2 rounded-lg transition ${
+className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
   location.pathname === "/settings"
-    ? "bg-blue-500 text-white"
+    ? "bg-blue-600 text-white"
     : "hover:bg-white/10"
 }`}
 >
@@ -172,21 +186,33 @@ onClick={()=>{
 localStorage.removeItem("token");
 window.location.href="/";
 }}
-className="block w-full text-left text-red-500 hover:opacity-80"
+className="w-full text-left px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10"
 >
 🚪 Logout
 </button>
 
 </div>
-
 </div>
 {/* MAIN CONTENT */}
 
 <div className="flex-1 p-8">
 
-      <h1 className="text-3xl font-bold mb-8">
-        User Dashboard
-      </h1>
+      <div className="flex justify-between items-center mb-10">
+
+<div>
+<h1 className="text-3xl font-bold">
+📊 Dashboard
+</h1>
+<p className="text-sm opacity-70">
+Track your food price savings and activity
+</p>
+</div>
+
+<div className="text-sm bg-blue-500/20 px-4 py-2 rounded-full">
+🔥 Smart Price Tracker
+</div>
+
+</div>
 
       {/* PROFILE CARD */}
 
@@ -211,87 +237,98 @@ className="block w-full text-left text-red-500 hover:opacity-80"
 
       <div className="grid md:grid-cols-3 gap-6">
 
-        <div className={`p-6 rounded-2xl shadow text-center ${
+<div className={`p-6 rounded-2xl text-center transition hover:scale-105 ${
   darkMode
-    ? "bg-white/5 backdrop-blur-md border border-white/10"
-    : "bg-white"
+  ? "bg-white/5 backdrop-blur-md border border-white/10"
+  : "bg-white shadow"
 }`}>
 
-          <h3 className="text-gray-500 text-sm">
-            Total Searches
-          </h3>
+<p className="text-sm opacity-70">
+Total Searches
+</p>
 
-          <p className="text-3xl font-bold mt-2 text-blue-600">
-            {insights.totalSearches}
-          </p>
-
-        </div>
-
-       <div className={`p-6 rounded-2xl shadow text-center ${
-  darkMode
-    ? "bg-white/5 backdrop-blur-md border border-white/10"
-    : "bg-white"
-}`}>
-
-          <h3 className="text-gray-500 text-sm">
-            Favourite Food
-          </h3>
-
-          <p className="text-2xl font-semibold mt-2">
-            {insights.favouriteFood || "—"}
-          </p>
-
-        </div>
-
-        <div className={`p-6 rounded-2xl shadow text-center ${
-  darkMode
-    ? "bg-white/5 backdrop-blur-md border border-white/10"
-    : "bg-white"
-}`}>
-
-          <h3 className="text-gray-500 text-sm">
-            Favourite City
-          </h3>
-
-          <p className="text-2xl font-semibold mt-2">
-            {insights.favouriteCity || "—"}
-          </p>
-
-        </div>
-
-      </div>
-      {/* MONEY SAVED */}
-
-<div className="grid md:grid-cols-2 gap-6 mt-10">
-
-<div className={`p-6 rounded-2xl shadow text-center ${
-  darkMode
-    ? "bg-white/5 backdrop-blur-md border border-white/10"
-    : "bg-white"
-}`}>
-
-<h3 className="text-gray-500 text-sm">
-💰 Total Money Saved
-</h3>
-
-<p className="text-3xl font-bold mt-2 text-green-500">
-₹{moneySaved}
+<p className="text-4xl font-bold text-blue-500 mt-2">
+{insights.totalSearches}
 </p>
 
 </div>
 
-<div className={`p-6 rounded-2xl shadow text-center ${
+
+<div className={`p-6 rounded-2xl text-center transition hover:scale-105 ${
   darkMode
-    ? "bg-white/5 backdrop-blur-md border border-white/10"
-    : "bg-white"
+  ? "bg-white/5 backdrop-blur-md border border-white/10"
+  : "bg-white shadow"
 }`}>
 
-<h3 className="text-gray-500 text-sm">
+<p className="text-sm opacity-70">
+Favourite Food
+</p>
+
+<p className="text-2xl font-semibold mt-2">
+{insights.favouriteFood || "—"}
+</p>
+
+</div>
+
+
+<div className={`p-6 rounded-2xl text-center transition hover:scale-105 ${
+  darkMode
+  ? "bg-white/5 backdrop-blur-md border border-white/10"
+  : "bg-white shadow"
+}`}>
+
+<p className="text-sm opacity-70">
+Favourite City
+</p>
+
+<p className="text-2xl font-semibold mt-2">
+{insights.favouriteCity || "—"}
+</p>
+
+</div>
+
+</div>
+      {/* MONEY SAVED */}
+
+<div className="grid md:grid-cols-2 gap-6 mt-10">
+
+<div className={`p-6 rounded-2xl transition hover:scale-105 ${
+  darkMode
+  ? "bg-green-500/10 border border-green-400/20"
+  : "bg-white shadow"
+}`}>
+
+<h3 className="text-sm opacity-70">
+💰 Total Money Saved
+</h3>
+
+<p className="text-4xl font-bold mt-2 text-green-500">
+₹{moneySaved}
+</p>
+
+<p className="text-xs opacity-70 mt-2">
+Based on best price comparisons
+</p>
+
+</div>
+
+
+<div className={`p-6 rounded-2xl transition hover:scale-105 ${
+  darkMode
+  ? "bg-yellow-500/10 border border-yellow-400/20"
+  : "bg-white shadow"
+}`}>
+
+<h3 className="text-sm opacity-70">
 🏆 Best Platform
 </h3>
 
-<p className="text-2xl font-semibold mt-2">
+<p className="text-3xl font-semibold mt-2">
 {bestPlatform || "—"}
+</p>
+
+<p className="text-xs opacity-70 mt-2">
+Most frequent lowest price
 </p>
 
 </div>
@@ -299,33 +336,35 @@ className="block w-full text-left text-red-500 hover:opacity-80"
 </div>
       {/* SEARCH CHART */}
 
-<div className={`p-6 rounded-2xl shadow mt-10 ${
+<div className={`p-6 rounded-2xl mt-10 ${
   darkMode
-    ? "bg-white/5 backdrop-blur-md border border-white/10"
-    : "bg-white"
+  ? "bg-white/5 backdrop-blur-md border border-white/10"
+  : "bg-white shadow"
 }`}>
 
-  <h2 className="text-xl font-semibold mb-4">
-    📊 Food Search Analytics
-  </h2>
+<h2 className="text-xl font-semibold mb-6">
+📊 Food Search Analytics
+</h2>
 
-  <div className="h-64">
+<div className="h-72">
 
-    <ResponsiveContainer width="100%" height="100%">
+<ResponsiveContainer width="100%" height="100%">
+<BarChart data={chartData}>
 
-      <BarChart data={chartData}>
+<XAxis dataKey="name" stroke={darkMode ? "#aaa" : "#444"} />
+<YAxis stroke={darkMode ? "#aaa" : "#444"} />
+<Tooltip />
 
-        <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip />
+<Bar
+dataKey="searches"
+fill="#3b82f6"
+radius={[8,8,0,0]}
+/>
 
-        <Bar dataKey="searches" fill="#3b82f6" />
+</BarChart>
+</ResponsiveContainer>
 
-      </BarChart>
-
-    </ResponsiveContainer>
-
-  </div>
+</div>
 
 </div>
 {/* RECENT SEARCHES */}
@@ -340,35 +379,83 @@ className="block w-full text-left text-red-500 hover:opacity-80"
     🕓 Recent Searches
   </h2>
 
-  <table className="w-full text-left">
+  <div className="overflow-x-auto">
 
-    <thead className="border-b">
+<table className="w-full text-left">
 
-      <tr>
-        <th className="py-2">Food</th>
-        <th className="py-2">City</th>
-        <th className="py-2">Winner</th>
-      </tr>
+<thead className={`text-sm ${
+  darkMode
+    ? "text-gray-300 border-b border-white/10"
+    : "text-gray-600 border-b"
+}`}>
 
-    </thead>
+<tr>
+<th className="py-3">Food</th>
+<th className="py-3">City</th>
+<th className="py-3">Winner</th>
+</tr>
 
-    <tbody>
+</thead>
 
-      {(user.searchHistory || []).map((search, index) => (
+<tbody>
 
-        <tr key={index} className="border-b">
+{(user.searchHistory || []).slice(0,6).map((search, index) => {
 
-          <td className="py-2">{search.item}</td>
-          <td className="py-2">{search.city}</td>
-          <td className="py-2 capitalize">{search.winner || "-"}</td>
+const winnerColor =
+search.winner === "zomato"
+? "bg-red-500/10 text-red-400"
+: search.winner === "swiggy"
+? "bg-orange-500/10 text-orange-400"
+: "bg-gray-500/10 text-gray-400";
 
-        </tr>
+return (
 
-      ))}
+<tr
+key={index}
+className={`transition ${
+darkMode
+? "hover:bg-white/5 border-b border-white/10"
+: "hover:bg-slate-100 border-b"
+}`}
+>
 
-    </tbody>
+<td className="py-3 font-medium">
+{getFoodIcon(search.item)} {search.item}
+</td>
 
-  </table>
+<td className="py-3">
+📍 {search.city}
+</td>
+
+<td className="py-3">
+
+{search.winner ? (
+
+<span className={`px-3 py-1 text-xs rounded-full capitalize ${winnerColor}`}>
+🏆 {search.winner}
+</span>
+
+) : (
+
+<span className="text-gray-400 text-sm">
+—
+</span>
+
+)}
+
+</td>
+
+</tr>
+
+);
+
+})}
+
+</tbody>
+
+</table>
+
+</div>
 
 </div>
 

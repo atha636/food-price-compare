@@ -10,6 +10,8 @@ import { motion } from "framer-motion";
 import CountUp from "react-countup";
 import Analytics from "./pages/Analytics";
 import History from "./pages/History";
+import { useLocation } from "react-router-dom";
+
 import Settings from "./pages/Settings";
 import {
   BarChart,
@@ -43,6 +45,7 @@ const [authError, setAuthError] = useState("");
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   const [serviceType, setServiceType] = useState("food");
+  const location = useLocation();
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [mobilePlatform, setMobilePlatform] = useState("zomato");
   const [theme, setTheme] = useState(
@@ -175,6 +178,29 @@ const handleGetLocation = () => {
 useEffect(() => {
   localStorage.setItem("theme", darkMode ? "dark" : "light");
 }, [darkMode]);
+useEffect(() => {
+
+if(location.state?.item && location.state?.city){
+
+const { item, city, serviceType } = location.state;
+
+setItem(item);
+setCity(city);
+
+if(serviceType){
+setServiceType(serviceType);
+}
+
+setTimeout(()=>{
+handleCompare(item, city);
+},200);
+
+// 🔥 CLEAR STATE AFTER USE
+window.history.replaceState({}, document.title);
+
+}
+
+},[location.state]);
 useEffect(() => {
   const autoLogin = async () => {
     const token = localStorage.getItem("token");
@@ -320,11 +346,14 @@ const handleLogout = () => {
   setItem("");
   setCity("");
 };
- const handleCompare = async () => {
-  if (!item || !city) {
-    setError("Please enter food item and city.");
-    return;
-  }
+ const handleCompare = async (customItem, customCity) => {
+  const searchItem = customItem || item;
+const searchCity = customCity || city;
+
+if (!searchItem || !searchCity) {
+  setError("Please enter food item and city.");
+  return;
+}
 
   const token = localStorage.getItem("token");
 
@@ -341,8 +370,8 @@ const handleLogout = () => {
 
   try {
     const response = await axios.post(
-      "https://food-price-compare-1.onrender.com/compare",
-      { item, city, serviceType },
+  "https://food-price-compare-1.onrender.com/compare",
+  { item: searchItem, city: searchCity, serviceType },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -376,12 +405,12 @@ if (response.data.serviceType === "food") {
 }
 console.log("WINNER:", winner);
 console.log("BEST PRICE:", bestPrice);
-console.log("Saving search:", item, city, winner, bestPrice);
+console.log("Saving search:", searchItem, searchCity, winner, bestPrice);
 await axios.post(
   "https://food-price-compare-1.onrender.com/save-search",
   {
-    item,
-    city,
+  item: searchItem,
+  city: searchCity,
     serviceType,
     winner,
     bestPrice
@@ -407,7 +436,7 @@ await axios.post(
 })
 .catch(err => console.log("Save failed:", err.response?.data));
   } catch (err) {
-    console.log("Compare failed:", err.response?.data);
+    console.log("Compare failed:", err);
     setError("Unable to fetch prices. Please try again.");
   } finally {
     setLoading(false);
@@ -433,7 +462,7 @@ const handleClearHistory = async () => {
   }
 };
   return (
-  <BrowserRouter>
+  
     <Routes>
       <Route path="/dashboard" element={<Dashboard />} />
 <Route path="/analytics" element={<Analytics />} />
@@ -921,7 +950,7 @@ element={<Settings theme={theme} setTheme={setTheme} />}
             </div>
 
             <button
-              onClick={handleCompare}
+              onClick={() => handleCompare()}
               disabled={loading}
               className={`w-full flex items-center justify-center gap-2
               font-semibold py-3 rounded-xl text-white
@@ -1321,7 +1350,7 @@ element={<Settings theme={theme} setTheme={setTheme} />}
       <Route path="/verified" element={<Verified />} />
       <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
-  </BrowserRouter>
+
 );
 }
 
