@@ -370,6 +370,24 @@ if(!user){
 return res.status(404).json({ message:"User not found" });
 }
 
+const existing = user.favourites.find(
+f => f.name === name && f.platform === platform
+);
+
+if(existing){
+
+// REMOVE favourite
+user.favourites = user.favourites.filter(
+f => !(f.name === name && f.platform === platform)
+);
+
+await user.save();
+
+return res.json({ message:"Favourite removed" });
+
+}else{
+
+// ADD favourite
 user.favourites.unshift({
 name,
 platform,
@@ -379,7 +397,9 @@ price
 
 await user.save();
 
-res.json({ message:"Favourite added" });
+return res.json({ message:"Favourite added" });
+
+}
 
 }catch(err){
 
@@ -389,7 +409,6 @@ res.status(500).json({ message:"Server error" });
 }
 
 });
-
 /* ==============================
    COMPARE ROUTE (Your Existing Logic)
 ============================== */

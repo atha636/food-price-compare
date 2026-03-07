@@ -360,7 +360,7 @@ const addFavourite = async (name, platform, city, price) => {
 
 const token = localStorage.getItem("token");
 
-const key = name + platform;
+const key = `${name}-${platform}-${price}`;
 
 let updatedFavourites;
 
@@ -821,8 +821,8 @@ onClick={()=>addFavourite(rest.name,"zomato",city,rest.price,)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
-animate={{ scale: favourites.includes(rest.name+"zomato") ? 1.2 : 1 }}
-className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(`${rest.name}-zomato-${rest.price}`) ? 1.2 : 1 }}
+className={favourites.includes(`${rest.name}-zomato-${rest.price}`) ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
@@ -1269,8 +1269,8 @@ onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
-animate={{ scale: favourites.includes(rest.name+"swiggy") ? 1.2 : 1 }}
-className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}
+animate={{ scale:favourites.includes(`${rest.name}-swiggy-${rest.price}`) ? 1.2 : 1 }}
+className={favourites.includes(`${rest.name}-swiggy-${rest.price}`)? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
