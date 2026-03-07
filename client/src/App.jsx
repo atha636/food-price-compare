@@ -277,6 +277,11 @@ const handleLogin = async () => {
     setUser(userRes.data);
     setIsLoggedIn(true);
     setHistory(userRes.data.searchHistory || []);
+    setFavourites(
+  (userRes.data.favourites || []).map(
+    f => f.name + f.platform
+  )
+);
 
     // 🔥 Run pending compare automatically
     if (pendingCompare) {
@@ -351,22 +356,18 @@ const handleLogout = () => {
 };
 
 
-const addFavourite = async (name, platform, city, price, index) => {
+const addFavourite = async (name, platform, city, price) => {
 
 const token = localStorage.getItem("token");
 
-const key = index + platform;
+const key = name + platform;
 
 let updatedFavourites;
 
 if (favourites.includes(key)) {
-
-updatedFavourites = favourites.filter(f => f !== key);
-
+  updatedFavourites = favourites.filter(f => f !== key);
 } else {
-
-updatedFavourites = [...favourites, key];
-
+  updatedFavourites = [...favourites, key];
 }
 
 setFavourites(updatedFavourites);
@@ -816,12 +817,12 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                           
                         )}
                         <button
-onClick={()=>addFavourite(rest.name,"zomato",city,rest.price,index)}
+onClick={()=>addFavourite(rest.name,"zomato",city,rest.price,)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
-animate={{ scale: favourites.includes(index+"zomato") ? 1.2 : 1 }}
-className={favourites.includes(index+"zomato") ? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(rest.name+"zomato") ? 1.2 : 1 }}
+className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
@@ -1264,12 +1265,12 @@ className={favourites.includes(index+"zomato") ? "text-red-500" : "text-white"}
                           </div>
                         )}
                         <button
-onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price,index)}
+onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
-animate={{ scale: favourites.includes(index+"swiggy") ? 1.2 : 1 }}
-className={favourites.includes(index+"swiggy") ? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(rest.name+"swiggy") ? 1.2 : 1 }}
+className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
