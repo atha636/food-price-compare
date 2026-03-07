@@ -351,23 +351,27 @@ const handleLogout = () => {
 };
 
 
-const addFavourite = async (name, platform, city, price) => {
+const addFavourite = async (name, platform, city, price, index) => {
 
 const token = localStorage.getItem("token");
 
-const key = name + platform;
+const key = index + platform;
 
-if(favourites.includes(key)){
+let updatedFavourites;
 
-setFavourites(favourites.filter(f => f !== key));
+if (favourites.includes(key)) {
 
-}else{
+updatedFavourites = favourites.filter(f => f !== key);
 
-setFavourites([...favourites,key]);
+} else {
+
+updatedFavourites = [...favourites, key];
 
 }
 
-try{
+setFavourites(updatedFavourites);
+
+try {
 
 await axios.post(
 "https://food-price-compare-1.onrender.com/add-favourite",
@@ -812,17 +816,15 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                           
                         )}
                         <button
-onClick={()=>addFavourite(rest.name,"zomato",city,rest.price)}
+onClick={()=>addFavourite(rest.name,"zomato",city,rest.price,index)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
-<span className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}>
 <motion.span
-animate={{ scale: favourites.includes(rest.name+"zomato") ? 1.2 : 1 }}
-className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(index+"zomato") ? 1.2 : 1 }}
+className={favourites.includes(index+"zomato") ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
-</span>
 </button>
                       </div>
                       <div className="flex justify-between items-center">
@@ -1262,17 +1264,15 @@ className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-whit
                           </div>
                         )}
                         <button
-onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price)}
+onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price,index)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
-<span className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}>
 <motion.span
-animate={{ scale: favourites.includes(rest.name+"swiggy") ? 1.2 : 1 }}
-className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(index+"swiggy") ? 1.2 : 1 }}
+className={favourites.includes(index+"swiggy") ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
-</span>
 </button>
                       </div>
                       <div className="flex justify-between items-center">
