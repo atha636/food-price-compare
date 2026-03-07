@@ -36,16 +36,11 @@ fetchUser();
 
 },[]);
 
-const updateProfile = async()=>{
-
-if(!name || !email){
-alert("Name and Email cannot be empty");
-return;
-}
+const updateProfile = async () => {
 
 try{
 
-await axios.put(
+const res = await axios.put(
 "https://food-price-compare-1.onrender.com/update-profile",
 { name,email },
 {
@@ -56,6 +51,9 @@ Authorization:`Bearer ${token}`
 );
 
 alert("Profile updated");
+
+setName(res.data.user.name);
+setEmail(res.data.user.email);
 
 }catch(err){
 console.log("Update failed");
