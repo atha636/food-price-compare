@@ -42,7 +42,23 @@ verificationToken: String,
     }
   ],
   default: []
+},
+favourites: {
+  type: [
+    {
+      name: String,
+      platform: String,
+      city: String,
+      price: Number,
+      addedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
+  default: []
 }
+
 
 }, { timestamps: true });
 

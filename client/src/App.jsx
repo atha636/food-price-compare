@@ -11,6 +11,7 @@ import CountUp from "react-countup";
 import Analytics from "./pages/Analytics";
 import History from "./pages/History";
 import { useLocation } from "react-router-dom";
+import { Heart } from "lucide-react";
 
 import Settings from "./pages/Settings";
 import {
@@ -345,6 +346,38 @@ const handleLogout = () => {
   setResult(null);
   setItem("");
   setCity("");
+};
+
+
+const addFavourite = async (name, platform, city, price) => {
+
+const token = localStorage.getItem("token");
+
+try{
+
+await axios.post(
+"https://food-price-compare-1.onrender.com/add-favourite",
+{
+name,
+platform,
+city,
+price
+},
+{
+headers:{
+Authorization:`Bearer ${token}`
+}
+}
+);
+
+console.log("Favourite saved");
+
+}catch(err){
+
+console.log("Favourite failed");
+
+}
+
 };
  const handleCompare = async (customItem, customCity) => {
   const searchItem = customItem || item;
@@ -745,6 +778,7 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                       }`}
                     >
                       <div className="relative h-40 rounded-xl overflow-hidden mb-3">
+
                         <div className="overflow-hidden rounded-lg">
                           <img
                             src={`https://loremflickr.com/600/400/${item}?random=${index}`}
@@ -763,7 +797,14 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                           <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
                             BEST DEAL
                           </div>
+                          
                         )}
+                        <button
+onClick={()=>addFavourite(rest.name,"zomato",city,rest.price)}
+className="absolute top-10 left-2 bg-black/60 text-white p-2 rounded-full backdrop-blur hover:scale-110 hover:text-red-400 transition"
+>
+<Heart size={16}/>
+</button>
                       </div>
                       <div className="flex justify-between items-center">
                         <div className="text-sm opacity-80">⏱ {rest.time} mins</div>
@@ -1181,6 +1222,7 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                       }`}
                     >
                       <div className="relative h-40 rounded-xl overflow-hidden mb-3">
+ 
                         <div className="overflow-hidden rounded-lg">
                           <img
                             src={`https://loremflickr.com/600/400/food?random=${index}`}
@@ -1200,6 +1242,12 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                             BEST DEAL
                           </div>
                         )}
+                        <button
+onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price)}
+className="absolute top-10 left-2 bg-black/60 text-white p-2 rounded-full backdrop-blur hover:scale-110 hover:text-red-400 transition"
+>
+<Heart size={16}/>
+</button>
                       </div>
                       <div className="flex justify-between items-center">
                         <div className="text-sm opacity-80">⏱ {rest.time} mins</div>

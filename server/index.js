@@ -358,6 +358,37 @@ app.put("/update-profile", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+app.post("/add-favourite", authMiddleware, async (req, res) => {
+
+try{
+
+const { name, platform, city, price } = req.body;
+
+const user = await User.findById(req.user.id);
+
+if(!user){
+return res.status(404).json({ message:"User not found" });
+}
+
+user.favourites.unshift({
+name,
+platform,
+city,
+price
+});
+
+await user.save();
+
+res.json({ message:"Favourite added" });
+
+}catch(err){
+
+console.log("FAV ERROR:",err);
+res.status(500).json({ message:"Server error" });
+
+}
+
+});
 
 /* ==============================
    COMPARE ROUTE (Your Existing Logic)
