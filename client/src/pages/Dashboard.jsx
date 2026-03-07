@@ -169,6 +169,16 @@ className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center g
 >
 🕓 History
 </button>
+<button
+onClick={()=>navigate("/favourites")}
+className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
+  location.pathname === "/favourites"
+    ? "bg-blue-600 text-white"
+    : "hover:bg-white/10"
+}`}
+>
+❤️ Favourites
+</button>
 
 <button
 onClick={()=>navigate("/settings")}

@@ -4,6 +4,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Verified from "./pages/Verified";
 import Dashboard from "./pages/Dashboard";
+import Favourites from "./pages/Favourites";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -224,6 +225,7 @@ useEffect(() => {
       setUser(userRes.data);
       setIsLoggedIn(true);
       setHistory(userRes.data.searchHistory || []);
+      setFavourites((userRes.data.favourites || []).map(f => f.name + f.platform));
 
       // 🔥 Restore insights
       const insightsRes = await axios.get(
@@ -333,6 +335,7 @@ const handleSignup = async () => {
     setHistory(userRes.data.searchHistory || []);
     setShowLoginPopup(false);
     setIsRegisterMode(false);
+    setFavourites((userRes.data.favourites || []).map(f => f.name + f.platform));
 
   } catch (err) {
     setAuthError("Signup failed");
@@ -357,49 +360,28 @@ const handleLogout = () => {
 
 
 const addFavourite = async (name, platform, city, price) => {
+  const token = localStorage.getItem("token");
+  const key = name + platform;
 
-const token = localStorage.getItem("token");
+  // ✅ Update UI instantly — no waiting for API
+  const isAlreadyFav = favourites.includes(key);
+  setFavourites(prev =>
+    isAlreadyFav ? prev.filter(f => f !== key) : [...prev, key]
+  );
 
-try {
-
-await axios.post(
-"https://food-price-compare-1.onrender.com/add-favourite",
-{
-name,
-platform,
-city,
-price
-},
-{
-headers:{
-Authorization:`Bearer ${token}`
-}
-}
-);
-
-// 🔥 RELOAD USER DATA AFTER UPDATE
-const userRes = await axios.get(
-"https://food-price-compare-1.onrender.com/me",
-{
-headers:{
-Authorization:`Bearer ${token}`
-}
-}
-);
-
-// 🔥 UPDATE FAVOURITES FROM DATABASE
-setFavourites(
-(userRes.data.favourites || []).map(
-f => f.name + f.platform
-)
-);
-
-}catch(err){
-
-console.log("Favourite failed");
-
-}
-
+  try {
+    await axios.post(
+      "https://food-price-compare-1.onrender.com/add-favourite",
+      { name, platform, city, price },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (err) {
+    // ✅ Revert if API fails
+    setFavourites(prev =>
+      isAlreadyFav ? [...prev, key] : prev.filter(f => f !== key)
+    );
+    console.log("Favourite failed");
+  }
 };
  const handleCompare = async (customItem, customCity) => {
   const searchItem = customItem || item;
@@ -523,6 +505,7 @@ const handleClearHistory = async () => {
       <Route path="/dashboard" element={<Dashboard />} />
 <Route path="/analytics" element={<Analytics />} />
 <Route path="/history" element={<History />} />
+<Route path="/favourites" element={<Favourites />} />
 <Route
 path="/settings"
 element={<Settings theme={theme} setTheme={setTheme} />}
@@ -879,6 +862,7 @@ className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-whit
     Dashboard
   </button>
 )}
+
   {isLoggedIn && (
     <button
       onClick={handleLogout}
