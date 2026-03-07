@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import CountUp from "react-countup";
 import Analytics from "./pages/Analytics";
 import History from "./pages/History";
+
 import { useLocation } from "react-router-dom";
 import { Heart } from "lucide-react";
 
@@ -42,6 +43,7 @@ const [isRegisterMode, setIsRegisterMode] = useState(false);
 const [name, setName] = useState("");
 const [authError, setAuthError] = useState("");
   const [history, setHistory] = useState([]);
+  const [favourites,setFavourites] = useState([]);
   const [insights, setInsights] = useState(null);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
@@ -353,6 +355,18 @@ const addFavourite = async (name, platform, city, price) => {
 
 const token = localStorage.getItem("token");
 
+const key = name + platform;
+
+if(favourites.includes(key)){
+
+setFavourites(favourites.filter(f => f !== key));
+
+}else{
+
+setFavourites([...favourites,key]);
+
+}
+
 try{
 
 await axios.post(
@@ -369,8 +383,6 @@ Authorization:`Bearer ${token}`
 }
 }
 );
-
-console.log("Favourite saved");
 
 }catch(err){
 
@@ -801,9 +813,16 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                         )}
                         <button
 onClick={()=>addFavourite(rest.name,"zomato",city,rest.price)}
-className="absolute top-10 left-2 bg-black/60 text-white p-2 rounded-full backdrop-blur hover:scale-110 hover:text-red-400 transition"
+className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
-<Heart size={16}/>
+<span className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}>
+<motion.span
+animate={{ scale: favourites.includes(rest.name+"zomato") ? 1.2 : 1 }}
+className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-white"}
+>
+❤️
+</motion.span>
+</span>
 </button>
                       </div>
                       <div className="flex justify-between items-center">
@@ -1244,9 +1263,16 @@ className="absolute top-10 left-2 bg-black/60 text-white p-2 rounded-full backdr
                         )}
                         <button
 onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price)}
-className="absolute top-10 left-2 bg-black/60 text-white p-2 rounded-full backdrop-blur hover:scale-110 hover:text-red-400 transition"
+className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
-<Heart size={16}/>
+<span className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}>
+<motion.span
+animate={{ scale: favourites.includes(rest.name+"swiggy") ? 1.2 : 1 }}
+className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}
+>
+❤️
+</motion.span>
+</span>
 </button>
                       </div>
                       <div className="flex justify-between items-center">
