@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Palette, User, AlertTriangle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 export default function Settings({ theme, setTheme }) {
 
 const [name,setName] = useState("");
 const [email,setEmail] = useState("");
-
+const [status, setStatus] = useState("");
+const [toast,setToast] = useState("");
 const token = localStorage.getItem("token");
 
 useEffect(()=>{
@@ -38,6 +40,8 @@ fetchUser();
 
 const updateProfile = async () => {
 
+const token = localStorage.getItem("token");
+
 try{
 
 const res = await axios.put(
@@ -50,13 +54,24 @@ Authorization:`Bearer ${token}`
 }
 );
 
-alert("Profile updated");
 
 setName(res.data.user.name);
 setEmail(res.data.user.email);
 
+setToast("Profile updated successfully");
+
+setTimeout(()=>{
+setToast("");
+},3000);
+
 }catch(err){
-console.log("Update failed");
+
+setToast("Update failed");
+
+setTimeout(()=>{
+setToast("");
+},3000);
+
 }
 
 };
@@ -183,6 +198,30 @@ className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl trans
 >
 Update Profile
 </button>
+{status && (
+<p className="text-sm mt-3 text-center text-green-500">
+{status}
+</p>
+)}
+<AnimatePresence>
+
+{toast && (
+
+<motion.div
+initial={{ opacity:0, y:-20, x:50 }}
+animate={{ opacity:1, y:0, x:0 }}
+exit={{ opacity:0, y:-20, x:50 }}
+transition={{ duration:0.3 }}
+className="fixed top-6 right-6 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg z-50"
+>
+
+{toast}
+
+</motion.div>
+
+)}
+
+</AnimatePresence>
 
 </div>
 
