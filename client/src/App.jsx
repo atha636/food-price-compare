@@ -360,18 +360,6 @@ const addFavourite = async (name, platform, city, price) => {
 
 const token = localStorage.getItem("token");
 
-const key = `${name}-${platform}-${price}`;
-
-let updatedFavourites;
-
-if (favourites.includes(key)) {
-  updatedFavourites = favourites.filter(f => f !== key);
-} else {
-  updatedFavourites = [...favourites, key];
-}
-
-setFavourites(updatedFavourites);
-
 try {
 
 await axios.post(
@@ -387,6 +375,23 @@ headers:{
 Authorization:`Bearer ${token}`
 }
 }
+);
+
+// 🔥 RELOAD USER DATA AFTER UPDATE
+const userRes = await axios.get(
+"https://food-price-compare-1.onrender.com/me",
+{
+headers:{
+Authorization:`Bearer ${token}`
+}
+}
+);
+
+// 🔥 UPDATE FAVOURITES FROM DATABASE
+setFavourites(
+(userRes.data.favourites || []).map(
+f => f.name + f.platform
+)
 );
 
 }catch(err){
@@ -483,6 +488,7 @@ await axios.post(
 
   setUser(res.data);   // ⭐ THIS WAS MISSING
   setHistory(res.data.searchHistory || []);
+  setFavourites((res.data.favourites || []).map(f => f.name + f.platform));
 })
 .catch(err => console.log("Save failed:", err.response?.data));
   } catch (err) {
@@ -817,12 +823,12 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                           
                         )}
                         <button
-onClick={()=>addFavourite(rest.name,"zomato",city,rest.price,)}
+onClick={()=>addFavourite(rest.name,"zomato",city,rest.price)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
-animate={{ scale: favourites.includes(`${rest.name}-zomato-${rest.price}`) ? 1.2 : 1 }}
-className={favourites.includes(`${rest.name}-zomato-${rest.price}`) ? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(rest.name+"zomato") ? 1.2 : 1 }}
+className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
@@ -1269,8 +1275,8 @@ onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
-animate={{ scale:favourites.includes(`${rest.name}-swiggy-${rest.price}`) ? 1.2 : 1 }}
-className={favourites.includes(`${rest.name}-swiggy-${rest.price}`)? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(rest.name+"swiggy") ? 1.2 : 1 }}
+className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
