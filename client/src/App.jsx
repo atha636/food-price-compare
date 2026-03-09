@@ -225,7 +225,11 @@ useEffect(() => {
       setUser(userRes.data);
       setIsLoggedIn(true);
       setHistory(userRes.data.searchHistory || []);
-      setFavourites((userRes.data.favourites || []).map(f => f.name + f.platform));
+      setFavourites(
+  (userRes.data.favourites || []).map(
+    f => f.name + f.platform + f.city
+  )
+);
 
       // 🔥 Restore insights
       const insightsRes = await axios.get(
@@ -278,12 +282,12 @@ const handleLogin = async () => {
 
     setUser(userRes.data);
     setIsLoggedIn(true);
-    setHistory(userRes.data.searchHistory || []);
     setFavourites(
   (userRes.data.favourites || []).map(
-    f => f.name + f.platform
+    f => f.name + f.platform + f.city
   )
 );
+    
 
     // 🔥 Run pending compare automatically
     if (pendingCompare) {
@@ -335,7 +339,11 @@ const handleSignup = async () => {
     setHistory(userRes.data.searchHistory || []);
     setShowLoginPopup(false);
     setIsRegisterMode(false);
-    setFavourites((userRes.data.favourites || []).map(f => f.name + f.platform));
+    setFavourites(
+  (userRes.data.favourites || []).map(
+    f => f.name + f.platform + f.city
+  )
+);
 
   } catch (err) {
     setAuthError("Signup failed");
@@ -361,10 +369,11 @@ const handleLogout = () => {
 
 const addFavourite = async (name, platform, city, price) => {
   const token = localStorage.getItem("token");
-  const key = name + platform;
+  const key = name + platform + city;
 
-  // ✅ Update UI instantly — no waiting for API
   const isAlreadyFav = favourites.includes(key);
+
+  // Optimistic UI
   setFavourites(prev =>
     isAlreadyFav ? prev.filter(f => f !== key) : [...prev, key]
   );
@@ -376,11 +385,11 @@ const addFavourite = async (name, platform, city, price) => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
   } catch (err) {
-    // ✅ Revert if API fails
+    // revert UI if API fails
     setFavourites(prev =>
       isAlreadyFav ? [...prev, key] : prev.filter(f => f !== key)
     );
-    console.log("Favourite failed");
+    console.log("Favourite toggle failed");
   }
 };
  const handleCompare = async (customItem, customCity) => {
@@ -470,7 +479,11 @@ await axios.post(
 
   setUser(res.data);   // ⭐ THIS WAS MISSING
   setHistory(res.data.searchHistory || []);
-  setFavourites((res.data.favourites || []).map(f => f.name + f.platform));
+setFavourites(
+  (res.data.favourites || []).map(
+    f => f.name + f.platform + f.city
+  )
+);
 })
 .catch(err => console.log("Save failed:", err.response?.data));
   } catch (err) {
@@ -757,8 +770,8 @@ element={<Settings theme={theme} setTheme={setTheme} />}
               [...result.zomatoList]
                 .sort((a, b) => a.price - b.price)
                 .map((rest, index) => (
-                  <div
-                    key={index}
+  <div
+    key={rest.name + "zomato"}
                     className={`w-full py-3 border-b text-sm transition-all duration-300 
                     hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 
                     cursor-pointer ${
@@ -768,7 +781,7 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                     }`}
                   >
                     <motion.div
-                      key={index}
+  key={rest.name + "zomato-card"}
                       layout
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -810,8 +823,8 @@ onClick={()=>addFavourite(rest.name,"zomato",city,rest.price)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
-animate={{ scale: favourites.includes(rest.name+"zomato") ? 1.2 : 1 }}
-className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(rest.name + "zomato" + city) ? 1.2 : 1 }}
+className={favourites.includes(rest.name + "zomato" + city) ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
@@ -1207,8 +1220,8 @@ className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-whit
               [...result.swiggyList]
                 .sort((a, b) => a.price - b.price)
                 .map((rest, index) => (
-                  <div
-                    key={index}
+  <div
+    key={rest.name + "swiggy"}
                     className={`w-full py-3 border-b text-sm transition-all duration-300 
                     hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 
                     cursor-pointer ${
@@ -1218,7 +1231,7 @@ className={favourites.includes(rest.name+"zomato") ? "text-red-500" : "text-whit
                     }`}
                   >
                     <motion.div
-                      key={index}
+  key={rest.name + "swiggy-card"}
                       layout
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1259,8 +1272,8 @@ onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
-animate={{ scale: favourites.includes(rest.name+"swiggy") ? 1.2 : 1 }}
-className={favourites.includes(rest.name+"swiggy") ? "text-red-500" : "text-white"}
+animate={{ scale: favourites.includes(rest.name + "swiggy" + city) ? 1.2 : 1 }}
+className={favourites.includes(rest.name + "swiggy" + city) ? "text-red-500" : "text-white"}
 >
 ❤️
 </motion.span>
