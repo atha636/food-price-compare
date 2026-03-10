@@ -136,6 +136,16 @@ if (zomatoWins === 0 && swiggyWins === 0) {
 </h2>
 
 <div className="space-y-3">
+  <button
+onClick={()=>navigate("/")}
+className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 ${
+location.pathname === "/"
+? "bg-blue-600 text-white shadow-lg"
+: "hover:bg-white/10"
+}`}
+>
+🏠 Home
+</button>
 
 <button
 onClick={()=>navigate("/dashboard")}
