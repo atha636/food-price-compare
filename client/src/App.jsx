@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import CountUp from "react-countup";
 import Analytics from "./pages/Analytics";
 import History from "./pages/History";
+import VerificationFailed from "./pages/VerificationFailed";
 
 import { useLocation } from "react-router-dom";
 import { Heart } from "lucide-react";
@@ -299,7 +300,7 @@ const handleLogin = async () => {
     setShowLoginPopup(false);
 
   } catch (err) {
-    setAuthError("Invalid email or password");
+    setAuthError(err.response?.data?.message || "Login failed");
   } finally {
     setLoginLoading(false);
   }
@@ -346,8 +347,8 @@ const handleSignup = async () => {
 );
 
   } catch (err) {
-    setAuthError("Signup failed");
-  }
+  setAuthError(err.response?.data?.message || "Signup failed");
+}
 
   setLoginLoading(false);
 };
@@ -1345,6 +1346,12 @@ className={favourites.includes(rest.name + "swiggy" + city) ? "text-red-500" : "
       />
 
       {/* NORMAL LOGIN */}
+     {authError && (
+  <div className="mb-3 p-3 rounded-lg bg-blue-500/10 border border-blue-400 text-blue-300 text-sm">
+    📧 Please verify your email first.  
+    Check your inbox or spam folder.
+  </div>
+)}
       <button
   onClick={isRegisterMode ? handleSignup : handleLogin}
   disabled={loginLoading}
@@ -1426,6 +1433,7 @@ className={favourites.includes(rest.name + "swiggy" + city) ? "text-red-500" : "
       />
 
       <Route path="/verified" element={<Verified />} />
+      <Route path="/verification-failed" element={<VerificationFailed />} />
       <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
 

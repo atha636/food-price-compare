@@ -15,18 +15,20 @@ const sendVerificationEmail = async (to, link) => {
         <h2>Welcome to PriceCompare 🚀</h2>
         <p>Click the button below to verify your email address.</p>
 
-        <a href="${link}" 
-           style="
-            display:inline-block;
-            padding:12px 20px;
-            background:#2563eb;
-            color:white;
-            text-decoration:none;
-            border-radius:8px;
-            font-weight:bold;
-           ">
-          Verify Email
-        </a>
+        <a 
+ href="${link}" 
+ target="_blank"
+ style="
+  display:inline-block;
+  padding:12px 20px;
+  background:#2563eb;
+  color:#ffffff;
+  text-decoration:none;
+  border-radius:8px;
+  font-weight:bold;
+ ">
+ Verify Email
+</a>
 
         <p style="margin-top:20px;font-size:12px;color:gray;">
           If you didn't create this account, you can ignore this email.
