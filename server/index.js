@@ -470,19 +470,37 @@ app.post("/compare", authMiddleware, async (req, res) => {
   try {
 
     // convert city → coordinates
-    const geo = await axios.get(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${city}`
-    );
+   const geo = await axios.get(
+  `https://nominatim.openstreetmap.org/search`,
+  {
+    params: {
+      format: "json",
+      q: city
+    },
+    headers: {
+      "User-Agent": "pricecompare-app"
+    }
+  }
+);
 
-   const lat = geo.data[0]?.lat;
-const lng = geo.data[0]?.lon;
+if (!geo.data || geo.data.length === 0) {
+  return res.status(400).json({
+    message: "City not found"
+  });
+}
+
+const lat = geo.data[0].lat;
+const lng = geo.data[0].lon;
 
 if (!lat || !lng) {
   return res.status(400).json({
     message: "Invalid city. Please try another location."
   });
 }
-
+console.log("CITY:", city);
+console.log("LAT:", lat);
+console.log("LNG:", lng);
+console.log("ITEM:", item);
     if (serviceType === "food") {
 
       const swiggyList = await fetchSwiggyRestaurants(lat, lng, item);
