@@ -801,7 +801,7 @@ element={<Settings theme={theme} setTheme={setTheme} />}
 
                         <div className="overflow-hidden rounded-lg">
                           <img
-                            src={`https://loremflickr.com/600/400/${item}?random=${index}`}
+                            src={rest.image || `https://loremflickr.com/600/400/${item}?random=${index}`}
                             alt={rest.name}
                             className="w-full h-40 object-cover rounded-lg transition-transform duration-500 hover:scale-110"
                           />
@@ -1251,7 +1251,7 @@ className={favourites.includes(rest.name + "zomato" + city) ? "text-red-500" : "
  
                         <div className="overflow-hidden rounded-lg">
                           <img
-                            src={`https://loremflickr.com/600/400/food?random=${index}`}
+                           src={rest.image || `https://loremflickr.com/600/400/${item}?random=${index}`}
                             alt={rest.name}
                             className="w-full h-40 object-cover rounded-lg transition-transform duration-500 hover:scale-110"
                           />

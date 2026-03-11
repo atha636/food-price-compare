@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
+const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const User = require("./models/User");
 const crypto = require("crypto");
@@ -35,6 +36,56 @@ const authMiddleware = (req, res, next) => {
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid or expired token." });
+  }
+};
+// ==============================
+// SWIGGY RESTAURANT FETCH
+// ==============================
+
+const fetchSwiggyRestaurants = async (lat, lng, food) => {
+  try {
+
+    const url = `https://www.swiggy.com/dapi/restaurants/search/v3?lat=${lat}&lng=${lng}&str=${encodeURIComponent(food)}`;
+const res = await axios.get(url, {
+  timeout: 5000,
+  headers: {
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json"
+  }
+});
+
+    const cards = res.data?.data?.cards || [];
+
+    const restaurants = [];
+
+    cards.forEach(card => {
+
+      const r = card?.card?.card?.info || card?.card?.info;
+
+if (r && r.name && r.cloudinaryImageId) {
+
+        restaurants.push({
+          name: r.name,
+          rating: r.avgRating && r.avgRating !== "--" ? r.avgRating : 4,
+          price: r.costForTwo || "₹200 for two",
+          time: r.sla?.deliveryTime || 30,
+          image: r.cloudinaryImageId
+  ? `https://res.cloudinary.com/swiggy/image/upload/${r.cloudinaryImageId}`
+  : null
+        });
+
+      }
+
+    });
+
+    return restaurants.slice(0,5);
+
+  } catch (err) {
+
+    console.log("Swiggy API error:", err.message);
+
+    return [];
+
   }
 };
 
@@ -412,90 +463,69 @@ res.status(500).json({ message:"Server error" });
 /* ==============================
    COMPARE ROUTE (Your Existing Logic)
 ============================== */
-app.post("/compare", authMiddleware, (req, res) => {
+app.post("/compare", authMiddleware, async (req, res) => {
+
   const { item, city, serviceType } = req.body;
 
-  const calculatePrice = (item, city, platform) => {
-    const basePrices = {
-      pizza: 180,
-      burger: 120,
-      pasta: 200,
-      biryani: 220,
-    };
+  try {
 
-    const cityMultiplier = {
-      indore: 1,
-      delhi: 1.2,
-      mumbai: 1.3,
-      jaipur: 1.1,
-    };
+    // convert city → coordinates
+    const geo = await axios.get(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${city}`
+    );
 
-    const platformFee = platform === "zomato" ? 15 : 10;
+   const lat = geo.data[0]?.lat;
+const lng = geo.data[0]?.lon;
 
-    const base = basePrices[item?.toLowerCase()] || 150;
-    const cityFactor = cityMultiplier[city?.toLowerCase()] || 1;
-    const randomFactor = Math.floor(Math.random() * 20);
+if (!lat || !lng) {
+  return res.status(400).json({
+    message: "Invalid city. Please try another location."
+  });
+}
 
-    return Math.round(base * cityFactor + platformFee + randomFactor);
-  };
+    if (serviceType === "food") {
 
-  if (serviceType === "food") {
-    const zomatoRestaurants = [
-      "Domino's",
-      "Pizza Hut",
-      "Oven Story",
-      "Local Pizza Hub",
-      "Italiano Cafe",
-    ];
+      const swiggyList = await fetchSwiggyRestaurants(lat, lng, item);
 
-    const swiggyRestaurants = [
-      "La Pino'z",
-      "Chicago Pizza",
-      "Domino's",
-      "Urban Tandoor",
-      "Food Factory",
-    ];
+      return res.json({
+        serviceType,
+        item,
+        city,
+        swiggyList,
+        zomatoList: [] // we will add zomato later
+      });
 
-    const zomatoList = zomatoRestaurants.map(name => ({
-      name,
-      price: calculatePrice(item, city, "zomato"),
-      rating: (3.5 + Math.random() * 1.5).toFixed(1),
-      time: Math.floor(20 + Math.random() * 15),
-    }));
+    }
 
-    const swiggyList = swiggyRestaurants.map(name => ({
-      name,
-      price: calculatePrice(item, city, "swiggy"),
-      rating: (3.5 + Math.random() * 1.5).toFixed(1),
-      time: Math.floor(18 + Math.random() * 18),
-    }));
+    // Grocery & Ride fallback (your old logic)
 
-    return res.json({
-      serviceType,
+    let zomatoPrice = Math.floor(200 + Math.random() * 200);
+    let swiggyPrice = Math.floor(180 + Math.random() * 200);
+    let zomatoTime = Math.floor(10 + Math.random() * 10);
+    let swiggyTime = Math.floor(8 + Math.random() * 12);
+
+    res.json({
       item,
       city,
-      zomatoList,
-      swiggyList,
+      serviceType,
+      zomato: zomatoPrice,
+      swiggy: swiggyPrice,
+      zomatoTime,
+      swiggyTime,
+      cheapest: zomatoPrice < swiggyPrice ? "zomato" : "swiggy",
+      fastest: zomatoTime < swiggyTime ? "zomato" : "swiggy",
     });
+
+  } catch (err) {
+
+    console.log("COMPARE ERROR:", err.message);
+
+    res.status(500).json({
+      message: "Compare failed"
+    });
+
   }
 
-  // Grocery & Ride
-  let zomatoPrice = Math.floor(200 + Math.random() * 200);
-  let swiggyPrice = Math.floor(180 + Math.random() * 200);
-  let zomatoTime = Math.floor(10 + Math.random() * 10);
-  let swiggyTime = Math.floor(8 + Math.random() * 12);
-
-  res.json({
-    item,
-    city,
-    serviceType,
-    zomato: zomatoPrice,
-    swiggy: swiggyPrice,
-    zomatoTime,
-    swiggyTime,
-    cheapest: zomatoPrice < swiggyPrice ? "zomato" : "swiggy",
-    fastest: zomatoTime < swiggyTime ? "zomato" : "swiggy",
-  });
 });
 
 /* ==============================
