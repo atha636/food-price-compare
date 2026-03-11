@@ -83,15 +83,28 @@ localStorage.setItem("theme", theme);
   const winner =
   serviceType === "food" && result
     ? (() => {
-        const zomatoBest = result.zomatoList.reduce((a, b) =>
-          a.price < b.price ? a : b
-        );
-        const swiggyBest = result.swiggyList.reduce((a, b) =>
-          a.price < b.price ? a : b
-        );
+
+        const zomatoBest =
+          result.zomatoList && result.zomatoList.length > 0
+            ? result.zomatoList.reduce((a, b) =>
+                a.price < b.price ? a : b
+              )
+            : null;
+
+        const swiggyBest =
+          result.swiggyList && result.swiggyList.length > 0
+            ? result.swiggyList.reduce((a, b) =>
+                a.price < b.price ? a : b
+              )
+            : null;
+
+        if (!zomatoBest && swiggyBest) return "swiggy";
+        if (!swiggyBest && zomatoBest) return "zomato";
+        if (!zomatoBest && !swiggyBest) return null;
 
         if (zomatoBest.price < swiggyBest.price) return "zomato";
         if (swiggyBest.price < zomatoBest.price) return "swiggy";
+
         return null;
       })()
     : null;
