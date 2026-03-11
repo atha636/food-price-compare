@@ -45,15 +45,17 @@ const authMiddleware = (req, res, next) => {
 const fetchSwiggyRestaurants = async (lat, lng, food) => {
   try {
 
-    const url = `https://www.swiggy.com/dapi/restaurants/search/v3?lat=${lat}&lng=${lng}&str=${encodeURIComponent(food)}`;
+const url = `https://www.swiggy.com/dapi/restaurants/list/v5?lat=${lat}&lng=${lng}&page_type=DESKTOP_WEB_LISTING`;
 const res = await axios.get(url, {
-  timeout: 10000,
+  timeout: 15000,
   headers: {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
     "Accept": "application/json",
     "Referer": "https://www.swiggy.com/",
     "Origin": "https://www.swiggy.com",
-    "Accept-Language": "en-IN,en;q=0.9"
+    "Accept-Language": "en-IN,en;q=0.9",
+    "x-requested-with": "XMLHttpRequest"
   }
 });
 
@@ -65,20 +67,17 @@ const res = await axios.get(url, {
     cards.forEach(card => {
 
   const restaurantsArray =
-    card?.card?.card?.restaurants ||
-    card?.card?.restaurants ||
-    card?.card?.card?.gridElements?.infoWithStyle?.restaurants ||
-    [];
+    card?.card?.card?.gridElements?.infoWithStyle?.restaurants || [];
 
   restaurantsArray.forEach(r => {
 
-    const info = r?.info || r;
+    const info = r?.info;
 
-    if (!info?.name) return;
+    if (!info) return;
 
     restaurants.push({
       name: info.name,
-      rating: info.avgRating || 4,
+      rating: info.avgRating,
       price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
       time: info.sla?.deliveryTime || 30,
       image: info.cloudinaryImageId
