@@ -74,13 +74,14 @@ const res = await axios.get(url, {
     const info = r?.info;
 
     if (!info) return;
+    console.log("IMAGE ID:", info.cloudinaryImageId);
 
     restaurants.push({
       name: info.name,
       rating: info.avgRating,
       price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
       time: info.sla?.deliveryTime || 30,
-      image: info.cloudinaryImageId
+      image: info.cloudinaryImageId || info.imageId
   ? `https://res.cloudinary.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_508,h_320,c_fill/${info.cloudinaryImageId}`
   : null
     });

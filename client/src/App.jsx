@@ -1271,11 +1271,18 @@ className={favourites.includes(rest.name + "zomato" + city) ? "text-red-500" : "
                       <div className="relative h-40 rounded-xl overflow-hidden mb-3">
  
                         <div className="overflow-hidden rounded-lg">
-                          <img
-                           src={rest.image || `https://loremflickr.com/600/400/${item}?random=${index}`}
-                            alt={rest.name}
-                            className="w-full h-40 object-cover rounded-lg transition-transform duration-500 hover:scale-110"
-                          />
+                         <img
+  src={
+    rest.image
+      ? rest.image
+      : `https://loremflickr.com/600/400/${item}?random=${index}`
+  }
+  onError={(e) => {
+    e.target.src = `https://loremflickr.com/600/400/${item}?random=${index}`;
+  }}
+  alt={rest.name}
+  className="w-full h-40 object-cover rounded-lg transition-transform duration-500 hover:scale-110"
+/>
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                         <div className="absolute bottom-2 left-3 text-white font-semibold text-sm">
