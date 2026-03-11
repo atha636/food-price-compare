@@ -626,20 +626,19 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                 }`}
               >
                 {(() => {
-                  const zomatoBest = result.zomatoList.reduce((a, b) =>
-  a.price < b.price ? a : b
-);
+                 const zomatoBest = getBestRestaurant(result.zomatoList);
+const swiggyBest = getBestRestaurant(result.swiggyList);
+const zomatoFastest = result.zomatoList.length > 0
+  ? result.zomatoList.reduce((a, b) => a.time < b.time ? a : b)
+  : null;
+const swiggyFastest = result.swiggyList.length > 0
+  ? result.swiggyList.reduce((a, b) => a.time < b.time ? a : b)
+  : null;
 
-const swiggyBest = result.swiggyList.reduce((a, b) =>
-  a.price < b.price ? a : b
-);
-                  const zomatoFastest = result.zomatoList.reduce((a, b) =>
-                    a.time < b.time ? a : b
-                  );
-                  const swiggyFastest = result.swiggyList.reduce((a, b) =>
-                    a.time < b.time ? a : b
-                  );
-                  const priceDifference = Math.abs(
+// ADD THIS LINE RIGHT HERE ↓
+if (!zomatoBest || !swiggyBest || !zomatoFastest || !swiggyFastest) return null;
+
+const priceDifference = Math.abs(   // ← this line already exists, keep it
                     zomatoBest.price - swiggyBest.price
                   );
                   const timeDifference = Math.abs(

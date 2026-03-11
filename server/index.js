@@ -47,37 +47,48 @@ const fetchSwiggyRestaurants = async (lat, lng, food) => {
 
     const url = `https://www.swiggy.com/dapi/restaurants/search/v3?lat=${lat}&lng=${lng}&str=${encodeURIComponent(food)}`;
 const res = await axios.get(url, {
-  timeout: 5000,
+  timeout: 10000,
   headers: {
-    "User-Agent": "Mozilla/5.0",
-    "Accept": "application/json"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Accept": "application/json",
+    "Referer": "https://www.swiggy.com/",
+    "Origin": "https://www.swiggy.com",
+    "Accept-Language": "en-IN,en;q=0.9"
   }
 });
 
     const cards = res.data?.data?.cards || [];
+    console.log("SWIGGY RAW RESPONSE:", JSON.stringify(res.data).slice(0,500));
 
     const restaurants = [];
 
     cards.forEach(card => {
 
-      const r = card?.card?.card?.info || card?.card?.info;
+  const restaurantsArray =
+    card?.card?.card?.restaurants ||
+    card?.card?.restaurants ||
+    card?.card?.card?.gridElements?.infoWithStyle?.restaurants ||
+    [];
 
-if (r && r.name && r.cloudinaryImageId) {
+  restaurantsArray.forEach(r => {
 
-        restaurants.push({
-          name: r.name,
-          rating: r.avgRating && r.avgRating !== "--" ? r.avgRating : 4,
-          price: r.costForTwo || "₹200 for two",
-          time: r.sla?.deliveryTime || 30,
-          image: r.cloudinaryImageId
-  ? `https://res.cloudinary.com/swiggy/image/upload/${r.cloudinaryImageId}`
-  : null
-        });
+    const info = r?.info || r;
 
-      }
+    if (!info?.name) return;
 
+    restaurants.push({
+      name: info.name,
+      rating: info.avgRating || 4,
+      price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
+      time: info.sla?.deliveryTime || 30,
+      image: info.cloudinaryImageId
+        ? `https://res.cloudinary.com/swiggy/image/upload/${info.cloudinaryImageId}`
+        : null
     });
 
+  });
+
+});
     return restaurants.slice(0,5);
 
   } catch (err) {
