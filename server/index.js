@@ -76,14 +76,23 @@ const res = await axios.get(url, {
     if (!info) return;
     console.log("IMAGE ID:", info.cloudinaryImageId);
 
+    let imageUrl = null;
+
+if (info.cloudinaryImageId) {
+
+  if (info.cloudinaryImageId.startsWith("RX_THUMBNAIL")) {
+    imageUrl = `https://media-assets.swiggy.com/${info.cloudinaryImageId}`;
+  } else {
+    imageUrl = `https://res.cloudinary.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_508,h_320,c_fill/${info.cloudinaryImageId}`;
+  }
+
+}
     restaurants.push({
       name: info.name,
       rating: info.avgRating,
       price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
       time: info.sla?.deliveryTime || 30,
-      image: info.cloudinaryImageId || info.imageId
-  ? `https://res.cloudinary.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_508,h_320,c_fill/${info.cloudinaryImageId}`
-  : null
+       image: imageUrl
     });
 
   });
