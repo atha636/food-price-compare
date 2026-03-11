@@ -26,7 +26,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+function getBestRestaurant(list) {
+  if (!list || list.length === 0) return null;
 
+  return list.reduce((a, b) =>
+    a.price < b.price ? a : b
+  );
+}
 
 export default function App() {
   
@@ -113,13 +119,10 @@ localStorage.setItem("theme", theme);
     const savingsData =
   serviceType === "food" && result
     ? (() => {
-        const zomatoBest = result.zomatoList.reduce((a, b) =>
-          a.price < b.price ? a : b
-        );
+        const zomatoBest = getBestRestaurant(result.zomatoList);
+const swiggyBest = getBestRestaurant(result.swiggyList);
 
-        const swiggyBest = result.swiggyList.reduce((a, b) =>
-          a.price < b.price ? a : b
-        );
+if (!zomatoBest || !swiggyBest) return null;
 
         const cheaperPrice = Math.min(
           zomatoBest.price,
@@ -446,14 +449,18 @@ let bestPrice = null;
 
 if (response.data.serviceType === "food") {
 
-  const zomatoBest = response.data.zomatoList.reduce((a, b) =>
-    a.price < b.price ? a : b
-  );
+  const zomatoBest = getBestRestaurant(response.data.zomatoList);
+const swiggyBest = getBestRestaurant(response.data.swiggyList);
 
-  const swiggyBest = response.data.swiggyList.reduce((a, b) =>
-    a.price < b.price ? a : b
-  );
-
+if (!zomatoBest && swiggyBest) {
+  winner = "swiggy";
+  bestPrice = swiggyBest.price;
+}
+else if (!swiggyBest && zomatoBest) {
+  winner = "zomato";
+  bestPrice = zomatoBest.price;
+}
+else if (zomatoBest && swiggyBest) {
   if (zomatoBest.price < swiggyBest.price) {
     winner = "zomato";
     bestPrice = zomatoBest.price;
@@ -461,6 +468,7 @@ if (response.data.serviceType === "food") {
     winner = "swiggy";
     bestPrice = swiggyBest.price;
   }
+}
 
 }
 console.log("WINNER:", winner);
@@ -619,11 +627,12 @@ element={<Settings theme={theme} setTheme={setTheme} />}
               >
                 {(() => {
                   const zomatoBest = result.zomatoList.reduce((a, b) =>
-                    a.price < b.price ? a : b
-                  );
-                  const swiggyBest = result.swiggyList.reduce((a, b) =>
-                    a.price < b.price ? a : b
-                  );
+  a.price < b.price ? a : b
+);
+
+const swiggyBest = result.swiggyList.reduce((a, b) =>
+  a.price < b.price ? a : b
+);
                   const zomatoFastest = result.zomatoList.reduce((a, b) =>
                     a.time < b.time ? a : b
                   );
