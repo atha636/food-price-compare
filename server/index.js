@@ -81,8 +81,8 @@ const res = await axios.get(url, {
       price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
       time: info.sla?.deliveryTime || 30,
       image: info.cloudinaryImageId
-        ? `https://res.cloudinary.com/swiggy/image/upload/${info.cloudinaryImageId}`
-        : null
+  ? `https://res.cloudinary.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_508,h_320,c_fill/${info.cloudinaryImageId}`
+  : null
     });
 
   });
