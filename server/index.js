@@ -120,20 +120,23 @@ const fetchZomatoRestaurants = async (lat, lng, food) => {
     const url = `https://www.zomato.com/webroutes/search/home`;
 
     const res = await axios.get(url, {
-      timeout: 10000,
-      params: {
-        lat: lat,
-        lon: lng,
-        q: food
-      },
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-        "Referer": "https://www.zomato.com/",
-        "Origin": "https://www.zomato.com"
-      }
-    });
-
+  timeout: 10000,
+  params: {
+    lat: lat,
+    lon: lng,
+    q: food
+  },
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    "Accept": "application/json",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://www.zomato.com/",
+    "Origin": "https://www.zomato.com",
+    "Connection": "keep-alive"
+  }
+});
+console.log("ZOMATO RAW:", JSON.stringify(res.data).slice(0,300));
     const restaurants = [];
 
     const cards =
