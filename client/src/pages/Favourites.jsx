@@ -206,7 +206,7 @@ darkMode
 <div className="h-40 overflow-hidden">
 
 <img
-src={`https://loremflickr.com/600/400/${fav.name}?random=${index}`}
+src={fav.image || `https://loremflickr.com/600/400/restaurant?random=${index}`}
 alt={fav.name}
 className="w-full h-full object-cover hover:scale-110 transition"
 />

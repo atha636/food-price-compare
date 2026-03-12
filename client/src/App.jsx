@@ -384,7 +384,8 @@ const handleLogout = () => {
 };
 
 
-const addFavourite = async (name, platform, city, price) => {
+const addFavourite = async (name, platform, city, price, image) => {
+
   const token = localStorage.getItem("token");
   const key = name + platform + city;
 
@@ -396,18 +397,24 @@ const addFavourite = async (name, platform, city, price) => {
   );
 
   try {
+
     await axios.post(
       "https://food-price-compare-1.onrender.com/add-favourite",
-      { name, platform, city, price },
+      { name, platform, city, price, image },
       { headers: { Authorization: `Bearer ${token}` } }
     );
+
   } catch (err) {
+
     // revert UI if API fails
     setFavourites(prev =>
       isAlreadyFav ? [...prev, key] : prev.filter(f => f !== key)
     );
+
     console.log("Favourite toggle failed");
+
   }
+
 };
  const handleCompare = async (customItem, customCity) => {
   const searchItem = customItem || item;
@@ -841,7 +848,7 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
                           
                         )}
                         <button
-onClick={()=>addFavourite(rest.name,"zomato",city,rest.price)}
+onClick={() => addFavourite(rest.name, "zomato", city, rest.price, rest.image)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span
@@ -1304,7 +1311,7 @@ Order Now
                           </div>
                         )}
                         <button
-onClick={()=>addFavourite(rest.name,"swiggy",city,rest.price)}
+onClick={() => addFavourite(rest.name, "swiggy", city, rest.price, rest.image)}
 className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
 >
 <motion.span

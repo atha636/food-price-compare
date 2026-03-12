@@ -541,7 +541,7 @@ app.post("/add-favourite", authMiddleware, async (req, res) => {
 
 try{
 
-const { name, platform, city, price } = req.body;
+const { name, platform, city, price, image } = req.body;
 
 const user = await User.findById(req.user.id);
 
@@ -571,7 +571,8 @@ user.favourites.unshift({
 name,
 platform,
 city,
-price
+price,
+image
 });
 
 await user.save();
