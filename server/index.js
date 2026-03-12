@@ -179,16 +179,21 @@ const fetchZomatoRestaurants = async (lat, lng, food, cityName) => {
 
       if (!name) return;
 
-      restaurants.push({
+      const distance = (Math.random() * 4 + 1).toFixed(2);
+
+restaurants.push({
   name: name,
   rating: (3.8 + Math.random()).toFixed(1),
   price: Math.floor(200 + Math.random() * 200),
   time: Math.floor(20 + Math.random() * 15),
-  image: `https://loremflickr.com/600/400/${food}?random=${i}`
+  image: `https://loremflickr.com/600/400/${food}?random=${i}`,
+  distance: distance
 });
     });
 
-    return restaurants;
+    restaurants.sort((a,b)=>a.distance - b.distance);
+
+return restaurants;
 
   } catch (err) {
 

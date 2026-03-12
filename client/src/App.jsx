@@ -853,7 +853,7 @@ className={favourites.includes(rest.name + "zomato" + city) ? "text-red-500" : "
 </button>
                       </div>
                       <div className="flex justify-between items-center">
-                        <div className="text-sm opacity-80">⏱ {rest.time} mins • 📍 {rest.distance} km</div>
+                        <div className="text-sm opacity-80">⏱ {rest.time} mins • 📍 {rest.distance} km </div>
                         <div className="text-lg font-bold text-blue-500">
                           ₹<CountUp end={rest.price} duration={1} />
                         </div>
@@ -1309,7 +1309,7 @@ className={favourites.includes(rest.name + "swiggy" + city) ? "text-red-500" : "
 </button>
                       </div>
                       <div className="flex justify-between items-center">
-                        <div className="text-sm opacity-80">⏱ {rest.time} mins</div>
+                        <div className="text-sm opacity-80">⏱ {rest.time} mins • 📍 {rest.distance} km</div>
                         <div className="text-lg font-bold text-blue-500">
                           ₹<CountUp end={rest.price} duration={1} />
                         </div>
