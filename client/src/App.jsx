@@ -870,6 +870,13 @@ className={favourites.includes(rest.name + "zomato" + city) ? "text-red-500" : "
                           </span>
                         )}
                         <span className="font-semibold">₹{rest.price}</span>
+                        <a
+ href={rest.url}
+ target="_blank"
+ className="mt-3 px-3 py-1 bg-red-500 rounded-lg text-white hover:bg-red-600"
+>
+Order Now
+</a>
                       </div>
                     </div>
                     <div className="flex justify-between text-xs mt-1 opacity-80 w-full">
@@ -1326,6 +1333,13 @@ className={favourites.includes(rest.name + "swiggy" + city) ? "text-red-500" : "
                           </span>
                         )}
                         <span className="font-semibold">₹{rest.price}</span>
+                        <a
+ href={rest.url}
+ target="_blank"
+ className="mt-3 px-3 py-1 bg-orange-500 rounded-lg text-white hover:bg-orange-600"
+>
+Order Now
+</a>
                       </div>
                     </div>
                     <div className="flex justify-between text-xs mt-1 opacity-80 w-full">

@@ -137,7 +137,8 @@ restaurants.push({
   price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
   time: info.sla?.deliveryTime || 30,
   image: imageUrl,
-  distance: distance.toFixed(2)
+  distance: distance.toFixed(2),
+  url: `https://www.swiggy.com/restaurants/${info.id}`
 });
 
   });
@@ -198,7 +199,8 @@ restaurants.push({
   price: Math.floor(200 + Math.random() * 200),
   time: Math.floor(20 + Math.random() * 15),
   image: `https://loremflickr.com/600/400/${food}?random=${i}`,
-  distance: distance
+  distance: distance,
+  url: `https://www.zomato.com/${city}`
 });
     });
 
