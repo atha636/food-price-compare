@@ -114,11 +114,13 @@ if (info.cloudinaryImageId) {
 // ZOMATO RESTAURANT FETCH (HTML SCRAPING)
 // ==============================
 
-const fetchZomatoRestaurants = async (lat, lng, food) => {
+const fetchZomatoRestaurants = async (lat, lng, food, cityName) => {
 
   try {
 
-    const city = "indore"; // simple version for now
+    const city = cityName
+  .toLowerCase()
+  .replace(/\s+/g, "-"); // simple version for now
 
     const url = `https://www.zomato.com/${city}/restaurants?q=${food}`;
 
@@ -578,7 +580,7 @@ console.log("ITEM:", item);
 
   const swiggyList = await fetchSwiggyRestaurants(lat, lng, item);
 
-  const zomatoList = await fetchZomatoRestaurants(lat, lng, item);
+  const zomatoList = await fetchZomatoRestaurants(lat, lng, item, city);
 
   return res.json({
     serviceType,
