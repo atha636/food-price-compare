@@ -110,15 +110,26 @@ if (info.cloudinaryImageId) {
   }
 
 }
-    const restLat = info?.latLong?.latitude || lat;
-const restLng = info?.latLong?.longitude || lng;
+    let distance;
 
-const distance = calculateDistance(
-  parseFloat(lat),
-  parseFloat(lng),
-  parseFloat(restLat),
-  parseFloat(restLng)
-);
+if (info?.latLong?.latitude && info?.latLong?.longitude) {
+
+  const restLat = info.latLong.latitude;
+  const restLng = info.latLong.longitude;
+
+  distance = calculateDistance(
+    parseFloat(lat),
+    parseFloat(lng),
+    parseFloat(restLat),
+    parseFloat(restLng)
+  );
+
+} else {
+
+  // fallback if swiggy doesn't give coordinates
+  distance = Math.random() * 4 + 1;
+
+}
 
 restaurants.push({
   name: info.name,
