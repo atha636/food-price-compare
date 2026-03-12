@@ -143,13 +143,12 @@ const fetchZomatoRestaurants = async (lat, lng, food) => {
       if (!name) return;
 
       restaurants.push({
-        name: name,
-        rating: (3.8 + Math.random()).toFixed(1),
-        price: Math.floor(200 + Math.random() * 200),
-        time: Math.floor(20 + Math.random() * 15),
-        image: "https://source.unsplash.com/600x400/?restaurant,food"
-      });
-
+  name: name,
+  rating: (3.8 + Math.random()).toFixed(1),
+  price: Math.floor(200 + Math.random() * 200),
+  time: Math.floor(20 + Math.random() * 15),
+  image: `https://loremflickr.com/600/400/${food}?random=${i}`
+});
     });
 
     return restaurants;
