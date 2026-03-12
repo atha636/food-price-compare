@@ -109,6 +109,75 @@ if (info.cloudinaryImageId) {
   }
 };
 
+// ==============================
+// ZOMATO RESTAURANT FETCH
+// ==============================
+
+const fetchZomatoRestaurants = async (lat, lng, food) => {
+
+  try {
+
+    const url = `https://www.zomato.com/webroutes/search/home`;
+
+    const res = await axios.get(url, {
+      timeout: 10000,
+      params: {
+        lat: lat,
+        lon: lng,
+        q: food
+      },
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Referer": "https://www.zomato.com/",
+        "Origin": "https://www.zomato.com"
+      }
+    });
+
+    const restaurants = [];
+
+    const cards =
+  res.data?.section?.SEARCH_RESULT?.cards ||
+  res.data?.section?.SEARCH_RESULT?.results ||
+  [];
+
+    cards.forEach(card => {
+
+      const info = card?.card?.restaurant?.info;
+
+      if (!info) return;
+
+      restaurants.push({
+        name: info.name,
+        rating: info.rating?.aggregate_rating || "4.0",
+        price:
+          parseInt(
+            info.costForTwo?.replace(/[^0-9]/g, "")
+          ) || 250,
+        time: Math.floor(20 + Math.random() * 15),
+        image:
+          info.image?.url ||
+          info.o2FeaturedImage?.url ||
+          "https://source.unsplash.com/600x400/?restaurant"
+      });
+
+    });
+
+    if (restaurants.length === 0) {
+  return [];
+}
+
+return restaurants.slice(0,5);
+
+  } catch (err) {
+
+    console.log("Zomato error:", err.message);
+
+    return [];
+
+  }
+
+};
 /* ==============================
    ROUTES
 ============================== */
@@ -523,17 +592,19 @@ console.log("LNG:", lng);
 console.log("ITEM:", item);
     if (serviceType === "food") {
 
-      const swiggyList = await fetchSwiggyRestaurants(lat, lng, item);
+  const swiggyList = await fetchSwiggyRestaurants(lat, lng, item);
 
-      return res.json({
-        serviceType,
-        item,
-        city,
-        swiggyList,
-        zomatoList: [] // we will add zomato later
-      });
+  const zomatoList = await fetchZomatoRestaurants(lat, lng, item);
 
-    }
+  return res.json({
+    serviceType,
+    item,
+    city,
+    swiggyList,
+    zomatoList
+  });
+
+}
 
     // Grocery & Ride fallback (your old logic)
 
