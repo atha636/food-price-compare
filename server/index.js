@@ -39,6 +39,28 @@ const authMiddleware = (req, res, next) => {
     return res.status(401).json({ message: "Invalid or expired token." });
   }
 };
+
+// ==============================
+// DISTANCE CALCULATOR
+// ====
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+
+  const R = 6371;
+
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+};
 // ==============================
 // SWIGGY RESTAURANT FETCH
 // ==============================
@@ -88,18 +110,31 @@ if (info.cloudinaryImageId) {
   }
 
 }
-    restaurants.push({
-      name: info.name,
-      rating: info.avgRating,
-      price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
-      time: info.sla?.deliveryTime || 30,
-       image: imageUrl
-    });
+    const restLat = info?.latLong?.latitude || lat;
+const restLng = info?.latLong?.longitude || lng;
+
+const distance = calculateDistance(
+  parseFloat(lat),
+  parseFloat(lng),
+  parseFloat(restLat),
+  parseFloat(restLng)
+);
+
+restaurants.push({
+  name: info.name,
+  rating: info.avgRating,
+  price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
+  time: info.sla?.deliveryTime || 30,
+  image: imageUrl,
+  distance: distance.toFixed(2)
+});
 
   });
 
 });
-    return restaurants.slice(0,5);
+    restaurants.sort((a,b)=>a.distance - b.distance);
+
+return restaurants.slice(0,5);
 
   } catch (err) {
 
