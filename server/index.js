@@ -6,6 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
+const cheerio = require("cheerio");
 const jwt = require("jsonwebtoken");
 const User = require("./models/User");
 const crypto = require("crypto");
@@ -110,71 +111,52 @@ if (info.cloudinaryImageId) {
 };
 
 // ==============================
-// ZOMATO RESTAURANT FETCH
+// ZOMATO RESTAURANT FETCH (HTML SCRAPING)
 // ==============================
 
 const fetchZomatoRestaurants = async (lat, lng, food) => {
 
   try {
 
-    const url = `https://www.zomato.com/webroutes/search/home`;
+    const city = "indore"; // simple version for now
+
+    const url = `https://www.zomato.com/${city}/restaurants?q=${food}`;
 
     const res = await axios.get(url, {
-  timeout: 10000,
-  params: {
-    lat: lat,
-    lon: lng,
-    q: food
-  },
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-    "Accept": "application/json",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Referer": "https://www.zomato.com/",
-    "Origin": "https://www.zomato.com",
-    "Connection": "keep-alive"
-  }
-});
-console.log("ZOMATO RAW:", JSON.stringify(res.data).slice(0,300));
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "text/html"
+      }
+    });
+
+    const $ = cheerio.load(res.data);
+
     const restaurants = [];
 
-    const cards =
-  res.data?.section?.SEARCH_RESULT?.cards ||
-  res.data?.section?.SEARCH_RESULT?.results ||
-  [];
+    $("h4").each((i, el) => {
 
-    cards.forEach(card => {
+      if (i >= 5) return false;
 
-      const info = card?.card?.restaurant?.info;
+      const name = $(el).text().trim();
 
-      if (!info) return;
+      if (!name) return;
 
       restaurants.push({
-        name: info.name,
-        rating: info.rating?.aggregate_rating || "4.0",
-        price:
-          parseInt(
-            info.costForTwo?.replace(/[^0-9]/g, "")
-          ) || 250,
+        name: name,
+        rating: (3.8 + Math.random()).toFixed(1),
+        price: Math.floor(200 + Math.random() * 200),
         time: Math.floor(20 + Math.random() * 15),
-        image:
-          info.image?.url ||
-          info.o2FeaturedImage?.url ||
-          "https://source.unsplash.com/600x400/?restaurant"
+        image: "https://source.unsplash.com/600x400/?restaurant,food"
       });
 
     });
 
-    if (restaurants.length === 0) {
-  return [];
-}
-
-return restaurants.slice(0,5);
+    return restaurants;
 
   } catch (err) {
 
-    console.log("Zomato error:", err.message);
+    console.log("Zomato scrape error:", err.message);
 
     return [];
 
