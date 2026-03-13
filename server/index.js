@@ -25,9 +25,12 @@ const app = express();
    MIDDLEWARE (MUST BE ON TOP)
 ============================== */
 app.use(cors({
-  origin: "https://your-frontend-url.vercel.app",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  origin: [
+    "http://localhost:5173",
+    process.env.FRONTEND_URL
+  ],
+  methods: ["GET","POST","PUT","DELETE"],
+  allowedHeaders: ["Content-Type","Authorization"]
 }));
 app.use(express.json());
 /* ==============================
@@ -293,7 +296,7 @@ app.post("/signup", async (req, res) => {
     });
 
     await user.save();
-const verifyLink = `food-price-compare-production.up.railway.app/verify/${verificationToken}`;
+const verifyLink = `https://food-price-compare-production.up.railway.app/verify/${verificationToken}`;
     sendVerificationEmail(email, verifyLink)
   .then(() => console.log("Verification email sent"))
   .catch(err => console.log("Email failed:", err));

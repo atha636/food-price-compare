@@ -50,14 +50,14 @@ const [bestPlatform, setBestPlatform] = useState(null);
     const fetchData = async () => {
 
       const userRes = await axios.get(
-        "https://food-price-compare-1.onrender.com/me",
+        "https://food-price-compare-production.up.railway.app/me",
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
 
       const insightsRes = await axios.get(
-        "https://food-price-compare-1.onrender.com/insights",
+        "https://food-price-compare-production.up.railway.app/insights",
         {
           headers: { Authorization: `Bearer ${token}` }
         }

@@ -28,7 +28,7 @@ const token = localStorage.getItem("token");
 const fetchAnalytics = async()=>{
 
 const res = await axios.get(
-"https://food-price-compare-1.onrender.com/me",
+"https://food-price-compare-production.up.railway.app/me",
 {
 headers:{
 Authorization:`Bearer ${token}`

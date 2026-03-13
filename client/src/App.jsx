@@ -231,7 +231,7 @@ useEffect(() => {
     try {
       // 🔥 Restore user
       const userRes = await axios.get(
-        "https://food-price-compare-1.onrender.com/me",
+        "https://food-price-compare-production.up.railway.app/me",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -250,7 +250,7 @@ useEffect(() => {
 
       // 🔥 Restore insights
       const insightsRes = await axios.get(
-        "https://food-price-compare-1.onrender.com/insights",
+        "https://food-price-compare-production.up.railway.app/insights",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -280,7 +280,7 @@ const handleLogin = async () => {
 
   try {
     const res = await axios.post(
-      "https://food-price-compare-1.onrender.com/login",
+      "https://food-price-compare-production.up.railway.app/login",
       { email, password }
     );
 
@@ -289,7 +289,7 @@ const handleLogin = async () => {
 
     // 🔥 Fetch user after login
     const userRes = await axios.get(
-      "https://food-price-compare-1.onrender.com/me",
+      "https://food-price-compare-production.up.railway.app/me",
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -328,13 +328,13 @@ const handleSignup = async () => {
   try {
     // 1️⃣ Signup
     await axios.post(
-      "https://food-price-compare-1.onrender.com/signup",
+      "https://food-price-compare-production.up.railway.app/signup",
       { name, email, password }
     );
 
     // 2️⃣ Login manually after signup
     const res = await axios.post(
-      "https://food-price-compare-1.onrender.com/login",
+      "https://food-price-compare-production.up.railway.app/login",
       { email, password }
     );
 
@@ -343,7 +343,7 @@ const handleSignup = async () => {
 
     // 3️⃣ Fetch user
     const userRes = await axios.get(
-      "https://food-price-compare-1.onrender.com/me",
+      "https://food-price-compare-production.up.railway.app/me",
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -399,7 +399,7 @@ const addFavourite = async (name, platform, city, price, image) => {
   try {
 
     await axios.post(
-      "https://food-price-compare-1.onrender.com/add-favourite",
+      "https://food-price-compare-production.up.railway.app/add-favourite",
       { name, platform, city, price, image },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -440,7 +440,7 @@ if (!searchItem || !searchCity) {
 
   try {
     const response = await axios.post(
-  "https://food-price-compare-1.onrender.com/compare",
+  "https://food-price-compare-production.up.railway.app/compare",
   { item: searchItem, city: searchCity, serviceType },
       {
         headers: {
@@ -482,7 +482,7 @@ console.log("WINNER:", winner);
 console.log("BEST PRICE:", bestPrice);
 console.log("Saving search:", searchItem, searchCity, winner, bestPrice);
 await axios.post(
-  "https://food-price-compare-1.onrender.com/save-search",
+  "https://food-price-compare-production.up.railway.app/save-search",
   {
   item: searchItem,
   city: searchCity,
@@ -498,7 +498,7 @@ await axios.post(
 )
 .then(async () => {
   const res = await axios.get(
-    "https://food-price-compare-1.onrender.com/me",
+    "https://food-price-compare-production.up.railway.app/me",
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -527,7 +527,7 @@ const handleClearHistory = async () => {
 
   try {
     await axios.delete(
-      "https://food-price-compare-1.onrender.com/clear-history",
+      "https://food-price-compare-production.up.railway.app/clear-history",
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1102,7 +1102,7 @@ Order Now
 
   try {
     const response = await axios.post(
-      "https://food-price-compare-1.onrender.com/compare",
+      "https://food-price-compare-production.up.railway.app/compare",
       {
         item: search.item,
         city: search.city,
@@ -1422,7 +1422,7 @@ Order Now
         onSuccess={async (credentialResponse) => {
           try {
             const res = await axios.post(
-              "https://food-price-compare-1.onrender.com/google-login",
+              "https://food-price-compare-production.up.railway.app/google-login",
               { token: credentialResponse.credential }
             );
 
@@ -1430,7 +1430,7 @@ Order Now
             localStorage.setItem("token", token);
 
             const userRes = await axios.get(
-              "https://food-price-compare-1.onrender.com/me",
+              "https://food-price-compare-production.up.railway.app/me",
               {
                 headers: {
                   Authorization: `Bearer ${token}`,

@@ -20,7 +20,7 @@ const fetchUser = async()=>{
 try{
 
 const res = await axios.get(
-"https://food-price-compare-1.onrender.com/me",
+"https://food-price-compare-production.up.railway.app/me",
 {
 headers:{
 Authorization:`Bearer ${token}`
@@ -48,7 +48,7 @@ const token = localStorage.getItem("token");
 try{
 
 const res = await axios.put(
-"https://food-price-compare-1.onrender.com/update-profile",
+"https://food-price-compare-production.up.railway.app/update-profile",
 { name,email },
 {
 headers:{
@@ -89,7 +89,7 @@ return;
 try{
 
 await axios.delete(
-"https://food-price-compare-1.onrender.com/delete-account",
+"https://food-price-compare-production.up.railway.app/delete-account",
 {
 headers:{
 Authorization:`Bearer ${token}`
