@@ -6,6 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
+
 // ==============================
 // REQUEST DELAY
 // ==============================
@@ -18,6 +19,7 @@ const jwt = require("jsonwebtoken");
 const User = require("./models/User");
 const crypto = require("crypto");
 const sendVerificationEmail = require("./utils/sendEmail");
+const zomatoCache = new Map();
 
 const app = express();
 
@@ -176,6 +178,12 @@ return restaurants.slice(0,5);
 // ==============================
 
 const fetchZomatoRestaurants = async (lat, lng, food, cityName) => {
+  const cacheKey = `${food}-${cityName}`;
+
+if (zomatoCache.has(cacheKey)) {
+  console.log("Returning Zomato data from cache");
+  return zomatoCache.get(cacheKey);
+}
 
   try {
 
@@ -188,26 +196,28 @@ const fetchZomatoRestaurants = async (lat, lng, food, cityName) => {
 
       try {
 
-        res = await axios.get(url, {
-          timeout: 15000,
-          params: {
-            q: food,
-            lat: lat,
-            lon: lng,
-            page_type: "delivery"
-          },
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-            "Accept":
-              "application/json, text/plain, */*",
-            "Accept-Language": "en-IN,en;q=0.9",
-            "Referer": "https://www.zomato.com/",
-            "Origin": "https://www.zomato.com",
-            "Connection": "keep-alive"
-          }
-        });
-
+        const res = await axios.get(url, {
+  timeout: 15000,
+  params: {
+    q: food,
+    lat,
+    lon: lng,
+    page_type: "delivery",
+    isMobile: 0,
+    entity_type: "city"
+  },
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    "Accept":
+      "application/json, text/plain, */*",
+    "Accept-Language": "en-IN,en;q=0.9",
+    "Referer": "https://www.zomato.com/",
+    "Origin": "https://www.zomato.com",
+    "Connection": "keep-alive",
+    "x-requested-with": "XMLHttpRequest"
+  }
+});
         break;
 
       } catch (err) {
@@ -251,7 +261,11 @@ const fetchZomatoRestaurants = async (lat, lng, food, cityName) => {
 
     });
 
-    return restaurants.slice(0, 5);
+   const result = restaurants.slice(0, 5);
+
+zomatoCache.set(cacheKey, result);
+
+return result;
 
   } catch (err) {
 
