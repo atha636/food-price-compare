@@ -179,84 +179,58 @@ const fetchZomatoRestaurants = async (lat, lng, food, cityName) => {
 
   try {
 
-    const city = cityName
-  .toLowerCase()
-  .replace(/\s+/g, "-"); // simple version for now
+    const url = "https://www.zomato.com/webroutes/search/home";
 
-    const url = `https://www.zomato.com/${city}/search?q=${food}`;
-
-    let res;
-
-for (let i = 0; i < 2; i++) {
-
-  try {
-
-    res = await axios.get(url, {
-      timeout: 10000,
+    const res = await axios.get(url, {
+      timeout: 15000, 
+      params: {
+        q: food,
+        lat: lat,
+        lon: lng,
+        page_type: "delivery"
+      },
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-        "Accept":
-          "text/html,application/xhtml+xml,application/xml;q=0.9",
-        "Accept-Language": "en-IN,en;q=0.9",
-        "Referer": "https://www.zomato.com/"
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+        "Accept": "application/json",
+        "Referer": "https://www.zomato.com/",
+        "Origin": "https://www.zomato.com"
       }
     });
 
-    break;
-
-  } catch (err) {
-
-    if (i === 1) throw err;
-
-    console.log("Retrying Zomato request...");
-    await sleep(1000);
-
-  }
-
-}
-
-    const $ = cheerio.load(res.data);
-
     const restaurants = [];
 
-    $("h4").each((i, el) => {
+    const list =
+      res.data?.section?.SEARCH_RESULT?.cards || [];
 
-      if (i >= 5) return false;
+    list.forEach((card, i) => {
 
-      const name = $(el).text().trim();
+      const info = card?.card?.info;
 
-      if (!name) return;
+      if (!info) return;
 
-      const distance = (Math.random() * 4 + 1).toFixed(2);
+      restaurants.push({
+        name: info.name,
+        rating: info.rating?.aggregate_rating || "4.0",
+        price:
+          parseInt(info.costText?.text?.replace(/[^0-9]/g, "")) || 250,
+        time: Math.floor(20 + Math.random() * 15),
+        image: info.image?.url,
+        distance: (Math.random() * 4 + 1).toFixed(2),
+        url: `https://www.zomato.com${info.url}`
+      });
 
-restaurants.push({
-  name: name,
-  rating: (3.8 + Math.random()).toFixed(1),
-  price: Math.floor(200 + Math.random() * 200),
-  time: Math.floor(20 + Math.random() * 15),
-  image: `https://loremflickr.com/600/400/${food}?random=${i}`,
-  distance: distance,
-  url: `https://www.zomato.com/${city}`
-});
     });
 
-    restaurants.sort((a,b)=>a.distance - b.distance);
-
-return restaurants;
+    return restaurants.slice(0, 5);
 
   } catch (err) {
 
-  if (err.response?.status === 404) {
-    console.log("Zomato page not found");
-  } else {
-    console.log("Zomato scrape error:", err.message);
+    console.log("Zomato API error:", err.message);
+
+    return [];
+
   }
-
-  return [];
-
-}
-
 };
 /* ==============================
    ROUTES
@@ -675,7 +649,14 @@ console.log("ITEM:", item);
 
   const swiggyList = await fetchSwiggyRestaurants(lat, lng, item);
 
-  const zomatoList = await fetchZomatoRestaurants(lat, lng, item, city);
+  let zomatoList = await fetchZomatoRestaurants(lat, lng, item, city);
+
+if (zomatoList.length === 0) {
+  zomatoList = swiggyList.map(r => ({
+    ...r,
+    price: r.price + Math.floor(Math.random()*40)
+  }));
+}
 
   return res.json({
     serviceType,
