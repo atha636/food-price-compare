@@ -24,7 +24,11 @@ const app = express();
 /* ==============================
    MIDDLEWARE (MUST BE ON TOP)
 ============================== */
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 /* ==============================
    AUTH MIDDLEWARE
@@ -289,7 +293,7 @@ app.post("/signup", async (req, res) => {
     });
 
     await user.save();
-const verifyLink = `https://food-price-compare-1.onrender.com/verify/${verificationToken}`;
+const verifyLink = `food-price-compare-production.up.railway.app/verify/${verificationToken}`;
     sendVerificationEmail(email, verifyLink)
   .then(() => console.log("Verification email sent"))
   .catch(err => console.log("Email failed:", err));
