@@ -6,6 +6,13 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
+// ==============================
+// REQUEST DELAY
+// ==============================
+
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
 const cheerio = require("cheerio");
 const jwt = require("jsonwebtoken");
 const User = require("./models/User");
@@ -169,15 +176,38 @@ const fetchZomatoRestaurants = async (lat, lng, food, cityName) => {
   .toLowerCase()
   .replace(/\s+/g, "-"); // simple version for now
 
-    const url = `https://www.zomato.com/${city}/restaurants?q=${food}`;
+    const url = `https://www.zomato.com/${city}/search?q=${food}`;
 
-    const res = await axios.get(url, {
+    let res;
+
+for (let i = 0; i < 2; i++) {
+
+  try {
+
+    res = await axios.get(url, {
+      timeout: 10000,
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "text/html"
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        "Accept":
+          "text/html,application/xhtml+xml,application/xml;q=0.9",
+        "Accept-Language": "en-IN,en;q=0.9",
+        "Referer": "https://www.zomato.com/"
       }
     });
+
+    break;
+
+  } catch (err) {
+
+    if (i === 1) throw err;
+
+    console.log("Retrying Zomato request...");
+    await sleep(1000);
+
+  }
+
+}
 
     const $ = cheerio.load(res.data);
 
@@ -210,11 +240,15 @@ return restaurants;
 
   } catch (err) {
 
+  if (err.response?.status === 404) {
+    console.log("Zomato page not found");
+  } else {
     console.log("Zomato scrape error:", err.message);
-
-    return [];
-
   }
+
+  return [];
+
+}
 
 };
 /* ==============================
