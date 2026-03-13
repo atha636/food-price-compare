@@ -25,7 +25,7 @@ const app = express();
    MIDDLEWARE (MUST BE ON TOP)
 ============================== */
 app.use(cors({
-  origin: "*",
+  origin: "https://your-frontend-url.vercel.app",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
