@@ -196,7 +196,7 @@ if (zomatoCache.has(cacheKey)) {
 
       try {
 
-        const res = await axios.get(url, {
+        res = await axios.get(url, {
   timeout: 15000,
   params: {
     q: food,
@@ -241,23 +241,22 @@ if (zomatoCache.has(cacheKey)) {
 
       if (!info) return;
 
-      restaurants.push({
-        name: info.name || "Restaurant",
-        rating: info.rating?.aggregate_rating || "4.0",
-        price:
-          parseInt(
-            info.costText?.text?.replace(/[^0-9]/g, "")
-          ) || 250,
-        time: Math.floor(20 + Math.random() * 15),
-        image:
-          info.image?.url ||
-          `https://loremflickr.com/600/400/${food}`,
-        distance: (Math.random() * 4 + 1).toFixed(2),
-        url:
-          info.url
-            ? `https://www.zomato.com${info.url}`
-            : "https://www.zomato.com"
-      });
+      const imageUrl =
+  info.image?.url ||
+  info.o2FeaturedImage?.url ||
+  info.thumbnail ||
+  info.featured_image ||
+  `https://source.unsplash.com/600x400/?${food}`;
+
+restaurants.push({
+  name: info.name || "Restaurant",
+  rating: info.rating?.aggregate_rating || "4.0",
+  price: parseInt(info.costText?.text?.replace(/[^0-9]/g, "")) || 250,
+  time: Math.floor(20 + Math.random() * 15),
+  image: imageUrl,
+  distance: (Math.random() * 4 + 1).toFixed(2),
+  url: info.url ? `https://www.zomato.com${info.url}` : "https://www.zomato.com"
+});
 
     });
 
@@ -699,12 +698,17 @@ console.log("ITEM:", item);
  let zomatoList = await fetchZomatoRestaurants(lat, lng, item, city);
 
 if (zomatoList.length === 0) {
+
   console.log("Using fallback Zomato data");
 
   zomatoList = swiggyList.map(r => ({
     ...r,
-    price: r.price + Math.floor(Math.random()*30)
+    price: r.price + Math.floor(Math.random()*30),
+
+    // ⭐ FIX: correct Zomato URL
+    url: `https://www.zomato.com/search?q=${encodeURIComponent(r.name)}`
   }));
+
 }
 
   return res.json({
