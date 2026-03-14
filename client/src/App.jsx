@@ -93,15 +93,15 @@ localStorage.setItem("theme", theme);
         const zomatoBest =
           result.zomatoList && result.zomatoList.length > 0
             ? result.zomatoList.reduce((a, b) =>
-                a.price < b.price ? a : b
-              )
+  a.score < b.score ? a : b
+)
             : null;
 
         const swiggyBest =
           result.swiggyList && result.swiggyList.length > 0
             ? result.swiggyList.reduce((a, b) =>
-                a.price < b.price ? a : b
-              )
+  a.score < b.score ? a : b
+)
             : null;
 
         if (!zomatoBest && swiggyBest) return "swiggy";
