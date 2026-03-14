@@ -59,6 +59,17 @@ const [authError, setAuthError] = useState("");
   const location = useLocation();
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [mobilePlatform, setMobilePlatform] = useState("zomato");
+  const groceryImages = {
+  milk: "https://images.unsplash.com/photo-1550583724-b2692b85b150",
+  bread: "https://images.unsplash.com/photo-1608198093002-ad4e005484ec",
+  rice: "https://images.unsplash.com/photo-1586201375761-83865001e31c",
+  eggs: "https://images.unsplash.com/photo-1518569656558-1f25e69d93d7",
+  vegetables: "https://images.unsplash.com/photo-1540420773420-3366772f4999",
+  fruits: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b",
+  potato: "https://images.unsplash.com/photo-1518977676601-b53f82aba655",
+  onion: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb",
+  tomato: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337"
+};
   const [theme, setTheme] = useState(
   localStorage.getItem("theme") || "system"
 );
@@ -961,10 +972,10 @@ const savings = mostExpensive.item.price - cheapest.item.price;
   </span>
 </div>
          <img
-  src={item.image || `https://source.unsplash.com/600x400/?${item.name}`}
-  onError={(e)=>{
-    e.target.src = `https://source.unsplash.com/600x400/?grocery,${item.name}`;
-  }}
+  src={
+    groceryImages[item.name.toLowerCase().split(" ")[0]] ||
+    "https://images.unsplash.com/photo-1542838132-92c53300491e"
+  }
   className="w-full h-36 object-cover rounded-lg mb-2"
 />
 
@@ -1409,10 +1420,10 @@ Order Now
   </span>
 </div>
           <img
-  src={item.image || `https://source.unsplash.com/600x400/?${item.name}`}
-  onError={(e)=>{
-    e.target.src = `https://source.unsplash.com/600x400/?grocery,${item.name}`;
-  }}
+  src={
+    groceryImages[item.name.toLowerCase().split(" ")[0]] ||
+    "https://images.unsplash.com/photo-1542838132-92c53300491e"
+  }
   className="w-full h-36 object-cover rounded-lg mb-2"
 />
 
