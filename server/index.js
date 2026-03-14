@@ -260,8 +260,21 @@ restaurants.push({
 
     });
 
-   const result = restaurants.slice(0, 5);
+   // remove duplicate restaurants
+const unique = [];
+const names = new Set();
 
+restaurants.forEach(r => {
+  if (!names.has(r.name)) {
+    names.add(r.name);
+    unique.push(r);
+  }
+});
+
+// take top 5 after removing duplicates
+const result = unique.slice(0, 5);
+
+// save in cache
 zomatoCache.set(cacheKey, result);
 
 return result;
