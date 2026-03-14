@@ -20,9 +20,7 @@ const User = require("./models/User");
 const crypto = require("crypto");
 const sendVerificationEmail = require("./utils/sendEmail");
 const zomatoCache = new Map();
-if (zomatoCache.has(cacheKey)) {
-  return zomatoCache.get(cacheKey);
-}
+
 
 const app = express();
 
