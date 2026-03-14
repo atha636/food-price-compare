@@ -331,7 +331,7 @@ const fetchZepto = async (item) => {
       price: 48,
       time: 10,
       rating: 4.4,
-      image: `https://source.unsplash.com/600x400/?${item}`,
+      image: `https://source.unsplash.com/600x400/?${item},grocery`,
       url: "https://www.zeptonow.com/"
     }
   ];
@@ -346,7 +346,7 @@ const fetchInstamart = async (item) => {
       price: 52,
       time: 14,
       rating: 4.3,
-      image: `https://source.unsplash.com/600x400/?${item}`,
+      image: `https://source.unsplash.com/600x400/?${item},grocery`,
       url: "https://www.swiggy.com/instamart"
     }
   ];
@@ -361,7 +361,7 @@ const fetchBlinkit = async (item) => {
       price: 46,
       time: 9,
       rating: 4.5,
-      image: `https://source.unsplash.com/600x400/?${item}`,
+     image: `https://source.unsplash.com/600x400/?${item},grocery`,
       url: "https://blinkit.com/"
     }
   ];
@@ -376,7 +376,7 @@ const fetchJioMart = async (item) => {
       price: 50,
       time: 25,
       rating: 4.2,
-      image: `https://source.unsplash.com/600x400/?${item}`,
+      image: `https://source.unsplash.com/600x400/?${item},grocery`,
       url: "https://www.jiomart.com/"
     }
   ];

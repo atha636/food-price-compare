@@ -88,7 +88,9 @@ localStorage.setItem("theme", theme);
 }, [theme]);
   const winner =
   serviceType === "food" && result
+  
     ? (() => {
+      
 
         const zomatoBest =
           result.zomatoList && result.zomatoList.length > 0
@@ -118,7 +120,50 @@ localStorage.setItem("theme", theme);
 
     const savingsData =
   serviceType === "food" && result
+  
+    ? (() => {const groceryInsights =
+  serviceType === "grocery" && result
     ? (() => {
+      
+
+        const platforms = [
+          { name: "Zepto", data: result.zeptoList },
+          { name: "Blinkit", data: result.blinkitList },
+          { name: "Instamart", data: result.instamartList },
+          { name: "JioMart", data: result.jiomartList }
+        ];
+
+        const items = platforms
+          .map(p => ({
+            name: p.name,
+            item: p.data?.[0]
+          }))
+          .filter(p => p.item);
+
+        if (items.length < 2) return null;
+
+        const cheapest = items.reduce((a, b) =>
+          a.item.price < b.item.price ? a : b
+        );
+
+        const fastest = items.reduce((a, b) =>
+          a.item.time < b.item.time ? a : b
+        );
+
+        const mostExpensive = items.reduce((a, b) =>
+          a.item.price > b.item.price ? a : b
+        );
+
+        const savings = mostExpensive.item.price - cheapest.item.price;
+
+        return {
+          cheapestPlatform: cheapest.name,
+          fastestPlatform: fastest.name,
+          savings
+        };
+
+      })()
+    : null;
         const zomatoBest = getBestRestaurant(result.zomatoList);
 const swiggyBest = getBestRestaurant(result.swiggyList);
 
@@ -147,6 +192,33 @@ if (!zomatoBest || !swiggyBest) return null;
         };
       })()
     : null;
+    const groceryWinner =
+  serviceType === "grocery" && result
+    ? (() => {
+
+        const platforms = [
+          { name: "zepto", data: result.zeptoList },
+          { name: "blinkit", data: result.blinkitList },
+          { name: "instamart", data: result.instamartList },
+          { name: "jiomart", data: result.jiomartList }
+        ];
+
+        let best = null;
+
+        platforms.forEach(p => {
+          const item = p.data?.[0];
+          if (!item) return;
+
+          if (!best || item.price < best.price) {
+            best = { platform: p.name, price: item.price };
+          }
+        });
+
+        return best?.platform || null;
+
+      })()
+    : null;
+    
   const [sortBy, setSortBy] = useState("price");
   const particlesInit = async (engine) => {
   await loadSlim(engine);
@@ -562,7 +634,7 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                 : "bg-gradient-to-br from-slate-100 via-white to-blue-50"
             }`}
           >
-      {winner && (
+      {(winner || groceryWinner) && (
   <motion.div
     initial={{ opacity: 0, y: -20, scale: 0.9 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -570,13 +642,13 @@ element={<Settings theme={theme} setTheme={setTheme} />}
     className="fixed top-6 right-6 z-50"
   >
     <div
-      className={`px-5 py-2 rounded-full shadow-2xl text-sm font-semibold backdrop-blur-md border ${
-        winner === "zomato"
-          ? "bg-red-500/20 text-red-300 border-red-400/30 shadow-red-500/40"
-          : "bg-orange-500/20 text-orange-300 border-orange-400/30 shadow-orange-500/40"
-      }`}
+      className="px-5 py-2 rounded-full shadow-2xl text-sm font-semibold backdrop-blur-md border bg-green-500/20 text-green-300 border-green-400/30"
     >
-      🏆 {winner === "zomato" ? "Zomato Wins" : "Swiggy Wins"}
+      🏆 {winner
+        ? winner === "zomato"
+          ? "Zomato Wins"
+          : "Swiggy Wins"
+        : `${groceryWinner.charAt(0).toUpperCase() + groceryWinner.slice(1)} Wins`}
     </div>
   </motion.div>
 )}
@@ -619,6 +691,8 @@ element={<Settings theme={theme} setTheme={setTheme} />}
         {serviceType === "food" &&
           result?.zomatoList &&
           result?.swiggyList && (
+            
+            
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -641,6 +715,7 @@ const zomatoFastest = result.zomatoList.length > 0
 const swiggyFastest = result.swiggyList.length > 0
   ? result.swiggyList.reduce((a, b) => a.time < b.time ? a : b)
   : null;
+  
 
 // ADD THIS LINE RIGHT HERE ↓
 if (!zomatoBest || !swiggyBest || !zomatoFastest || !swiggyFastest) return null;
@@ -713,7 +788,94 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
                 })()}
               </div>
             </motion.div>
-          )}
+          )}{/* Grocery Insight bar */}
+{serviceType === "grocery" && result && (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4 }}
+    className="hidden lg:flex justify-center mt-4"
+  >
+    <div
+      className={`px-6 py-3 rounded-xl shadow-lg text-sm font-medium ${
+        darkMode
+          ? "bg-green-500/20 text-green-200 border border-green-400/30"
+          : "bg-white text-slate-700 border border-slate-200"
+      }`}
+    >
+      {(() => {
+
+        const platforms = [
+  { name: "Zepto", item: result.zeptoList?.[0] },
+  { name: "Blinkit", item: result.blinkitList?.[0] },
+  { name: "Instamart", item: result.instamartList?.[0] },
+  { name: "JioMart", item: result.jiomartList?.[0] }
+].filter(p => p.item);
+
+        if (platforms.length < 2) return null;
+
+        const cheapest = platforms.reduce((a,b)=>
+  a.item.price < b.item.price ? a : b
+);
+
+const fastest = platforms.reduce((a,b)=>
+  a.item.time < b.item.time ? a : b
+);
+
+const mostExpensive = platforms.reduce((a,b)=>
+  a.item.price > b.item.price ? a : b
+);
+
+const savings = mostExpensive.item.price - cheapest.item.price;
+
+        return (
+          <div className="flex flex-col items-center gap-1">
+
+            <span>
+  🔥 <span
+    className={
+      cheapest.name === "Zepto"
+        ? "text-purple-400 font-semibold"
+        : cheapest.name === "Blinkit"
+        ? "text-yellow-400 font-semibold"
+        : cheapest.name === "Instamart"
+        ? "text-orange-400 font-semibold"
+        : "text-blue-400 font-semibold"
+    }
+  >
+    {cheapest.name}
+  </span>{" "}
+  best price ₹{cheapest.item.price}
+</span>
+
+<span className="text-xs opacity-80">
+  ⚡ <span
+    className={
+      fastest.name === "Zepto"
+        ? "text-purple-400 font-semibold"
+        : fastest.name === "Blinkit"
+        ? "text-yellow-400 font-semibold"
+        : fastest.name === "Instamart"
+        ? "text-orange-400 font-semibold"
+        : "text-blue-400 font-semibold"
+    }
+  >
+    {fastest.name}
+  </span>{" "}
+  fastest delivery {fastest.item.time} mins
+</span>
+
+            <span className="text-xs opacity-80">
+              💰 You save ₹{savings}
+            </span>
+
+          </div>
+        );
+
+      })()}
+    </div>
+  </motion.div>
+)}
 
         {/* Savings */}
         {savingsData && savingsData.perOrder > 0 && (
@@ -766,6 +928,67 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
       <div className="relative z-10 flex flex-col lg:flex-row items-start justify-center gap-8 px-4 lg:px-8 py-6">
 
         {/* Zomato Panel */}
+         {/* Results for non-food */}
+        {serviceType === "grocery" && result && (
+  <div
+    className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
+      darkMode
+        ? "bg-white/5 backdrop-blur-md text-white"
+        : "bg-white shadow-md"
+    }`}
+  >
+    <h3 className="text-center font-bold mb-4 text-purple-400">
+  Grocery Stores
+</h3>
+
+    {[ 
+      { name: "Zepto", data: result.zeptoList },
+      { name: "Blinkit", data: result.blinkitList }
+    ].map((platform) =>
+      platform.data?.map((item, index) => (
+        <div
+          key={platform.name + index}
+          className={`mb-4 p-3 rounded-xl border transition-all hover:scale-105 ${
+  platform.name === "Zepto"
+    ? "border-purple-400 shadow-purple-400/30"
+    : "border-yellow-400 shadow-yellow-400/30"
+}`}
+
+        >
+        <div className="flex items-center gap-2 mb-2">
+  <span className="text-xs font-semibold opacity-80">
+    {platform.name}
+  </span>
+</div>
+         <img
+  src={item.image || `https://source.unsplash.com/600x400/?${item.name}`}
+  onError={(e)=>{
+    e.target.src = `https://source.unsplash.com/600x400/?grocery,${item.name}`;
+  }}
+  className="w-full h-36 object-cover rounded-lg mb-2"
+/>
+
+          <div className="font-semibold text-sm">
+            {item.name}
+          </div>
+
+          <div className="flex justify-between text-sm mt-1">
+            <span>₹{item.price}</span>
+            <span>⏱ {item.time} mins</span>
+          </div>
+
+          <a
+            href={item.url}
+            target="_blank"
+            className="block mt-2 text-center bg-green-500 text-white py-1 rounded-lg"
+          >
+            Order
+          </a>
+        </div>
+      ))
+    )}
+  </div>
+)}
         {serviceType === "food" && result?.zomatoList && (
           <div
             className={`${mobilePlatform === "zomato" ? "block" : "hidden"} 
@@ -1148,63 +1371,72 @@ Order Now
           {/* Error */}
           {error && <p className="text-red-500 text-center mt-4">{error}</p>}
 
-          {/* Results for non-food */}
-          {serviceType === "grocery" && result && (
-  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 px-6 pb-10">
+         
+          
+        </div>
+        {/* ── END CENTER CARD ── */}
 
-    {[
-      { name: "Zepto", data: result.zeptoList },
-      { name: "Blinkit", data: result.blinkitList },
+        {/* Swiggy Panel */}
+         {/* Results for non-food */}
+        {serviceType === "grocery" && result && (
+  <div
+    className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
+      darkMode
+        ? "bg-white/5 backdrop-blur-md text-white"
+        : "bg-white shadow-md"
+    }`}
+  >
+   <h3 className="text-center font-bold mb-4 text-blue-400">
+  More Stores
+</h3>
+
+    {[ 
       { name: "Instamart", data: result.instamartList },
       { name: "JioMart", data: result.jiomartList }
-    ].map((platform, index) => {
-
-      const item = platform.data?.[0];
-      if (!item) return null;
-
-      return (
+    ].map((platform) =>
+      platform.data?.map((item, index) => (
         <div
-          key={index}
-          className={`rounded-2xl p-4 transition-all ${
-            darkMode
-              ? "bg-white/5 backdrop-blur-md text-white"
-              : "bg-white shadow-md"
-          }`}
+          key={platform.name + index}
+          className={`mb-4 p-3 rounded-xl border transition-all hover:scale-105 ${
+  platform.name === "Instamart"
+    ? "border-orange-400 shadow-orange-400/30"
+    : "border-blue-400 shadow-blue-400/30"
+}`}
         >
-          <h3 className="font-bold text-center mb-3">{platform.name}</h3>
-
+          <div className="flex items-center gap-2 mb-2">
+  <span className="text-xs font-semibold opacity-80">
+    {platform.name}
+  </span>
+</div>
           <img
-            src={item.image}
-            alt={item.name}
-            className="w-full h-32 object-cover rounded-xl mb-3"
-          />
+  src={item.image || `https://source.unsplash.com/600x400/?${item.name}`}
+  onError={(e)=>{
+    e.target.src = `https://source.unsplash.com/600x400/?grocery,${item.name}`;
+  }}
+  className="w-full h-36 object-cover rounded-lg mb-2"
+/>
 
-          <div className="text-sm font-medium mb-1">{item.name}</div>
-
-          <div className="text-lg font-bold text-blue-500">
-            ₹{item.price}
+          <div className="font-semibold text-sm">
+            {item.name}
           </div>
 
-          <div className="text-xs opacity-80 mb-2">
-            ⏱ {item.time} mins
+          <div className="flex justify-between text-sm mt-1">
+            <span>₹{item.price}</span>
+            <span>⏱ {item.time} mins</span>
           </div>
 
           <a
             href={item.url}
             target="_blank"
-            className="block text-center bg-green-500 text-white py-1 rounded-lg"
+            className="block mt-2 text-center bg-green-500 text-white py-1 rounded-lg"
           >
-            Order Now
+            Order
           </a>
         </div>
-      );
-    })}
+      ))
+    )}
   </div>
 )}
-        </div>
-        {/* ── END CENTER CARD ── */}
-
-        {/* Swiggy Panel */}
         {serviceType === "food" && result?.swiggyList && (
           <div
             className={`${mobilePlatform === "swiggy" ? "block" : "hidden"} 
