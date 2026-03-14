@@ -147,20 +147,32 @@ if (info?.latLong?.latitude && info?.latLong?.longitude) {
 
 }
 
+const price = parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200;
+const rating = parseFloat(info.avgRating) || 4;
+const time = info.sla?.deliveryTime || 30;
+const dist = parseFloat(distance);
+
+const score =
+  price * 0.35 +
+  time * 1.2 +
+  dist * 10 -
+  rating * 15;
+
 restaurants.push({
   name: info.name,
-  rating: info.avgRating,
-  price: parseInt(info.costForTwo?.replace(/[^0-9]/g, "")) || 200,
-  time: info.sla?.deliveryTime || 30,
+  rating,
+  price,
+  time,
   image: imageUrl,
-  distance: distance.toFixed(2),
+  distance: dist.toFixed(2),
+  score,
   url: `https://www.swiggy.com/restaurants/${info.id}`
 });
 
   });
 
 });
-    restaurants.sort((a,b)=>a.distance - b.distance);
+    restaurants.sort((a,b)=>a.score - b.score);
 
 return restaurants.slice(0,5);
 
@@ -248,14 +260,28 @@ if (zomatoCache.has(cacheKey)) {
   info.featured_image ||
   `https://source.unsplash.com/600x400/?${food}`;
 
+const price = parseInt(info.costText?.text?.replace(/[^0-9]/g, "")) || 250;
+const rating = parseFloat(info.rating?.aggregate_rating) || 4;
+const time = Math.floor(20 + Math.random() * 15);
+const dist = Math.random() * 4 + 1;
+
+const score =
+  price * 0.35 +
+  time * 1.2 +
+  dist * 10 -
+  rating * 15;
+
 restaurants.push({
   name: info.name || "Restaurant",
-  rating: info.rating?.aggregate_rating || "4.0",
-  price: parseInt(info.costText?.text?.replace(/[^0-9]/g, "")) || 250,
-  time: Math.floor(20 + Math.random() * 15),
+  rating,
+  price,
+  time,
   image: imageUrl,
-  distance: (Math.random() * 4 + 1).toFixed(2),
-  url: info.url ? `https://www.zomato.com${info.url}` : "https://www.zomato.com"
+  distance: dist.toFixed(2),
+  score,
+  url: info.url
+    ? `https://www.zomato.com${info.url}`
+    : `https://www.zomato.com/search?q=${encodeURIComponent(info.name)}`
 });
 
     });
