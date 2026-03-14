@@ -974,7 +974,9 @@ Order Now
               PriceCompare
             </h1>
             <p className={`mt-2 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-              Compare food prices instantly
+              {serviceType === "food" && "Compare food prices instantly"}
+{serviceType === "grocery" && "Compare grocery prices instantly"}
+{serviceType === "ride" && "Compare ride fares instantly"}
             </p>
             <div className="mt-3 flex justify-center">
               <span
@@ -993,7 +995,13 @@ Order Now
           <div className="space-y-4">
             <input
               type="text"
-              placeholder="Food item (e.g. Pizza)"
+              placeholder={
+  serviceType === "food"
+    ? "Food item (e.g. Pizza)"
+    : serviceType === "grocery"
+    ? "Grocery item (e.g. Milk)"
+    : "Ride location"
+}
               value={item}
               onChange={(e) => setItem(e.target.value)}
               className={`w-full rounded-xl px-4 py-3 outline-none transition ${
@@ -1141,84 +1149,58 @@ Order Now
           {error && <p className="text-red-500 text-center mt-4">{error}</p>}
 
           {/* Results for non-food */}
-          {result && result.serviceType !== "food" && (() => {
-            const maxPrice = Math.max(result.zomato, result.swiggy);
-            const difference = Math.abs(result.zomato - result.swiggy);
-            const timeDifference = Math.abs(result.zomatoTime - result.swiggyTime);
+          {serviceType === "grocery" && result && (
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 px-6 pb-10">
 
-            let insight = "";
-            if (result.cheapest === result.fastest) {
-              insight = `${result.cheapest.charAt(0).toUpperCase() + result.cheapest.slice(1)} is both cheaper and faster. Best choice!`;
-            } else if (difference <= 10) {
-              insight = "Both platforms offer similar pricing. Choose based on delivery time.";
-            } else if (result.cheapest === "zomato") {
-              insight = `Zomato is ₹${difference} cheaper but ${timeDifference} mins difference in delivery.`;
-            } else {
-              insight = `Swiggy is ₹${difference} cheaper but ${timeDifference} mins difference in delivery.`;
-            }
+    {[
+      { name: "Zepto", data: result.zeptoList },
+      { name: "Blinkit", data: result.blinkitList },
+      { name: "Instamart", data: result.instamartList },
+      { name: "JioMart", data: result.jiomartList }
+    ].map((platform, index) => {
 
-            const cheaperPlatform = result.zomato < result.swiggy ? "Zomato" : "Swiggy";
-            const chartData = [
-              { name: "Zomato", price: result.zomato },
-              { name: "Swiggy", price: result.swiggy },
-            ];
+      const item = platform.data?.[0];
+      if (!item) return null;
 
-            return (
-              <motion.div
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="mt-8 space-y-6"
-              >
-                <div className="text-center bg-white/10 border border-white/20 rounded-xl p-4">
-                  <p className="text-sm text-slate-300">
-                    💰 {cheaperPlatform} is ₹{difference} cheaper
-                  </p>
-                </div>
-                <div
-                  className={`p-4 rounded-xl text-sm ${
-                    darkMode
-                      ? "bg-blue-500/20 text-blue-200 border border-blue-400/30"
-                      : "bg-blue-50 text-blue-700 border border-blue-200"
-                  }`}
-                >
-                  💡 {insight}
-                </div>
+      return (
+        <div
+          key={index}
+          className={`rounded-2xl p-4 transition-all ${
+            darkMode
+              ? "bg-white/5 backdrop-blur-md text-white"
+              : "bg-white shadow-md"
+          }`}
+        >
+          <h3 className="font-bold text-center mb-3">{platform.name}</h3>
 
-                <PriceCard
-                  name="Zomato"
-                  logo="https://b.zmtcdn.com/images/logo/zomato_logo_2017.png"
-                  price={result.zomato}
-                  time={result.zomatoTime}
-                  cheapest={result.cheapest === "zomato"}
-                  maxPrice={maxPrice}
-                />
-                <PriceCard
-                  name="Swiggy"
-                  logo="https://upload.wikimedia.org/wikipedia/commons/1/13/Swiggy_logo.png"
-                  price={result.swiggy}
-                  time={result.swiggyTime}
-                  cheapest={result.cheapest === "swiggy"}
-                  maxPrice={maxPrice}
-                />
+          <img
+            src={item.image}
+            alt={item.name}
+            className="w-full h-32 object-cover rounded-xl mb-3"
+          />
 
-                <div
-                  className={`mt-6 p-4 rounded-xl flex justify-center ${
-                    darkMode
-                      ? "bg-white/10 border border-white/20"
-                      : "bg-slate-100 border border-slate-300"
-                  }`}
-                >
-                  <BarChart width={300} height={180} data={chartData}>
-                    <XAxis dataKey="name" stroke="#475569" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#475569" tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="price" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </div>
-              </motion.div>
-            );
-          })()}
+          <div className="text-sm font-medium mb-1">{item.name}</div>
+
+          <div className="text-lg font-bold text-blue-500">
+            ₹{item.price}
+          </div>
+
+          <div className="text-xs opacity-80 mb-2">
+            ⏱ {item.time} mins
+          </div>
+
+          <a
+            href={item.url}
+            target="_blank"
+            className="block text-center bg-green-500 text-white py-1 rounded-lg"
+          >
+            Order Now
+          </a>
+        </div>
+      );
+    })}
+  </div>
+)}
         </div>
         {/* ── END CENTER CARD ── */}
 

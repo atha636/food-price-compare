@@ -318,6 +318,70 @@ return result;
 
   }
 };
+
+// ==============================
+// GROCERY FETCH (SIMULATION FOR NOW)
+// ==============================
+
+const fetchZepto = async (item) => {
+
+  return [
+    {
+      name: `${item} (Zepto Fresh)`,
+      price: 48,
+      time: 10,
+      rating: 4.4,
+      image: `https://source.unsplash.com/600x400/?${item}`,
+      url: "https://www.zeptonow.com/"
+    }
+  ];
+
+};
+
+const fetchInstamart = async (item) => {
+
+  return [
+    {
+      name: `${item} (Instamart)`,
+      price: 52,
+      time: 14,
+      rating: 4.3,
+      image: `https://source.unsplash.com/600x400/?${item}`,
+      url: "https://www.swiggy.com/instamart"
+    }
+  ];
+
+};
+
+const fetchBlinkit = async (item) => {
+
+  return [
+    {
+      name: `${item} (Blinkit)`,
+      price: 46,
+      time: 9,
+      rating: 4.5,
+      image: `https://source.unsplash.com/600x400/?${item}`,
+      url: "https://blinkit.com/"
+    }
+  ];
+
+};
+
+const fetchJioMart = async (item) => {
+
+  return [
+    {
+      name: `${item} (JioMart)`,
+      price: 50,
+      time: 25,
+      rating: 4.2,
+      image: `https://source.unsplash.com/600x400/?${item}`,
+      url: "https://www.jiomart.com/"
+    }
+  ];
+
+};
 /* ==============================
    ROUTES
 ============================== */
@@ -761,24 +825,24 @@ if (zomatoList.length === 0) {
 
 }
 
-    // Grocery & Ride fallback (your old logic)
+    if (serviceType === "grocery") {
 
-    let zomatoPrice = Math.floor(200 + Math.random() * 200);
-    let swiggyPrice = Math.floor(180 + Math.random() * 200);
-    let zomatoTime = Math.floor(10 + Math.random() * 10);
-    let swiggyTime = Math.floor(8 + Math.random() * 12);
+  const zeptoList = await fetchZepto(item);
+  const instamartList = await fetchInstamart(item);
+  const blinkitList = await fetchBlinkit(item);
+  const jiomartList = await fetchJioMart(item);
 
-    res.json({
-      item,
-      city,
-      serviceType,
-      zomato: zomatoPrice,
-      swiggy: swiggyPrice,
-      zomatoTime,
-      swiggyTime,
-      cheapest: zomatoPrice < swiggyPrice ? "zomato" : "swiggy",
-      fastest: zomatoTime < swiggyTime ? "zomato" : "swiggy",
-    });
+  return res.json({
+    serviceType,
+    item,
+    city,
+    zeptoList,
+    instamartList,
+    blinkitList,
+    jiomartList
+  });
+
+}
 
   } catch (err) {
 
