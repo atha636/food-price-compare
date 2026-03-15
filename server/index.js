@@ -323,24 +323,65 @@ return result;
 // GROCERY PRODUCT DETECTION
 // ==============================
 
-const detectProduct = (item) => {
+// ==============================
+// SMART GROCERY PRODUCT DETECTOR
+// ==============================
 
-  const text = item.toLowerCase();
+const groceryProducts = {
 
-  if (text.includes("milk")) return "milk";
-  if (text.includes("bread")) return "bread";
-  if (text.includes("rice")) return "rice";
-  if (text.includes("egg")) return "eggs";
-  if (text.includes("potato")) return "potato";
-  if (text.includes("onion")) return "onion";
-  if (text.includes("tomato")) return "tomato";
-  if (text.includes("apple")) return "apple";
-  if (text.includes("banana")) return "banana";
-  if (text.includes("cheese")) return "cheese";
-  if (text.includes("butter")) return "butter";
-  if (text.includes("paneer")) return "paneer";
+  milk: ["milk", "dairy milk", "amul milk", "toned milk", "full cream milk"],
 
-  return item; // fallback
+  bread: ["bread", "brown bread", "white bread", "sandwich bread"],
+
+  rice: ["rice", "basmati rice", "brown rice"],
+
+  eggs: ["egg", "eggs", "farm eggs"],
+
+  potato: ["potato", "aloo"],
+
+  onion: ["onion", "red onion"],
+
+  tomato: ["tomato", "tamatar"],
+
+  apple: ["apple", "red apple", "green apple"],
+
+  banana: ["banana", "kela"],
+
+  cheese: ["cheese", "cheddar cheese", "cheese slice"],
+
+  butter: ["butter", "amul butter"],
+
+  paneer: ["paneer", "cottage cheese"],
+
+  yogurt: ["yogurt", "curd", "dahi"],
+
+  sugar: ["sugar", "white sugar"],
+
+  salt: ["salt", "tata salt"],
+
+  oil: ["oil", "cooking oil", "sunflower oil", "mustard oil"]
+
+};
+
+const detectProduct = (input) => {
+
+  const text = input.toLowerCase();
+
+  for (const product in groceryProducts) {
+
+    const keywords = groceryProducts[product];
+
+    for (const keyword of keywords) {
+
+      if (text.includes(keyword)) {
+        return product;
+      }
+
+    }
+
+  }
+
+  return input.toLowerCase(); // fallback
 };
 // ==============================
 // GROCERY FETCH (SIMULATION FOR NOW)
