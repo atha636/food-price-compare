@@ -40,6 +40,18 @@ export default function App() {
   const [item, setItem] = useState("");
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
+  const [serviceType, setServiceType] = useState("food");
+  const isBasketMode =
+  serviceType === "grocery" &&
+  result?.products &&
+  result.products.length > 1;
+  
+  const basketWinner =
+isBasketMode
+? Object.entries(result.totals)
+.reduce((a,b)=>a[1] < b[1] ? a : b)[0]
+: null;
+
   const [loading, setLoading] = useState(false);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [pendingCompare, setPendingCompare] = useState(false);
@@ -55,7 +67,7 @@ const [authError, setAuthError] = useState("");
   const [insights, setInsights] = useState(null);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
-  const [serviceType, setServiceType] = useState("food");
+  
   const location = useLocation();
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [mobilePlatform, setMobilePlatform] = useState("zomato");
@@ -653,7 +665,7 @@ element={<Settings theme={theme} setTheme={setTheme} />}
                 : "bg-gradient-to-br from-slate-100 via-white to-blue-50"
             }`}
           >
-      {(winner || groceryWinner) && (
+      {(winner || groceryWinner || basketWinner) && (
   <motion.div
     initial={{ opacity: 0, y: -20, scale: 0.9 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -664,10 +676,12 @@ element={<Settings theme={theme} setTheme={setTheme} />}
       className="px-5 py-2 rounded-full shadow-2xl text-sm font-semibold backdrop-blur-md border bg-green-500/20 text-green-300 border-green-400/30"
     >
       🏆 {winner
-        ? winner === "zomato"
-          ? "Zomato Wins"
-          : "Swiggy Wins"
-        : `${groceryWinner.charAt(0).toUpperCase() + groceryWinner.slice(1)} Wins`}
+  ? winner === "zomato"
+    ? "Zomato Wins"
+    : "Swiggy Wins"
+  : basketWinner
+  ? `${basketWinner.charAt(0).toUpperCase() + basketWinner.slice(1)} Basket Cheapest`
+  : `${groceryWinner.charAt(0).toUpperCase() + groceryWinner.slice(1)} Wins`}
     </div>
   </motion.div>
 )}
@@ -808,7 +822,7 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
               </div>
             </motion.div>
           )}{/* Grocery Insight bar */}
-{serviceType === "grocery" && result && (
+{serviceType === "grocery" && result && !isBasketMode && (
   <motion.div
     initial={{ opacity: 0, y: -10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -948,7 +962,7 @@ const savings = mostExpensive.item.price - cheapest.item.price;
 
         {/* Zomato Panel */}
          {/* Results for non-food */}
-        {serviceType === "grocery" && result && (
+        {serviceType === "grocery" && result && !isBasketMode && (
   <div
     className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
       darkMode
@@ -1400,6 +1414,85 @@ Order Now
           {/* Error */}
           {error && <p className="text-red-500 text-center mt-4">{error}</p>}
 
+          {isBasketMode && (
+
+<div className={`mt-6 p-5 rounded-2xl ${
+darkMode
+? "bg-white/5 border border-white/10"
+: "bg-slate-100"
+}`}>
+
+<h3 className="text-lg font-semibold mb-3">
+🛒 Basket Comparison
+</h3>
+
+<div className="space-y-2">
+
+{Object.entries(result.totals).map(([platform,price]) => (
+
+<div
+key={platform}
+className={`flex justify-between p-3 rounded-lg ${
+basketWinner === platform
+? "bg-green-500/20 border border-green-400 font-semibold"
+: "bg-white/10"
+}`}
+>
+
+<span className="capitalize">
+{platform}
+</span>
+
+<span className="font-bold">
+₹{price}
+</span>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+)}
+
+{isBasketMode && (
+
+<div className="mt-4">
+
+<h4 className="text-sm mb-2 opacity-80">
+Basket Items
+</h4>
+
+<div className="space-y-2">
+
+{result.basket.map((item,index)=>(
+<div
+key={index}
+className="flex justify-between text-sm p-2 bg-white/10 rounded"
+>
+
+<span>{item.product}</span>
+
+<div className="flex gap-3">
+
+<span>Z ₹{item.zepto}</span>
+<span>B ₹{item.blinkit}</span>
+<span>I ₹{item.instamart}</span>
+<span>J ₹{item.jiomart}</span>
+
+</div>
+
+</div>
+))}
+
+</div>
+
+</div>
+
+)}
+
          
           
         </div>
@@ -1407,7 +1500,7 @@ Order Now
 
         {/* Swiggy Panel */}
          {/* Results for non-food */}
-        {serviceType === "grocery" && result && (
+        {serviceType === "grocery" && result && !isBasketMode && (
   <div
     className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
       darkMode

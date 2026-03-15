@@ -381,6 +381,36 @@ const detectProduct = (input) => {
 
   return input.toLowerCase(); // fallback
 };
+// ==============================
+// MULTI ITEM DETECTION
+// ==============================
+
+const detectMultipleProducts = (input) => {
+
+  const words = input
+  .toLowerCase()
+  .replace(/,/g, " ")
+  .split(/\s+/);
+
+  const detected = new Set();
+
+  words.forEach(word => {
+
+    const product = detectProduct(word);
+
+    if (product && product !== word) {
+      detected.add(product);
+    }
+
+  });
+
+  if (detected.size === 0) {
+    detected.add(detectProduct(input));
+  }
+
+  return Array.from(detected);
+
+};
 
 // ==============================
 // GROCERY CATEGORY MAP
@@ -849,6 +879,67 @@ res.status(500).json({ message:"Server error" });
 }
 
 });
+
+
+// ==============================
+// BUILD GROCERY BASKET
+// ==============================
+
+const buildBasket = async (products) => {
+
+  let zeptoTotal = 0;
+  let blinkitTotal = 0;
+  let instamartTotal = 0;
+  let jiomartTotal = 0;
+
+  const basket = [];
+
+  for (const product of products) {
+
+    const [zepto, blinkit, instamart, jiomart] =
+await Promise.all([
+  fetchZepto(product),
+  fetchBlinkit(product),
+  fetchInstamart(product),
+  fetchJioMart(product)
+]);
+
+    zeptoTotal += zepto[0].price;
+    blinkitTotal += blinkit[0].price;
+    instamartTotal += instamart[0].price;
+    jiomartTotal += jiomart[0].price;
+
+    const category = detectCategory(product);
+
+basket.push({
+  product,
+  category,
+  zepto: zepto[0].price,
+  blinkit: blinkit[0].price,
+  instamart: instamart[0].price,
+  jiomart: jiomart[0].price
+});
+
+  }
+
+  const totals = {
+  zepto: zeptoTotal,
+  blinkit: blinkitTotal,
+  instamart: instamartTotal,
+  jiomart: jiomartTotal
+};
+
+const basketWinner = Object.entries(totals)
+.reduce((a,b)=>a[1] < b[1] ? a : b)[0];
+
+return {
+  basket,
+  totals,
+  basketWinner
+};
+  
+
+};
 /* ==============================
    COMPARE ROUTE (Your Existing Logic)
 ============================== */
@@ -922,23 +1013,17 @@ if (zomatoList.length === 0) {
 
     if (serviceType === "grocery") {
 
-  const product = detectProduct(item);
-  const category = detectCategory(product);
+  const products = detectMultipleProducts(item);
 
-  const zeptoList = await fetchZepto(product);
-  const instamartList = await fetchInstamart(product);
-  const blinkitList = await fetchBlinkit(product);
-  const jiomartList = await fetchJioMart(product);
+  const basketData = await buildBasket(products);
 
-  return res.json({
+return res.json({
   serviceType,
-  item: product,
-  category,
   city,
-  zeptoList,
-  instamartList,
-  blinkitList,
-  jiomartList
+  products,
+  basket: basketData.basket,
+  totals: basketData.totals,
+  basketWinner: basketData.basketWinner
 });
 
 }
