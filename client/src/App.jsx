@@ -41,10 +41,10 @@ export default function App() {
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
   const [serviceType, setServiceType] = useState("food");
-  const isBasketMode =
+ const isBasketMode =
   serviceType === "grocery" &&
-  result?.products &&
-  result.products.length > 1;
+  result?.basket &&
+  result.basket.length > 0;
   
   const basketWinner =
 isBasketMode
@@ -964,7 +964,7 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
       <div className="relative z-10 flex flex-col lg:flex-row items-start justify-center gap-8 px-4 lg:px-8 py-6">
 
         {/* ✅ FIX: Left Grocery Panel — Zepto & Blinkit from result.basket[0] */}
-        {serviceType === "grocery" && result && !isBasketMode && (
+        {serviceType === "grocery" && result && (
   <div
     className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
       darkMode
@@ -1419,7 +1419,7 @@ Order Now
 
           {isBasketMode && (
 
-<div className={`mt-6 p-5 rounded-2xl ${
+<div className={`mt-6 p-5 rounded-2xl max-w-md mx-auto ${
 darkMode
 ? "bg-white/5 border border-white/10"
 : "bg-slate-100"
@@ -1502,7 +1502,7 @@ className="flex justify-between text-sm p-2 bg-white/10 rounded"
         {/* ── END CENTER CARD ── */}
 
         {/* ✅ FIX: Right Grocery Panel — Instamart & JioMart from result.basket[0] */}
-        {serviceType === "grocery" && result && !isBasketMode && (
+        {serviceType === "grocery" && result && (
   <div
     className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
       darkMode
