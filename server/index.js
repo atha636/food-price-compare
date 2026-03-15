@@ -387,26 +387,22 @@ const detectProduct = (input) => {
 
 const detectMultipleProducts = (input) => {
 
-  const words = input
-  .toLowerCase()
-  .replace(/,/g, " ")
-  .split(/\s+/);
+  const items = input
+    .toLowerCase()
+    .split(/[,\s]+/)
+    .filter(Boolean);
 
   const detected = new Set();
 
-  words.forEach(word => {
+  items.forEach(item => {
 
-    const product = detectProduct(word);
+    const product = detectProduct(item);
 
-    if (product && product !== word) {
+    if (groceryProducts[product]) {
       detected.add(product);
     }
 
   });
-
-  if (detected.size === 0) {
-    detected.add(detectProduct(input));
-  }
 
   return Array.from(detected);
 
