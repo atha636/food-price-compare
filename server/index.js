@@ -320,6 +320,29 @@ return result;
 };
 
 // ==============================
+// GROCERY PRODUCT DETECTION
+// ==============================
+
+const detectProduct = (item) => {
+
+  const text = item.toLowerCase();
+
+  if (text.includes("milk")) return "milk";
+  if (text.includes("bread")) return "bread";
+  if (text.includes("rice")) return "rice";
+  if (text.includes("egg")) return "eggs";
+  if (text.includes("potato")) return "potato";
+  if (text.includes("onion")) return "onion";
+  if (text.includes("tomato")) return "tomato";
+  if (text.includes("apple")) return "apple";
+  if (text.includes("banana")) return "banana";
+  if (text.includes("cheese")) return "cheese";
+  if (text.includes("butter")) return "butter";
+  if (text.includes("paneer")) return "paneer";
+
+  return item; // fallback
+};
+// ==============================
 // GROCERY FETCH (SIMULATION FOR NOW)
 // ==============================
 
@@ -827,14 +850,16 @@ if (zomatoList.length === 0) {
 
     if (serviceType === "grocery") {
 
-  const zeptoList = await fetchZepto(item);
-  const instamartList = await fetchInstamart(item);
-  const blinkitList = await fetchBlinkit(item);
-  const jiomartList = await fetchJioMart(item);
+  const product = detectProduct(item);
+
+  const zeptoList = await fetchZepto(product);
+  const instamartList = await fetchInstamart(product);
+  const blinkitList = await fetchBlinkit(product);
+  const jiomartList = await fetchJioMart(product);
 
   return res.json({
     serviceType,
-    item,
+    item: product,
     city,
     zeptoList,
     instamartList,
