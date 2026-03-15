@@ -821,8 +821,9 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
                 })()}
               </div>
             </motion.div>
-          )}{/* Grocery Insight bar */}
-{serviceType === "grocery" && result && !isBasketMode && (
+          )}
+          {/* Grocery Insight bar */}
+{serviceType === "grocery" && result && (
   <motion.div
     initial={{ opacity: 0, y: -10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -838,15 +839,16 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
     >
       {(() => {
         // ✅ FIX: read from result.basket[0] instead of non-existent list fields
-        const basketItem = result.basket?.[0];
-        if (!basketItem) return null;
+        const itemCount = result.basket?.length || 0;
+        const totals = result.totals;
+if (!totals) return null;
 
-        const platforms = [
-          { name: "Zepto", price: basketItem.zepto, time: 10 },
-          { name: "Blinkit", price: basketItem.blinkit, time: 9 },
-          { name: "Instamart", price: basketItem.instamart, time: 14 },
-          { name: "JioMart", price: basketItem.jiomart, time: 25 }
-        ].filter(p => p.price != null);
+const platforms = [
+  { name: "Zepto", price: totals.zepto, time: 10 },
+  { name: "Blinkit", price: totals.blinkit, time: 9 },
+  { name: "Instamart", price: totals.instamart, time: 14 },
+  { name: "JioMart", price: totals.jiomart, time: 25 }
+];
 
         if (platforms.length < 2) return null;
 
@@ -866,6 +868,9 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
 
         return (
           <div className="flex flex-col items-center gap-1">
+            <span className="text-xs opacity-80">
+🛒 Basket ({itemCount} items)
+</span>
 
             <span>
   🔥 <span
@@ -1001,27 +1006,78 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
             {platform.name}
           </span>
         </div>
-        <img
-          src={
-            groceryImages[result.basket?.[0]?.product?.toLowerCase().split(" ")[0]] ||
-            "https://images.unsplash.com/photo-1542838132-92c53300491e"
-          }
-          className="w-full h-36 object-cover rounded-lg mb-2"
-        />
-        <div className="flex items-center justify-between mb-1">
-          <span
-            className={`${categoryColors[result.basket?.[0]?.category || "other"]} text-white text-xs px-2 py-1 rounded`}
-          >
-            {result.basket?.[0]?.category || "other"}
-          </span>
-        </div>
-        <div className="font-semibold text-sm">
-          {result.basket?.[0]?.product}
-        </div>
-        <div className="flex justify-between text-sm mt-1">
-          <span>₹{platform.price}</span>
-          <span>⏱ {platform.time} mins</span>
-        </div>
+        <div
+className={`${
+result.basket?.length > 1
+? "flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
+: "flex justify-center"
+}`}
+>
+
+{result.basket?.map((item, i) => {
+
+const imageKey = item.product.toLowerCase().split(" ")[0]
+
+return (
+
+<div
+key={i}
+className={`${
+result.basket?.length > 1
+? "min-w-[150px]"
+: "w-full"
+} bg-white/5 rounded-xl p-2 flex-shrink-0`}
+>
+
+<a
+href={
+platform.name === "Zepto"
+? `https://www.zeptonow.com/search?query=${item.product}`
+: platform.name === "Blinkit"
+? `https://blinkit.com/s/?q=${item.product}`
+: platform.name === "Instamart"
+? `https://www.swiggy.com/instamart/search?query=${item.product}`
+: `https://www.jiomart.com/search/${item.product}`
+}
+target="_blank"
+rel="noopener noreferrer"
+>
+
+<img
+src={groceryImages[imageKey]}
+className="w-full h-24 object-cover rounded-lg mb-2 hover:scale-105 transition cursor-pointer"
+/>
+
+</a>
+
+<span
+className={`${categoryColors[item.category || "other"]} text-white text-xs px-2 py-1 rounded`}
+>
+{item.category}
+</span>
+
+<div className="font-semibold text-xs mt-1 capitalize">
+{item.product}
+</div>
+
+<div className="flex justify-between text-xs mt-1">
+<span>
+₹{platform.name === "Zepto"
+? item.zepto
+: item.blinkit}
+</span>
+
+<span>⏱ {platform.time}m</span>
+</div>
+
+</div>
+
+)
+
+})}
+
+</div>
+        
         <a
           href={platform.url}
           target="_blank"
@@ -1470,24 +1526,25 @@ Basket Items
 
 <div className="space-y-2">
 
-{result.basket.map((item,index)=>(
-<div
-key={index}
-className="flex justify-between text-sm p-2 bg-white/10 rounded"
->
+{result.basket.map((item, index) => (
+  <div
+    key={index}
+    className="flex justify-between items-center text-sm p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition"
+  >
+    
+    <span className="font-medium capitalize">
+      {item.product}
+    </span>
 
-<span>{item.product}</span>
+    <div className="flex gap-4 text-xs font-semibold">
 
-<div className="flex gap-3">
+      <span className="text-purple-400">🟣 Z ₹{item.zepto}</span>
+<span className="text-yellow-400">🟡 B ₹{item.blinkit}</span>
+<span className="text-orange-400">🟠 I ₹{item.instamart}</span>
+<span className="text-blue-400">🔵 J ₹{item.jiomart}</span>
+    </div>
 
-<span>Z ₹{item.zepto}</span>
-<span>B ₹{item.blinkit}</span>
-<span>I ₹{item.instamart}</span>
-<span>J ₹{item.jiomart}</span>
-
-</div>
-
-</div>
+  </div>
 ))}
 
 </div>
@@ -1539,27 +1596,78 @@ className="flex justify-between text-sm p-2 bg-white/10 rounded"
             {platform.name}
           </span>
         </div>
-        <img
-          src={
-            groceryImages[result.basket?.[0]?.product?.toLowerCase().split(" ")[0]] ||
-            "https://images.unsplash.com/photo-1542838132-92c53300491e"
-          }
-          className="w-full h-36 object-cover rounded-lg mb-2"
-        />
-        <div className="flex items-center justify-between mb-1">
-          <span
-            className={`${categoryColors[result.basket?.[0]?.category || "other"]} text-white text-xs px-2 py-1 rounded`}
-          >
-            {result.basket?.[0]?.category || "other"}
-          </span>
-        </div>
-        <div className="font-semibold text-sm">
-          {result.basket?.[0]?.product}
-        </div>
-        <div className="flex justify-between text-sm mt-1">
-          <span>₹{platform.price}</span>
-          <span>⏱ {platform.time} mins</span>
-        </div>
+        <div
+className={`${
+result.basket?.length > 1
+? "flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
+: "flex justify-center"
+}`}
+>
+
+{result.basket?.map((item, i) => {
+
+const imageKey = item.product.toLowerCase().split(" ")[0]
+
+return (
+
+<div
+key={i}
+className={`${
+result.basket?.length > 1
+? "min-w-[150px]"
+: "w-full"
+} bg-white/5 rounded-xl p-2 flex-shrink-0`}
+>
+
+<a
+href={
+platform.name === "Zepto"
+? `https://www.zeptonow.com/search?query=${item.product}`
+: platform.name === "Blinkit"
+? `https://blinkit.com/s/?q=${item.product}`
+: platform.name === "Instamart"
+? `https://www.swiggy.com/instamart/search?query=${item.product}`
+: `https://www.jiomart.com/search/${item.product}`
+}
+target="_blank"
+rel="noopener noreferrer"
+>
+
+<img
+src={groceryImages[imageKey]}
+className="w-full h-24 object-cover rounded-lg mb-2 hover:scale-105 transition cursor-pointer"
+/>
+
+</a>
+
+<span
+className={`${categoryColors[item.category || "other"]} text-white text-xs px-2 py-1 rounded`}
+>
+{item.category}
+</span>
+
+<div className="font-semibold text-xs mt-1 capitalize">
+{item.product}
+</div>
+
+<div className="flex justify-between text-xs mt-1">
+<span>
+₹{platform.name === "Zepto"
+? item.zepto
+: item.blinkit}
+</span>
+
+<span>⏱ {platform.time}m</span>
+</div>
+
+</div>
+
+)
+
+})}
+
+</div>
+        
         <a
           href={platform.url}
           target="_blank"
