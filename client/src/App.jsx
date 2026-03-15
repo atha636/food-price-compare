@@ -70,6 +70,14 @@ const [authError, setAuthError] = useState("");
   onion: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb",
   tomato: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337"
 };
+const categoryColors = {
+  dairy: "bg-blue-500",
+  bakery: "bg-yellow-500",
+  fruits: "bg-red-500",
+  vegetables: "bg-green-500",
+  pantry: "bg-orange-500",
+  other: "bg-gray-500"
+};
   const [theme, setTheme] = useState(
   localStorage.getItem("theme") || "system"
 );
@@ -979,9 +987,19 @@ const savings = mostExpensive.item.price - cheapest.item.price;
   className="w-full h-36 object-cover rounded-lg mb-2"
 />
 
-          <div className="font-semibold text-sm">
-            {item.name}
-          </div>
+          <div className="flex items-center justify-between mb-1">
+
+<span
+className={`${categoryColors[result?.category || "other"]} text-white text-xs px-2 py-1 rounded`}
+>
+{result?.category || "other"}
+</span>
+
+</div>
+
+<div className="font-semibold text-sm">
+{item.name}
+</div>
 
           <div className="flex justify-between text-sm mt-1">
             <span>₹{item.price}</span>
@@ -1427,10 +1445,19 @@ Order Now
   className="w-full h-36 object-cover rounded-lg mb-2"
 />
 
-          <div className="font-semibold text-sm">
-            {item.name}
-          </div>
+          <div className="flex items-center justify-between mb-1">
 
+<span
+className={`${categoryColors[result?.category || "other"]} text-white text-xs px-2 py-1 rounded`}
+>
+{result?.category || "other"}
+</span>
+
+</div>
+
+<div className="font-semibold text-sm">
+{item.name}
+</div>
           <div className="flex justify-between text-sm mt-1">
             <span>₹{item.price}</span>
             <span>⏱ {item.time} mins</span>

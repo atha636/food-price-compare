@@ -319,9 +319,7 @@ return result;
   }
 };
 
-// ==============================
-// GROCERY PRODUCT DETECTION
-// ==============================
+
 
 // ==============================
 // SMART GROCERY PRODUCT DETECTOR
@@ -382,6 +380,39 @@ const detectProduct = (input) => {
   }
 
   return input.toLowerCase(); // fallback
+};
+
+// ==============================
+// GROCERY CATEGORY MAP
+// ==============================
+
+const groceryCategories = {
+
+  dairy: ["milk", "paneer", "butter", "cheese", "yogurt"],
+
+  bakery: ["bread"],
+
+  fruits: ["apple", "banana"],
+
+  vegetables: ["onion", "potato", "tomato"],
+
+  pantry: ["rice", "sugar", "salt", "oil"]
+
+};
+
+const detectCategory = (product) => {
+
+  for (const category in groceryCategories) {
+
+    const products = groceryCategories[category];
+
+    if (products.includes(product)) {
+      return category;
+    }
+
+  }
+
+  return "other";
 };
 // ==============================
 // GROCERY FETCH (SIMULATION FOR NOW)
@@ -892,6 +923,7 @@ if (zomatoList.length === 0) {
     if (serviceType === "grocery") {
 
   const product = detectProduct(item);
+  const category = detectCategory(product);
 
   const zeptoList = await fetchZepto(product);
   const instamartList = await fetchInstamart(product);
@@ -899,14 +931,15 @@ if (zomatoList.length === 0) {
   const jiomartList = await fetchJioMart(product);
 
   return res.json({
-    serviceType,
-    item: product,
-    city,
-    zeptoList,
-    instamartList,
-    blinkitList,
-    jiomartList
-  });
+  serviceType,
+  item: product,
+  category,
+  city,
+  zeptoList,
+  instamartList,
+  blinkitList,
+  jiomartList
+});
 
 }
 
