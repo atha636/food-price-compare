@@ -837,29 +837,32 @@ const priceDifference = Math.abs(   // ← this line already exists, keep it
       }`}
     >
       {(() => {
+        // ✅ FIX: read from result.basket[0] instead of non-existent list fields
+        const basketItem = result.basket?.[0];
+        if (!basketItem) return null;
 
         const platforms = [
-  { name: "Zepto", item: result.zeptoList?.[0] },
-  { name: "Blinkit", item: result.blinkitList?.[0] },
-  { name: "Instamart", item: result.instamartList?.[0] },
-  { name: "JioMart", item: result.jiomartList?.[0] }
-].filter(p => p.item);
+          { name: "Zepto", price: basketItem.zepto, time: 10 },
+          { name: "Blinkit", price: basketItem.blinkit, time: 9 },
+          { name: "Instamart", price: basketItem.instamart, time: 14 },
+          { name: "JioMart", price: basketItem.jiomart, time: 25 }
+        ].filter(p => p.price != null);
 
         if (platforms.length < 2) return null;
 
-        const cheapest = platforms.reduce((a,b)=>
-  a.item.price < b.item.price ? a : b
-);
+        const cheapest = platforms.reduce((a, b) =>
+          a.price < b.price ? a : b
+        );
 
-const fastest = platforms.reduce((a,b)=>
-  a.item.time < b.item.time ? a : b
-);
+        const fastest = platforms.reduce((a, b) =>
+          a.time < b.time ? a : b
+        );
 
-const mostExpensive = platforms.reduce((a,b)=>
-  a.item.price > b.item.price ? a : b
-);
+        const mostExpensive = platforms.reduce((a, b) =>
+          a.price > b.price ? a : b
+        );
 
-const savings = mostExpensive.item.price - cheapest.item.price;
+        const savings = mostExpensive.price - cheapest.price;
 
         return (
           <div className="flex flex-col items-center gap-1">
@@ -878,7 +881,7 @@ const savings = mostExpensive.item.price - cheapest.item.price;
   >
     {cheapest.name}
   </span>{" "}
-  best price ₹{cheapest.item.price}
+  best price ₹{cheapest.price}
 </span>
 
 <span className="text-xs opacity-80">
@@ -895,7 +898,7 @@ const savings = mostExpensive.item.price - cheapest.item.price;
   >
     {fastest.name}
   </span>{" "}
-  fastest delivery {fastest.item.time} mins
+  fastest delivery {fastest.time} mins
 </span>
 
             <span className="text-xs opacity-80">
@@ -960,8 +963,7 @@ const savings = mostExpensive.item.price - cheapest.item.price;
       {/* ── THREE-COLUMN ROW: Zomato | Center Card | Swiggy ── */}
       <div className="relative z-10 flex flex-col lg:flex-row items-start justify-center gap-8 px-4 lg:px-8 py-6">
 
-        {/* Zomato Panel */}
-         {/* Results for non-food */}
+        {/* ✅ FIX: Left Grocery Panel — Zepto & Blinkit from result.basket[0] */}
         {serviceType === "grocery" && result && !isBasketMode && (
   <div
     className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
@@ -971,67 +973,68 @@ const savings = mostExpensive.item.price - cheapest.item.price;
     }`}
   >
     <h3 className="text-center font-bold mb-4 text-purple-400">
-  Grocery Stores
-</h3>
+      Grocery Stores
+    </h3>
 
-    {[ 
-      { name: "Zepto", data: result.zeptoList },
-      { name: "Blinkit", data: result.blinkitList }
-    ].map((platform) =>
-      platform.data?.map((item, index) => (
-        <div
-          key={platform.name + index}
-          className={`mb-4 p-3 rounded-xl border transition-all hover:scale-105 ${
-  platform.name === "Zepto"
-    ? "border-purple-400 shadow-purple-400/30"
-    : "border-yellow-400 shadow-yellow-400/30"
-}`}
-
-        >
+    {[
+      {
+        name: "Zepto",
+        price: result.basket?.[0]?.zepto,
+        time: 10,
+        url: "https://www.zeptonow.com/",
+        borderClass: "border-purple-400 shadow-purple-400/30"
+      },
+      {
+        name: "Blinkit",
+        price: result.basket?.[0]?.blinkit,
+        time: 9,
+        url: "https://blinkit.com/",
+        borderClass: "border-yellow-400 shadow-yellow-400/30"
+      }
+    ].map((platform, index) => (
+      <div
+        key={platform.name + index}
+        className={`mb-4 p-3 rounded-xl border transition-all hover:scale-105 ${platform.borderClass}`}
+      >
         <div className="flex items-center gap-2 mb-2">
-  <span className="text-xs font-semibold opacity-80">
-    {platform.name}
-  </span>
-</div>
-         <img
-  src={
-    groceryImages[item.name.toLowerCase().split(" ")[0]] ||
-    "https://images.unsplash.com/photo-1542838132-92c53300491e"
-  }
-  className="w-full h-36 object-cover rounded-lg mb-2"
-/>
-
-          <div className="flex items-center justify-between mb-1">
-
-<span
-className={`${categoryColors[result?.category || "other"]} text-white text-xs px-2 py-1 rounded`}
->
-{result?.category || "other"}
-</span>
-
-</div>
-
-<div className="font-semibold text-sm">
-{item.name}
-</div>
-
-          <div className="flex justify-between text-sm mt-1">
-            <span>₹{item.price}</span>
-            <span>⏱ {item.time} mins</span>
-          </div>
-
-          <a
-            href={item.url}
-            target="_blank"
-            className="block mt-2 text-center bg-green-500 text-white py-1 rounded-lg"
-          >
-            Order
-          </a>
+          <span className="text-xs font-semibold opacity-80">
+            {platform.name}
+          </span>
         </div>
-      ))
-    )}
+        <img
+          src={
+            groceryImages[result.basket?.[0]?.product?.toLowerCase().split(" ")[0]] ||
+            "https://images.unsplash.com/photo-1542838132-92c53300491e"
+          }
+          className="w-full h-36 object-cover rounded-lg mb-2"
+        />
+        <div className="flex items-center justify-between mb-1">
+          <span
+            className={`${categoryColors[result.basket?.[0]?.category || "other"]} text-white text-xs px-2 py-1 rounded`}
+          >
+            {result.basket?.[0]?.category || "other"}
+          </span>
+        </div>
+        <div className="font-semibold text-sm">
+          {result.basket?.[0]?.product}
+        </div>
+        <div className="flex justify-between text-sm mt-1">
+          <span>₹{platform.price}</span>
+          <span>⏱ {platform.time} mins</span>
+        </div>
+        <a
+          href={platform.url}
+          target="_blank"
+          className="block mt-2 text-center bg-green-500 text-white py-1 rounded-lg"
+        >
+          Order
+        </a>
+      </div>
+    ))}
   </div>
 )}
+
+        {/* Zomato Panel */}
         {serviceType === "food" && result?.zomatoList && (
           <div
             className={`${mobilePlatform === "zomato" ? "block" : "hidden"} 
@@ -1498,8 +1501,7 @@ className="flex justify-between text-sm p-2 bg-white/10 rounded"
         </div>
         {/* ── END CENTER CARD ── */}
 
-        {/* Swiggy Panel */}
-         {/* Results for non-food */}
+        {/* ✅ FIX: Right Grocery Panel — Instamart & JioMart from result.basket[0] */}
         {serviceType === "grocery" && result && !isBasketMode && (
   <div
     className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
@@ -1508,66 +1510,69 @@ className="flex justify-between text-sm p-2 bg-white/10 rounded"
         : "bg-white shadow-md"
     }`}
   >
-   <h3 className="text-center font-bold mb-4 text-blue-400">
-  More Stores
-</h3>
+    <h3 className="text-center font-bold mb-4 text-blue-400">
+      More Stores
+    </h3>
 
-    {[ 
-      { name: "Instamart", data: result.instamartList },
-      { name: "JioMart", data: result.jiomartList }
-    ].map((platform) =>
-      platform.data?.map((item, index) => (
-        <div
-          key={platform.name + index}
-          className={`mb-4 p-3 rounded-xl border transition-all hover:scale-105 ${
-  platform.name === "Instamart"
-    ? "border-orange-400 shadow-orange-400/30"
-    : "border-blue-400 shadow-blue-400/30"
-}`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-  <span className="text-xs font-semibold opacity-80">
-    {platform.name}
-  </span>
-</div>
-          <img
-  src={
-    groceryImages[item.name.toLowerCase().split(" ")[0]] ||
-    "https://images.unsplash.com/photo-1542838132-92c53300491e"
-  }
-  className="w-full h-36 object-cover rounded-lg mb-2"
-/>
-
-          <div className="flex items-center justify-between mb-1">
-
-<span
-className={`${categoryColors[result?.category || "other"]} text-white text-xs px-2 py-1 rounded`}
->
-{result?.category || "other"}
-</span>
-
-</div>
-
-<div className="font-semibold text-sm">
-{item.name}
-</div>
-          <div className="flex justify-between text-sm mt-1">
-            <span>₹{item.price}</span>
-            <span>⏱ {item.time} mins</span>
-          </div>
-
-          <a
-            href={item.url}
-            target="_blank"
-            className="block mt-2 text-center bg-green-500 text-white py-1 rounded-lg"
-          >
-            Order
-          </a>
+    {[
+      {
+        name: "Instamart",
+        price: result.basket?.[0]?.instamart,
+        time: 14,
+        url: "https://www.swiggy.com/instamart",
+        borderClass: "border-orange-400 shadow-orange-400/30"
+      },
+      {
+        name: "JioMart",
+        price: result.basket?.[0]?.jiomart,
+        time: 25,
+        url: "https://www.jiomart.com/",
+        borderClass: "border-blue-400 shadow-blue-400/30"
+      }
+    ].map((platform, index) => (
+      <div
+        key={platform.name + index}
+        className={`mb-4 p-3 rounded-xl border transition-all hover:scale-105 ${platform.borderClass}`}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-semibold opacity-80">
+            {platform.name}
+          </span>
         </div>
-      ))
-    )}
+        <img
+          src={
+            groceryImages[result.basket?.[0]?.product?.toLowerCase().split(" ")[0]] ||
+            "https://images.unsplash.com/photo-1542838132-92c53300491e"
+          }
+          className="w-full h-36 object-cover rounded-lg mb-2"
+        />
+        <div className="flex items-center justify-between mb-1">
+          <span
+            className={`${categoryColors[result.basket?.[0]?.category || "other"]} text-white text-xs px-2 py-1 rounded`}
+          >
+            {result.basket?.[0]?.category || "other"}
+          </span>
+        </div>
+        <div className="font-semibold text-sm">
+          {result.basket?.[0]?.product}
+        </div>
+        <div className="flex justify-between text-sm mt-1">
+          <span>₹{platform.price}</span>
+          <span>⏱ {platform.time} mins</span>
+        </div>
+        <a
+          href={platform.url}
+          target="_blank"
+          className="block mt-2 text-center bg-green-500 text-white py-1 rounded-lg"
+        >
+          Order
+        </a>
+      </div>
+    ))}
   </div>
 )}
+
+        {/* Swiggy Panel */}
         {serviceType === "food" && result?.swiggyList && (
           <div
             className={`${mobilePlatform === "swiggy" ? "block" : "hidden"} 
