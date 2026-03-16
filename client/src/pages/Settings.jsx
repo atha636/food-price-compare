@@ -1,364 +1,586 @@
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Palette, User, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+/* ── Inject Fonts ── */
+const injectFonts = () => {
+  if (document.getElementById("st-fonts")) return;
+  const link = document.createElement("link");
+  link.id = "st-fonts";
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap";
+  document.head.appendChild(link);
+};
+
+/* ── Reusable Section Card ── */
+const Card = ({ children, style = {} }) => (
+  <div style={{
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "24px",
+    padding: "28px",
+    backdropFilter: "blur(20px)",
+    ...style,
+  }}>
+    {children}
+  </div>
+);
+
+/* ── Section Heading ── */
+const SectionHead = ({ icon: Icon, label, color }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
+    <div style={{
+      width: "34px", height: "34px",
+      background: `${color}18`,
+      border: `1px solid ${color}30`,
+      borderRadius: "10px",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <Icon size={16} color={color} />
+    </div>
+    <h2 style={{
+      fontFamily: "'Syne', sans-serif",
+      fontSize: "16px", fontWeight: 700,
+      color: label === "Danger Zone" ? color : "#f1f5f9",
+    }}>
+      {label}
+    </h2>
+  </div>
+);
+
+/* ── Styled Input ── */
+const Input = ({ label, ...props }) => {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{ marginBottom: "14px" }}>
+      {label && (
+        <label style={{
+          display: "block", fontSize: "11px", letterSpacing: "0.1em",
+          textTransform: "uppercase", color: "#475569",
+          marginBottom: "6px", fontFamily: "'DM Sans', sans-serif",
+        }}>
+          {label}
+        </label>
+      )}
+      <input
+        {...props}
+        onFocus={e => { setFocused(true); props.onFocus?.(e); }}
+        onBlur={e => { setFocused(false); props.onBlur?.(e); }}
+        style={{
+          width: "100%", boxSizing: "border-box",
+          padding: "13px 16px",
+          borderRadius: "14px",
+          border: `1px solid ${focused ? "rgba(96,165,250,0.5)" : "rgba(255,255,255,0.1)"}`,
+          background: focused ? "rgba(96,165,250,0.06)" : "rgba(255,255,255,0.04)",
+          color: "#f1f5f9",
+          fontSize: "14px",
+          fontFamily: "'DM Sans', sans-serif",
+          outline: "none",
+          transition: "all 0.2s ease",
+          boxShadow: focused ? "0 0 0 3px rgba(96,165,250,0.1)" : "none",
+        }}
+      />
+    </div>
+  );
+};
+
+/* ── Theme Button ── */
+const ThemeBtn = ({ icon, label, active, accent, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        flex: 1,
+        padding: "18px 12px",
+        borderRadius: "16px",
+        border: active ? `1px solid ${accent}50` : "1px solid rgba(255,255,255,0.08)",
+        background: active
+          ? `${accent}18`
+          : hovered ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
+        cursor: "pointer",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", gap: "10px",
+        transition: "all 0.2s ease",
+        transform: active ? "scale(1.04)" : hovered ? "scale(1.02)" : "scale(1)",
+        boxShadow: active ? `0 8px 24px ${accent}20` : "none",
+        position: "relative", overflow: "hidden",
+      }}
+    >
+      {active && (
+        <div style={{
+          position: "absolute", inset: 0,
+          background: `radial-gradient(circle at 50% 0%, ${accent}15, transparent 70%)`,
+          pointerEvents: "none",
+        }} />
+      )}
+      <span style={{ fontSize: "22px", lineHeight: 1 }}>{icon}</span>
+      <span style={{
+        fontSize: "12px", fontWeight: active ? 600 : 400,
+        color: active ? accent : "#64748b",
+        fontFamily: "'DM Sans', sans-serif",
+        letterSpacing: "0.04em",
+      }}>
+        {label}
+      </span>
+      {active && (
+        <div style={{
+          position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+          width: "30px", height: "2px",
+          background: accent, borderRadius: "2px 2px 0 0",
+        }} />
+      )}
+    </button>
+  );
+};
+
+/* ══════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════ */
 export default function Settings({ theme, setTheme }) {
-
-const [name,setName] = useState("");
-const [email,setEmail] = useState("");
-const [status, setStatus] = useState("");
-const [toast,setToast] = useState("");
-const token = localStorage.getItem("token");
-const [showDeleteModal, setShowDeleteModal] = useState(false);
-const [confirmText, setConfirmText] = useState("");
-
-useEffect(()=>{
-
-const fetchUser = async()=>{
-
-try{
-
-const res = await axios.get(
-"https://food-price-compare-production.up.railway.app/me",
-{
-headers:{
-Authorization:`Bearer ${token}`
-}
-}
-);
-
-setName(res.data.name);
-setEmail(res.data.email);
-
-}catch(err){
-console.log("Failed to load user");
-}
-
-};
-
-fetchUser();
-
-},[]);
-
-const updateProfile = async () => {
-
-const token = localStorage.getItem("token");
-
-try{
-
-const res = await axios.put(
-"https://food-price-compare-production.up.railway.app/update-profile",
-{ name,email },
-{
-headers:{
-Authorization:`Bearer ${token}`
-}
-}
-);
-
-
-setName(res.data.user.name);
-setEmail(res.data.user.email);
-
-setToast("Profile updated successfully");
-
-setTimeout(()=>{
-setToast("");
-},3000);
-
-}catch(err){
-
-setToast("Update failed");
-
-setTimeout(()=>{
-setToast("");
-},3000);
-
-}
-
-};
-
-const deleteAccount = async () => {
-
-if(confirmText !== "DELETE"){
-setToast("You must type DELETE");
-return;
-}
-
-try{
-
-await axios.delete(
-"https://food-price-compare-production.up.railway.app/delete-account",
-{
-headers:{
-Authorization:`Bearer ${token}`
-}
-}
-);
-
-localStorage.removeItem("token");
-
-setShowDeleteModal(false);
-
-window.location.href="/";
-
-}catch(err){
-console.log("Delete failed");
-}
-
-};
-
-return(
-
-<div className="min-h-screen p-10 bg-slate-100 dark:bg-gray-900">
-
-<h1 className="text-4xl font-bold tracking-tight text-slate-800 dark:text-white">
-⚙ Settings
-</h1>
-
-<p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-Manage your account preferences
-</p>
-
-<div className="grid md:grid-cols-2 gap-10 max-w-6xl">
-
-{/* LEFT COLUMN — THEME */}
-
-<div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-6 rounded-2xl shadow-lg border border-white/20">
-
-<div className="flex items-center gap-2 mb-4">
-<Palette size={20} className="text-blue-500"/>
-<h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">
-Theme
-</h2>
-</div>
-
-<div className="grid grid-cols-3 gap-3">
-
-<button
-onClick={()=>setTheme("light")}
-className={`p-5 rounded-xl border flex flex-col items-center gap-2 transition-all duration-200 ${
-theme==="light"
-? "bg-blue-500 text-white shadow-lg scale-105"
-: "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-}`}
->
-☀
-<span className="text-sm">Light</span>
-</button>
-
-<button
-onClick={()=>setTheme("dark")}
-className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition ${
-theme==="dark"
-? "bg-blue-500 text-white"
-: "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-}`}
->
-🌙
-<span className="text-sm">Dark</span>
-</button>
-
-<button
-onClick={()=>setTheme("system")}
-className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition ${
-theme==="system"
-? "bg-blue-500 text-white"
-: "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-}`}
->
-💻
-<span className="text-sm">System</span>
-</button>
-
-</div>
-
-</div>
-
-
-{/* RIGHT COLUMN */}
-
-<div className="space-y-8">
-
-{/* EDIT PROFILE */}
-
-<div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-6 rounded-2xl shadow-lg border border-white/20">
-
-<div className="flex items-center gap-2 mb-4">
-<User size={20} className="text-green-500"/>
-<h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">
-Edit Profile
-</h2>
-</div>
-
-<div className="flex items-center gap-4 mb-4">
-
-<div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-{name ? name.charAt(0).toUpperCase() : "U"}
-</div>
-
-<div>
-<p className="font-semibold text-slate-800 dark:text-white">{name}</p>
-<p className="text-sm text-gray-500">{email}</p>
-</div>
-
-</div>
-<input
-type="text"
-value={name}
-onChange={(e)=>setName(e.target.value)}
-className="w-full p-3 mb-3 rounded-xl border border-gray-300 dark:border-gray-600
-bg-white/80 dark:bg-gray-700/50 backdrop-blur focus:ring-2 focus:ring-blue-500 outline-none"
-/>
-
-<input
-type="email"
-value={email}
-onChange={(e)=>setEmail(e.target.value)}
-className="w-full p-3 mb-4 rounded-xl border border-gray-300 dark:border-gray-600
-bg-white/80 dark:bg-gray-700/50 backdrop-blur focus:ring-2 focus:ring-blue-500 outline-none"
-/>
-
-<button
-onClick={updateProfile}
-className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl transition"
->
-Update Profile
-</button>
-{status && (
-<p className="text-sm mt-3 text-center text-green-500">
-{status}
-</p>
-)}
-<AnimatePresence>
-
-{toast && (
-
-<motion.div
-initial={{ opacity:0, y:-20, x:50 }}
-animate={{ opacity:1, y:0, x:0 }}
-exit={{ opacity:0, y:-20, x:50 }}
-transition={{ duration:0.3 }}
-className={`fixed top-6 right-6 px-5 py-3 rounded-xl shadow-lg z-50 ${
-toast.includes("success")
-? "bg-green-500 text-white"
-: "bg-red-500 text-white"
-}`}
->
-
-{toast}
-
-</motion.div>
-
-)}
-
-</AnimatePresence>
-
-</div>
-
-{/* DELETE ACCOUNT */}
-
-<div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-6 rounded-2xl shadow-lg border border-white/20">
-
-<div className="flex items-center gap-2 mb-4">
-<AlertTriangle size={20} className="text-red-500"/>
-<h2 className="text-lg font-semibold text-red-500">
-Danger Zone
-</h2>
-</div>
-
-<div className="border border-red-300 dark:border-red-700 p-4 rounded-xl">
-
-<p className="text-sm text-red-400 mb-3">
-Deleting your account will remove:
-</p>
-
-<ul className="text-xs text-red-400 mb-4 space-y-1">
-<li>• All favourites</li>
-<li>• Search history</li>
-<li>• Account data</li>
-</ul>
-
-<button
-onClick={() => setShowDeleteModal(true)}
-className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl transition"
->
-Delete Account
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-<AnimatePresence>
-{showDeleteModal && (
-
-<motion.div
-initial={{ opacity:0 }}
-animate={{ opacity:1 }}
-exit={{ opacity:0 }}
-className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
->
-
-<motion.div
-initial={{ scale:0.8, opacity:0 }}
-animate={{ scale:1, opacity:1 }}
-exit={{ scale:0.8, opacity:0 }}
-transition={{ duration:0.2 }}
-className="bg-white dark:bg-gray-800 p-6 rounded-2xl w-[350px] shadow-xl border border-red-200 dark:border-red-700"
->
-
-<h3 className="text-lg font-bold text-red-500 mb-2">
-⚠ Delete Account
-</h3>
-
-<p className="text-sm text-gray-500 mb-4">
-This action cannot be undone. Type DELETE to confirm.
-</p>
-
-<input
-type="text"
-placeholder="Type DELETE"
-value={confirmText}
-onChange={(e)=>setConfirmText(e.target.value)}
-className="w-full p-3 mb-4 rounded-xl border border-gray-300 dark:border-gray-600
-bg-white/80 dark:bg-gray-700/50 backdrop-blur focus:ring-2 focus:ring-blue-500 outline-none"
-/>
-
-<div className="flex gap-3">
-
-<button
-onClick={()=>{
-setShowDeleteModal(false);
-setConfirmText("");
-}}
-className="flex-1 bg-gray-300 dark:bg-gray-600 py-2 rounded-xl"
->
-Cancel
-</button>
-
-<button
-onClick={deleteAccount}
-className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl"
->
-Delete
-</button>
-
-</div>
-
-</motion.div>
-
-</motion.div>
-
-)}
-</AnimatePresence>
-
-</div>
-
-);
-
+  injectFonts();
+
+  const [name,            setName]            = useState("");
+  const [email,           setEmail]           = useState("");
+  const [status,          setStatus]          = useState("");
+  const [toast,           setToast]           = useState({ msg: "", type: "" });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmText,     setConfirmText]     = useState("");
+  const [saving,          setSaving]          = useState(false);
+
+  const token = localStorage.getItem("token");
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: "", type: "" }), 3000);
+  };
+
+  useEffect(() => {
+    axios.get("https://food-price-compare-production.up.railway.app/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => { setName(res.data.name); setEmail(res.data.email); })
+      .catch(() => {});
+  }, []);
+
+  const updateProfile = async () => {
+    setSaving(true);
+    try {
+      const res = await axios.put(
+        "https://food-price-compare-production.up.railway.app/update-profile",
+        { name, email },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setName(res.data.user.name);
+      setEmail(res.data.user.email);
+      showToast("Profile updated successfully ✓", "success");
+    } catch {
+      showToast("Update failed — please try again", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (confirmText !== "DELETE") { showToast("Type DELETE to confirm", "error"); return; }
+    try {
+      await axios.delete("https://food-price-compare-production.up.railway.app/delete-account", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      localStorage.removeItem("token");
+      setShowDeleteModal(false);
+      window.location.href = "/";
+    } catch {
+      showToast("Delete failed", "error");
+    }
+  };
+
+  const initial = name ? name.charAt(0).toUpperCase() : "U";
+
+  return (
+    <>
+      <style>{`
+        @keyframes slideUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+        @keyframes pulse-glow { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)} 50%{box-shadow:0 0 0 8px rgba(239,68,68,0)} }
+        input::placeholder { color:#334155; }
+      `}</style>
+
+      {/* ── Toast ── */}
+      <AnimatePresence>
+        {toast.msg && (
+          <motion.div
+            initial={{ opacity: 0, y: -16, x: 16 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: -16, x: 16 }}
+            transition={{ duration: 0.28 }}
+            style={{
+              position: "fixed", top: "24px", right: "24px", zIndex: 9999,
+              padding: "14px 20px",
+              borderRadius: "14px",
+              background: toast.type === "success"
+                ? "linear-gradient(135deg,#065f46,#047857)"
+                : "linear-gradient(135deg,#7f1d1d,#b91c1c)",
+              border: `1px solid ${toast.type === "success" ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`,
+              color: "#f1f5f9",
+              fontSize: "13px", fontWeight: 500,
+              fontFamily: "'DM Sans', sans-serif",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
+              backdropFilter: "blur(16px)",
+              display: "flex", alignItems: "center", gap: "8px",
+              maxWidth: "320px",
+            }}
+          >
+            {toast.type === "success" ? "✓" : "✕"} {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg,#020617 0%,#0f172a 60%,#020617 100%)",
+        fontFamily: "'DM Sans', sans-serif",
+        color: "#f1f5f9",
+        padding: "48px 36px",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+
+        {/* Ambient blobs */}
+        <div style={{
+          position: "fixed", top: "-200px", left: "-200px",
+          width: "500px", height: "500px",
+          background: "radial-gradient(circle,rgba(59,130,246,0.07) 0%,transparent 70%)",
+          borderRadius: "50%", pointerEvents: "none",
+        }} />
+        <div style={{
+          position: "fixed", bottom: "-200px", right: "-100px",
+          width: "400px", height: "400px",
+          background: "radial-gradient(circle,rgba(139,92,246,0.07) 0%,transparent 70%)",
+          borderRadius: "50%", pointerEvents: "none",
+        }} />
+
+        <div style={{ position: "relative", zIndex: 1, maxWidth: "900px", margin: "0 auto" }}>
+
+          {/* ── Page Header ── */}
+          <div style={{ marginBottom: "40px", animation: "fadeIn 0.5s ease both" }}>
+            <p style={{
+              fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase",
+              color: "#60a5fa", marginBottom: "8px", fontWeight: 500,
+            }}>
+              ● Account Settings
+            </p>
+            <h1 style={{
+              fontFamily: "'Syne', sans-serif",
+              fontSize: "clamp(28px,4vw,42px)", fontWeight: 800, lineHeight: 1.1,
+              background: "linear-gradient(135deg,#f1f5f9 30%,#60a5fa 100%)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>
+              Settings
+            </h1>
+            <p style={{ color: "#475569", fontSize: "14px", marginTop: "8px" }}>
+              Manage your account preferences and profile
+            </p>
+          </div>
+
+          {/* ── Two-column grid ── */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "24px",
+            alignItems: "start",
+          }}>
+
+            {/* LEFT COLUMN */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+              {/* Theme */}
+              <Card style={{ animation: "slideUp 0.5s ease 0.1s both" }}>
+                <SectionHead icon={Palette} label="Appearance" color="#60a5fa" />
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <ThemeBtn icon="☀️" label="Light"  active={theme === "light"}  accent="#f59e0b" onClick={() => setTheme("light")}  />
+                  <ThemeBtn icon="🌙" label="Dark"   active={theme === "dark"}   accent="#818cf8" onClick={() => setTheme("dark")}   />
+                  <ThemeBtn icon="💻" label="System" active={theme === "system"} accent="#34d399" onClick={() => setTheme("system")} />
+                </div>
+                <p style={{ marginTop: "16px", fontSize: "12px", color: "#334155", lineHeight: 1.6 }}>
+                  Choose how PriceCompare looks to you. Select a theme or sync with your system.
+                </p>
+              </Card>
+
+              {/* Profile preview */}
+              <Card style={{ animation: "slideUp 0.5s ease 0.15s both" }}>
+                <p style={{
+                  fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase",
+                  color: "#475569", marginBottom: "18px",
+                }}>
+                  Preview
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                  <div style={{
+                    width: "56px", height: "56px", flexShrink: 0,
+                    background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+                    borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "22px", fontWeight: 800, color: "#fff",
+                    fontFamily: "'Syne', sans-serif",
+                    boxShadow: "0 4px 18px rgba(59,130,246,0.35)",
+                  }}>
+                    {initial}
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "16px" }}>
+                      {name || "Your Name"}
+                    </p>
+                    <p style={{ color: "#475569", fontSize: "13px", marginTop: "2px" }}>
+                      {email || "your@email.com"}
+                    </p>
+                  </div>
+                  <div style={{ marginLeft: "auto" }}>
+                    <span style={{
+                      background: "rgba(52,211,153,0.1)", color: "#34d399",
+                      border: "1px solid rgba(52,211,153,0.2)",
+                      borderRadius: "100px", padding: "4px 12px",
+                      fontSize: "11px", fontWeight: 600,
+                    }}>
+                      ✓ Active
+                    </span>
+                  </div>
+                </div>
+              </Card>
+
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+              {/* Edit Profile */}
+              <Card style={{ animation: "slideUp 0.5s ease 0.2s both" }}>
+                <SectionHead icon={User} label="Edit Profile" color="#34d399" />
+
+                <Input
+                  label="Full Name"
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Your full name"
+                />
+                <Input
+                  label="Email Address"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                />
+
+                <button
+                  onClick={updateProfile}
+                  disabled={saving}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    borderRadius: "14px",
+                    border: "none",
+                    background: saving
+                      ? "rgba(52,211,153,0.3)"
+                      : "linear-gradient(135deg,#059669,#34d399)",
+                    color: "#fff",
+                    fontFamily: "'Syne', sans-serif",
+                    fontSize: "14px", fontWeight: 700,
+                    cursor: saving ? "not-allowed" : "pointer",
+                    transition: "all 0.2s ease",
+                    letterSpacing: "0.04em",
+                    boxShadow: saving ? "none" : "0 4px 16px rgba(52,211,153,0.25)",
+                    marginTop: "4px",
+                  }}
+                  onMouseEnter={e => { if (!saving) e.currentTarget.style.transform = "scale(1.02)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+                >
+                  {saving ? "Saving…" : "Save Changes"}
+                </button>
+              </Card>
+
+              {/* Danger Zone */}
+              <Card style={{
+                border: "1px solid rgba(239,68,68,0.2)",
+                background: "rgba(239,68,68,0.03)",
+                animation: "slideUp 0.5s ease 0.25s both",
+              }}>
+                <SectionHead icon={AlertTriangle} label="Danger Zone" color="#f87171" />
+
+                <div style={{
+                  background: "rgba(239,68,68,0.06)",
+                  border: "1px solid rgba(239,68,68,0.15)",
+                  borderRadius: "16px",
+                  padding: "18px",
+                  marginBottom: "16px",
+                }}>
+                  <p style={{ fontSize: "13px", color: "#fca5a5", marginBottom: "10px", fontWeight: 500 }}>
+                    Deleting your account will permanently remove:
+                  </p>
+                  {["All favourites", "Search history", "Account data & preferences"].map(item => (
+                    <div key={item} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#f87171", flexShrink: 0 }} />
+                      <span style={{ fontSize: "12px", color: "#fca5a5" }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  style={{
+                    width: "100%",
+                    padding: "13px",
+                    borderRadius: "14px",
+                    border: "1px solid rgba(239,68,68,0.3)",
+                    background: "rgba(239,68,68,0.1)",
+                    color: "#f87171",
+                    fontFamily: "'Syne', sans-serif",
+                    fontSize: "14px", fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    letterSpacing: "0.04em",
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = "rgba(239,68,68,0.18)";
+                    e.currentTarget.style.transform = "scale(1.02)";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
+                  Delete Account
+                </button>
+              </Card>
+
+            </div>
+          </div>
+
+          {/* Footer */}
+          <p style={{
+            textAlign: "center", marginTop: "48px",
+            fontSize: "11px", color: "#1e293b", letterSpacing: "0.08em",
+          }}>
+            PriceCompare · Account Settings
+          </p>
+        </div>
+      </div>
+
+      {/* ══ Delete Confirmation Modal ══ */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.75)",
+              backdropFilter: "blur(8px)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 9000,
+            }}
+            onClick={e => { if (e.target === e.currentTarget) setShowDeleteModal(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.85, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 26 }}
+              style={{
+                background: "linear-gradient(135deg,#0f172a,#1e293b)",
+                border: "1px solid rgba(239,68,68,0.25)",
+                borderRadius: "24px",
+                padding: "32px",
+                width: "360px",
+                boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(239,68,68,0.1)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              {/* Warning icon */}
+              <div style={{
+                width: "52px", height: "52px",
+                background: "rgba(239,68,68,0.12)",
+                border: "1px solid rgba(239,68,68,0.25)",
+                borderRadius: "16px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "24px",
+                marginBottom: "20px",
+                animation: "pulse-glow 2s infinite",
+              }}>
+                ⚠️
+              </div>
+
+              <h3 style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: "20px", fontWeight: 800,
+                color: "#f87171", marginBottom: "8px",
+              }}>
+                Delete Account
+              </h3>
+              <p style={{ fontSize: "13px", color: "#64748b", lineHeight: 1.6, marginBottom: "24px" }}>
+                This action is <strong style={{ color: "#f87171" }}>permanent and irreversible</strong>.
+                Type <code style={{
+                  background: "rgba(239,68,68,0.12)", color: "#f87171",
+                  padding: "1px 6px", borderRadius: "5px", fontSize: "12px",
+                }}>DELETE</code> below to confirm.
+              </p>
+
+              <Input
+                type="text"
+                placeholder="Type DELETE"
+                value={confirmText}
+                onChange={e => setConfirmText(e.target.value)}
+              />
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+                <button
+                  onClick={() => { setShowDeleteModal(false); setConfirmText(""); }}
+                  style={{
+                    flex: 1, padding: "13px",
+                    borderRadius: "14px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "#94a3b8",
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: "14px", fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "background 0.2s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.09)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={deleteAccount}
+                  style={{
+                    flex: 1, padding: "13px",
+                    borderRadius: "14px",
+                    border: "1px solid rgba(239,68,68,0.35)",
+                    background: confirmText === "DELETE"
+                      ? "linear-gradient(135deg,#dc2626,#ef4444)"
+                      : "rgba(239,68,68,0.1)",
+                    color: confirmText === "DELETE" ? "#fff" : "#f87171",
+                    fontFamily: "'Syne', sans-serif",
+                    fontSize: "14px", fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: confirmText === "DELETE" ? "0 4px 16px rgba(239,68,68,0.3)" : "none",
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
 }

@@ -4,493 +4,595 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Cell
 } from "recharts";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
-export default function Dashboard() {
-const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [insights, setInsights] = useState(null);
-  const [chartData, setChartData] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
-  const [moneySaved, setMoneySaved] = useState(0);
-  const location = useLocation();
-  const getFoodIcon = (food) => {
-  const item = food?.toLowerCase();
+import { useNavigate, useLocation } from "react-router-dom";
 
-  if (item.includes("pizza")) return "🍕";
-  if (item.includes("burger")) return "🍔";
-  if (item.includes("biryani")) return "🍛";
-  if (item.includes("pasta")) return "🍝";
-  if (item.includes("momos")) return "🥟";
-  if (item.includes("sandwich")) return "🥪";
-  if (item.includes("cake")) return "🍰";
-  if (item.includes("coffee")) return "☕";
-
-  return "🍽️"; // default icon
+/* ── Inject Google Fonts once ── */
+const injectFonts = () => {
+  if (document.getElementById("db-fonts")) return;
+  const link = document.createElement("link");
+  link.id = "db-fonts";
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap";
+  document.head.appendChild(link);
 };
-const [bestPlatform, setBestPlatform] = useState(null);
+
+/* ── Food icon helper ── */
+const getFoodIcon = (food) => {
+  const item = food?.toLowerCase() ?? "";
+  if (item.includes("pizza"))    return "🍕";
+  if (item.includes("burger"))   return "🍔";
+  if (item.includes("biryani"))  return "🍛";
+  if (item.includes("pasta"))    return "🍝";
+  if (item.includes("momos"))    return "🥟";
+  if (item.includes("sandwich")) return "🥪";
+  if (item.includes("cake"))     return "🍰";
+  if (item.includes("coffee"))   return "☕";
+  return "🍽️";
+};
+
+/* ── Nav items config ── */
+const NAV = [
+  { label: "Home",               icon: "🏠",  path: "/"                  },
+  { label: "Dashboard",          icon: "📊",  path: "/dashboard"         },
+  { label: "Grocery Dashboard",  icon: "🛒",  path: "/grocery-dashboard" },
+  { label: "Analytics",          icon: "📈",  path: "/analytics"         },
+  { label: "History",            icon: "🕓",  path: "/history"           },
+  { label: "Favourites",         icon: "❤️",  path: "/favourites"        },
+  { label: "Settings",           icon: "⚙",  path: "/settings"          },
+];
+
+const ACTIVE_COLOR = {
+  "/grocery-dashboard": "#34d399",
+};
+const getActiveColor = (path) => ACTIVE_COLOR[path] ?? "#60a5fa";
+
+/* ── Custom Bar Tooltip ── */
+const ChartTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "rgba(2,6,23,0.96)",
+      border: "1px solid rgba(96,165,250,0.3)",
+      borderRadius: "12px",
+      padding: "10px 16px",
+      fontFamily: "'DM Sans', sans-serif",
+      fontSize: "13px",
+      color: "#e2e8f0",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+      backdropFilter: "blur(12px)",
+    }}>
+      <p style={{ color: "#60a5fa", fontWeight: 600, marginBottom: 4 }}>{label}</p>
+      <p>{payload[0].value} searches</p>
+    </div>
+  );
+};
+
+/* ── Stat Card ── */
+const StatCard = ({ icon, label, value, accent, sub, delay = 0 }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: `1px solid ${accent}22`,
+        borderRadius: "20px",
+        padding: "26px 24px",
+        position: "relative",
+        overflow: "hidden",
+        transition: "transform 0.3s ease, box-shadow 0.3s ease",
+        transform: hovered ? "translateY(-5px)" : "translateY(0)",
+        boxShadow: hovered ? `0 20px 40px ${accent}18` : "none",
+        animation: `slideUp 0.55s ease ${delay}s both`,
+        cursor: "default",
+      }}
+    >
+      <div style={{
+        position: "absolute", top: "-36px", right: "-36px",
+        width: "110px", height: "110px",
+        background: `radial-gradient(circle, ${accent}20 0%, transparent 70%)`,
+        borderRadius: "50%", pointerEvents: "none",
+      }} />
+      <p style={{
+        fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase",
+        color: "#64748b", marginBottom: "14px",
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
+        {icon}&nbsp;&nbsp;{label}
+      </p>
+      <p style={{
+  fontFamily: "'Syne', sans-serif",
+  fontSize: "clamp(22px, 2.8vw, 36px)",
+  fontWeight: 800,
+  color: accent,
+  lineHeight: 1.1,
+  wordBreak: "break-word",
+  whiteSpace: "normal"
+}}>
+  {value}
+</p>
+      {sub && (
+        <p style={{ fontSize: "11px", color: "#475569", marginTop: "8px" }}>{sub}</p>
+      )}
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════════════════════════ */
+export default function Dashboard() {
+  injectFonts();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+
+  const [user,        setUser]        = useState(null);
+  const [insights,    setInsights]    = useState(null);
+  const [chartData,   setChartData]   = useState([]);
+  const [darkMode,    setDarkMode]    = useState(false);
+  const [moneySaved,  setMoneySaved]  = useState(0);
+  const [bestPlatform,setBestPlatform]= useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   useEffect(() => {
-
-  const savedTheme = localStorage.getItem("theme");
-
-  if (savedTheme === "dark") {
-    setDarkMode(true);
-  }
-
-}, []);
+    if (localStorage.getItem("theme") === "dark") setDarkMode(true);
+  }, []);
 
   useEffect(() => {
-
     const token = localStorage.getItem("token");
-
     const fetchData = async () => {
-
-      const userRes = await axios.get(
-        "https://food-price-compare-production.up.railway.app/me",
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      const insightsRes = await axios.get(
-        "https://food-price-compare-production.up.railway.app/insights",
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const [userRes, insightsRes] = await Promise.all([
+        axios.get("https://food-price-compare-production.up.railway.app/me",      { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get("https://food-price-compare-production.up.railway.app/insights", { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
 
       setUser(userRes.data);
       setInsights(insightsRes.data);
+
       const history = userRes.data.searchHistory || [];
 
-const foodCount = {};
+      /* Chart */
+      const foodCount = {};
+      history.forEach(s => { foodCount[s.item] = (foodCount[s.item] || 0) + 1; });
+      setChartData(Object.keys(foodCount).map(f => ({ name: f, searches: foodCount[f] })));
 
-history.forEach(search => {
-  foodCount[search.item] = (foodCount[search.item] || 0) + 1;
-});
-
-const chartArray = Object.keys(foodCount).map(food => ({
-  name: food,
-  searches: foodCount[food]
-}));
-
-setChartData(chartArray);
-
-/* 🔥 MONEY SAVED CALCULATION */
-
-let totalSaved = 0;
-let zomatoWins = 0;
-let swiggyWins = 0;
-
-history.forEach(search => {
-
-  if (search.bestPrice) {
-    totalSaved += search.bestPrice * 0.1;
-  }
-
-  if (search.winner === "zomato") zomatoWins++;
-  if (search.winner === "swiggy") swiggyWins++;
-
-});
-
-setMoneySaved(Math.round(totalSaved));
-
-if (zomatoWins === 0 && swiggyWins === 0) {
-  setBestPlatform(null);
-} else {
-  setBestPlatform(
-    zomatoWins > swiggyWins ? "Zomato" : "Swiggy"
-  );
-}
-
+      /* Money + best platform */
+      let totalSaved = 0, zomatoWins = 0, swiggyWins = 0;
+      history.forEach(s => {
+        if (s.bestPrice)         totalSaved += s.bestPrice * 0.1;
+        if (s.winner === "zomato") zomatoWins++;
+        if (s.winner === "swiggy") swiggyWins++;
+      });
+      setMoneySaved(Math.round(totalSaved));
+      if (zomatoWins || swiggyWins)
+        setBestPlatform(zomatoWins > swiggyWins ? "Zomato" : "Swiggy");
     };
-
     fetchData();
-
   }, []);
 
-  if (!user || !insights) return <p className="p-10">Loading...</p>;
+  if (!user || !insights) return (
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      background: "#020617", fontFamily: "'DM Sans', sans-serif", color: "#64748b",
+    }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{
+          width: "40px", height: "40px", border: "3px solid #1e293b",
+          borderTop: "3px solid #60a5fa", borderRadius: "50%",
+          animation: "spin 0.8s linear infinite", margin: "0 auto 16px",
+        }} />
+        <p>Loading your dashboard…</p>
+      </div>
+    </div>
+  );
+
+  /* ── Theme tokens ── */
+  const bg          = darkMode ? "#020617"                      : "#f8fafc";
+  const sidebarBg   = darkMode ? "rgba(2,6,23,0.98)"            : "#ffffff";
+  const sidebarBord = darkMode ? "rgba(255,255,255,0.07)"       : "rgba(0,0,0,0.08)";
+  const cardBg      = darkMode ? "rgba(255,255,255,0.03)"       : "rgba(255,255,255,0.9)";
+  const cardBorder  = darkMode ? "rgba(255,255,255,0.08)"       : "rgba(0,0,0,0.07)";
+  const textPrimary = darkMode ? "#f1f5f9"                      : "#0f172a";
+  const textMuted   = darkMode ? "#475569"                      : "#94a3b8";
+  const rowHover    = darkMode ? "rgba(96,165,250,0.05)"        : "rgba(0,0,0,0.03)";
+  const tableBorder = darkMode ? "rgba(255,255,255,0.06)"       : "rgba(0,0,0,0.06)";
+
+  const barColors = ["#60a5fa","#34d399","#f59e0b","#f472b6","#a78bfa","#fb923c"];
 
   return (
+    <>
+      <style>{`
+        @keyframes slideUp  { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+        @keyframes spin     { to   { transform:rotate(360deg); } }
+        @keyframes glow     { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+        .nav-btn:hover { background: rgba(255,255,255,0.06) !important; }
+        .row-tr:hover td { background: ${rowHover} !important; }
+        .badge-zomato   { background:rgba(239,68,68,0.12)!important;  color:#f87171!important; }
+        .badge-swiggy   { background:rgba(249,115,22,0.12)!important; color:#fb923c!important; }
+        .badge-default  { background:rgba(100,116,139,0.12)!important;color:#94a3b8!important; }
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:#1e293b; border-radius:4px; }
+      `}</style>
 
-<div className={`min-h-screen flex ${
-  darkMode
-    ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white"
-    : "bg-slate-100 text-slate-800"
-}`}>
+      <div style={{
+        display: "flex", minHeight: "100vh",
+        background: bg,
+        fontFamily: "'DM Sans', sans-serif",
+        color: textPrimary,
+        transition: "background 0.3s ease",
+      }}>
 
-{/* SIDEBAR */}
+        {/* ══ SIDEBAR ══ */}
+        <aside style={{
+          width: sidebarOpen ? "240px" : "72px",
+          minHeight: "100vh",
+          background: sidebarBg,
+          borderRight: `1px solid ${sidebarBord}`,
+          padding: sidebarOpen ? "32px 20px" : "32px 12px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "4px",
+          transition: "width 0.3s ease, padding 0.3s ease",
+          position: "sticky", top: 0,
+          backdropFilter: "blur(20px)",
+          flexShrink: 0,
+          zIndex: 10,
+        }}>
 
-<div className={`w-64 min-h-screen p-6 backdrop-blur-xl ${
-  darkMode
-    ? "bg-black/40 border-r border-white/10"
-    : "bg-white border-r"
-}`}>
+          {/* Logo */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: "10px",
+            marginBottom: "32px", cursor: "pointer",
+            overflow: "hidden",
+          }} onClick={() => setSidebarOpen(o => !o)}>
+            <div style={{
+              width: "36px", height: "36px", flexShrink: 0,
+              background: "linear-gradient(135deg,#3b82f6,#60a5fa)",
+              borderRadius: "10px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "18px", boxShadow: "0 4px 14px rgba(59,130,246,0.4)",
+            }}>🚀</div>
+            {sidebarOpen && (
+              <span style={{
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 1000, fontSize: "12px",
+                background: "linear-gradient(135deg,#f1f5f9,#60a5fa)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                backgroundClip: "text", whiteSpace: "nowrap",
+              }}>
+                PriceCompare
+              </span>
+            )}
+          </div>
 
-<h2 className="text-2xl font-bold mb-10 tracking-wide">
-🚀 PriceCompare
-</h2>
+          {/* Nav links */}
+          {NAV.map(({ label, icon, path }) => {
+            const active = location.pathname === path;
+            const ac     = getActiveColor(path);
+            return (
+              <button
+                key={path}
+                className="nav-btn"
+                onClick={() => navigate(path)}
+                style={{
+                  width: "100%", textAlign: "left",
+                  padding: sidebarOpen ? "11px 14px" : "11px",
+                  borderRadius: "12px",
+                  border: active ? `1px solid ${ac}30` : "1px solid transparent",
+                  background: active ? `${ac}15` : "transparent",
+                  color: active ? ac : textMuted,
+                  fontSize: "13px", fontWeight: active ? 600 : 400,
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center",
+                  gap: sidebarOpen ? "10px" : "0",
+                  justifyContent: sidebarOpen ? "flex-start" : "center",
+                  transition: "all 0.2s ease",
+                  fontFamily: "'DM Sans', sans-serif",
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              >
+                {active && (
+                  <span style={{
+                    position: "absolute", left: 0, top: "20%", bottom: "20%",
+                    width: "3px", borderRadius: "0 3px 3px 0",
+                    background: ac,
+                    boxShadow: `0 0 8px ${ac}`,
+                  }} />
+                )}
+                <span style={{ fontSize: "16px", flexShrink: 0 }}>{icon}</span>
+                {sidebarOpen && <span style={{ whiteSpace: "nowrap" }}>{label}</span>}
+              </button>
+            );
+          })}
 
-<div className="space-y-3">
-  <button
-onClick={()=>navigate("/")}
-className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 ${
-location.pathname === "/"
-? "bg-blue-600 text-white shadow-lg"
-: "hover:bg-white/10"
-}`}
->
-🏠 Home
-</button>
+          {/* Logout */}
+          <div style={{ marginTop: "auto", paddingTop: "16px", borderTop: `1px solid ${sidebarBord}` }}>
+            <button
+              onClick={() => { localStorage.removeItem("token"); window.location.href = "/"; }}
+              style={{
+                width: "100%", textAlign: "left",
+                padding: sidebarOpen ? "11px 14px" : "11px",
+                borderRadius: "12px",
+                border: "1px solid rgba(239,68,68,0.15)",
+                background: "rgba(239,68,68,0.06)",
+                color: "#f87171",
+                fontSize: "13px", fontWeight: 500,
+                cursor: "pointer",
+                display: "flex", alignItems: "center",
+                gap: sidebarOpen ? "10px" : "0",
+                justifyContent: sidebarOpen ? "flex-start" : "center",
+                fontFamily: "'DM Sans', sans-serif",
+                transition: "background 0.2s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,0.12)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(239,68,68,0.06)"}
+            >
+              <span style={{ fontSize: "16px", flexShrink: 0 }}>🚪</span>
+              {sidebarOpen && <span>Logout</span>}
+            </button>
+          </div>
+        </aside>
 
-<button
-onClick={()=>navigate("/dashboard")}
-className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
-  location.pathname === "/dashboard"
-    ? "bg-blue-600 text-white shadow-lg"
-    : "hover:bg-white/10"
-}`}
->
-📊 Dashboard
-</button>
+        {/* ══ MAIN ══ */}
+        <main style={{
+          flex: 1, padding: "40px 36px",
+          overflowY: "auto",
+          animation: "fadeIn 0.4s ease both",
+        }}>
 
-<button
-onClick={()=>navigate("/grocery-dashboard")}
-className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
-  location.pathname === "/grocery-dashboard"
-    ? "bg-green-600 text-white shadow-lg"
-    : "hover:bg-white/10"
-}`}
->
-🛒 Grocery Dashboard
-</button>
+          {/* Header */}
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+            marginBottom: "40px",
+          }}>
+            <div>
+              <p style={{
+                fontSize: "11px", letterSpacing: "0.14em", textTransform: "uppercase",
+                color: "#60a5fa", marginBottom: "8px", fontWeight: 500,
+              }}>
+                ● Live Analytics
+              </p>
+              <h1 style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 800, lineHeight: 1.1,
+                background: darkMode
+                  ? "linear-gradient(135deg,#f1f5f9 30%,#60a5fa 100%)"
+                  : "linear-gradient(135deg,#0f172a 30%,#2563eb 100%)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>
+                Your Dashboard
+              </h1>
+              <p style={{ color: textMuted, fontSize: "14px", marginTop: "6px" }}>
+                Track food price savings and activity
+              </p>
+            </div>
 
-<button
-onClick={()=>navigate("/analytics")}
-className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
-  location.pathname === "/analytics"
-    ? "bg-blue-600 text-white"
-    : "hover:bg-white/10"
-}`}
->
-📈 Analytics
-</button>
+            <div style={{
+              display: "flex", alignItems: "center", gap: "10px",
+              padding: "10px 18px",
+              borderRadius: "100px",
+              background: "rgba(96,165,250,0.1)",
+              border: "1px solid rgba(96,165,250,0.2)",
+              fontSize: "13px", fontWeight: 500, color: "#60a5fa",
+              animation: "glow 3s ease infinite",
+            }}>
+              🔥 Smart Price Tracker
+            </div>
+          </div>
 
-<button
-onClick={()=>navigate("/history")}
-className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
-  location.pathname === "/history"
-    ? "bg-blue-600 text-white"
-    : "hover:bg-white/10"
-}`}
->
-🕓 History
-</button>
-<button
-onClick={()=>navigate("/favourites")}
-className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
-  location.pathname === "/favourites"
-    ? "bg-blue-600 text-white"
-    : "hover:bg-white/10"
-}`}
->
-❤️ Favourites
-</button>
+          {/* Profile card */}
+          <div style={{
+            background: cardBg,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: "22px",
+            padding: "24px 28px",
+            marginBottom: "28px",
+            backdropFilter: "blur(16px)",
+            display: "flex", alignItems: "center", gap: "20px",
+            animation: "slideUp 0.5s ease 0.05s both",
+          }}>
+            <div style={{
+              width: "52px", height: "52px", flexShrink: 0,
+              background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+              borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "22px",
+              boxShadow: "0 4px 16px rgba(59,130,246,0.3)",
+            }}>
+              {user.name?.[0]?.toUpperCase() ?? "👤"}
+            </div>
+            <div>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "18px" }}>
+                {user.name}
+              </p>
+              <p style={{ color: textMuted, fontSize: "13px", marginTop: "2px" }}>
+                {user.email}
+              </p>
+            </div>
+            <div style={{ marginLeft: "auto" }}>
+              <span style={{
+                background: "rgba(52,211,153,0.1)", color: "#34d399",
+                border: "1px solid rgba(52,211,153,0.2)",
+                borderRadius: "100px", padding: "4px 12px",
+                fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em",
+              }}>
+                ✓ Active
+              </span>
+            </div>
+          </div>
 
-<button
-onClick={()=>navigate("/settings")}
-className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
-  location.pathname === "/settings"
-    ? "bg-blue-600 text-white"
-    : "hover:bg-white/10"
-}`}
->
-⚙ Settings
-</button>
+          {/* Stats row */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "18px", marginBottom: "28px",
+          }}>
+            <StatCard icon="🔍" label="Total Searches"  value={insights.totalSearches} accent="#60a5fa" delay={0.1} />
+            <StatCard icon="🍽️" label="Favourite Food"  value={insights.favouriteFood || "—"} accent="#f59e0b" delay={0.15} />
+            <StatCard icon="📍" label="Favourite City"  value={insights.favouriteCity || "—"} accent="#a78bfa" delay={0.2} />
+            <StatCard icon="💰" label="Money Saved"     value={`₹${moneySaved}`} accent="#34d399" sub="Based on best price comparisons" delay={0.25} />
+            <StatCard icon="🏆" label="Best Platform"   value={bestPlatform || "—"} accent="#f472b6" sub="Most frequent lowest price" delay={0.3} />
+          </div>
 
-<button
-onClick={()=>{
-localStorage.removeItem("token");
-window.location.href="/";
-}}
-className="w-full text-left px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10"
->
-🚪 Logout
-</button>
+          {/* Chart */}
+          <div style={{
+            background: cardBg,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: "22px",
+            padding: "28px",
+            marginBottom: "28px",
+            backdropFilter: "blur(16px)",
+            animation: "slideUp 0.55s ease 0.35s both",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700 }}>
+                📊 Food Search Analytics
+              </h2>
+              <span style={{
+                fontSize: "11px", color: textMuted, letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}>
+                All time
+              </span>
+            </div>
 
-</div>
-</div>
-{/* MAIN CONTENT */}
+            {chartData.length === 0 ? (
+              <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", color: textMuted, fontSize: "14px" }}>
+                No search data yet
+              </div>
+            ) : (
+              <div style={{ height: "260px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} barCategoryGap="35%">
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: "#475569", fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}
+                      axisLine={false} tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: "#475569", fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}
+                      axisLine={false} tickLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)", radius: 6 }} />
+                    <Bar dataKey="searches" radius={[10, 10, 0, 0]}>
+                      {chartData.map((_, i) => (
+                        <Cell key={i} fill={barColors[i % barColors.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
 
-<div className="flex-1 p-8">
+          {/* Recent searches table */}
+          <div style={{
+            background: cardBg,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: "22px",
+            padding: "28px",
+            backdropFilter: "blur(16px)",
+            animation: "slideUp 0.55s ease 0.4s both",
+          }}>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700, marginBottom: "20px" }}>
+              🕓 Recent Searches
+            </h2>
 
-      <div className="flex justify-between items-center mb-10">
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    {["Food", "City", "Winner"].map(col => (
+                      <th key={col} style={{
+                        textAlign: "left",
+                        padding: "10px 16px",
+                        fontSize: "11px", letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                        color: textMuted,
+                        fontWeight: 500,
+                        borderBottom: `1px solid ${tableBorder}`,
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}>
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(user.searchHistory || []).slice(0, 6).map((search, i) => {
+                    const winnerClass =
+                      search.winner === "zomato"  ? "badge-zomato"  :
+                      search.winner === "swiggy"  ? "badge-swiggy"  : "badge-default";
 
-<div>
-<h1 className="text-3xl font-bold">
-📊 Dashboard
-</h1>
-<p className="text-sm opacity-70">
-Track your food price savings and activity
-</p>
-</div>
+                    return (
+                      <tr
+                        key={i}
+                        className="row-tr"
+                        style={{ animation: `slideUp 0.4s ease ${0.45 + i * 0.06}s both` }}
+                      >
+                        <td style={{
+                          padding: "14px 16px",
+                          borderBottom: `1px solid ${tableBorder}`,
+                          fontSize: "14px", fontWeight: 500,
+                        }}>
+                          <span style={{ marginRight: "8px" }}>{getFoodIcon(search.item)}</span>
+                          {search.item}
+                        </td>
+                        <td style={{
+                          padding: "14px 16px",
+                          borderBottom: `1px solid ${tableBorder}`,
+                          fontSize: "13px", color: textMuted,
+                        }}>
+                          📍 {search.city}
+                        </td>
+                        <td style={{
+                          padding: "14px 16px",
+                          borderBottom: `1px solid ${tableBorder}`,
+                        }}>
+                          {search.winner ? (
+                            <span className={winnerClass} style={{
+                              display: "inline-flex", alignItems: "center", gap: "5px",
+                              padding: "4px 12px",
+                              borderRadius: "100px",
+                              fontSize: "12px", fontWeight: 600,
+                              textTransform: "capitalize",
+                            }}>
+                              🏆 {search.winner}
+                            </span>
+                          ) : (
+                            <span style={{ color: textMuted, fontSize: "13px" }}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-<div className="text-sm bg-blue-500/20 px-4 py-2 rounded-full">
-🔥 Smart Price Tracker
-</div>
-
-</div>
-
-      {/* PROFILE CARD */}
-
-      <div className={`p-6 rounded-2xl shadow mb-8 ${
-  darkMode
-    ? "bg-white/5 backdrop-blur-md border border-white/10"
-    : "bg-white"
-}`}>
-
-        <h2 className="text-xl font-semibold mb-4">
-          👤 Profile
-        </h2>
-
-        <div className="space-y-2">
-          <p><b>Name:</b> {user.name}</p>
-          <p><b>Email:</b> {user.email}</p>
-        </div>
-
+          {/* Footer */}
+          <p style={{
+            textAlign: "center", marginTop: "40px",
+            fontSize: "11px", color: "#334155",
+            letterSpacing: "0.08em",
+          }}>
+            PriceCompare Dashboard · Real-time food price intelligence
+          </p>
+        </main>
       </div>
-
-      {/* STATS GRID */}
-
-      <div className="grid md:grid-cols-3 gap-6">
-
-<div className={`p-6 rounded-2xl text-center transition hover:scale-105 ${
-  darkMode
-  ? "bg-white/5 backdrop-blur-md border border-white/10"
-  : "bg-white shadow"
-}`}>
-
-<p className="text-sm opacity-70">
-Total Searches
-</p>
-
-<p className="text-4xl font-bold text-blue-500 mt-2">
-{insights.totalSearches}
-</p>
-
-</div>
-
-
-<div className={`p-6 rounded-2xl text-center transition hover:scale-105 ${
-  darkMode
-  ? "bg-white/5 backdrop-blur-md border border-white/10"
-  : "bg-white shadow"
-}`}>
-
-<p className="text-sm opacity-70">
-Favourite Food
-</p>
-
-<p className="text-2xl font-semibold mt-2">
-{insights.favouriteFood || "—"}
-</p>
-
-</div>
-
-
-<div className={`p-6 rounded-2xl text-center transition hover:scale-105 ${
-  darkMode
-  ? "bg-white/5 backdrop-blur-md border border-white/10"
-  : "bg-white shadow"
-}`}>
-
-<p className="text-sm opacity-70">
-Favourite City
-</p>
-
-<p className="text-2xl font-semibold mt-2">
-{insights.favouriteCity || "—"}
-</p>
-
-</div>
-
-</div>
-      {/* MONEY SAVED */}
-
-<div className="grid md:grid-cols-2 gap-6 mt-10">
-
-<div className={`p-6 rounded-2xl transition hover:scale-105 ${
-  darkMode
-  ? "bg-green-500/10 border border-green-400/20"
-  : "bg-white shadow"
-}`}>
-
-<h3 className="text-sm opacity-70">
-💰 Total Money Saved
-</h3>
-
-<p className="text-4xl font-bold mt-2 text-green-500">
-₹{moneySaved}
-</p>
-
-<p className="text-xs opacity-70 mt-2">
-Based on best price comparisons
-</p>
-
-</div>
-
-
-<div className={`p-6 rounded-2xl transition hover:scale-105 ${
-  darkMode
-  ? "bg-yellow-500/10 border border-yellow-400/20"
-  : "bg-white shadow"
-}`}>
-
-<h3 className="text-sm opacity-70">
-🏆 Best Platform
-</h3>
-
-<p className="text-3xl font-semibold mt-2">
-{bestPlatform || "—"}
-</p>
-
-<p className="text-xs opacity-70 mt-2">
-Most frequent lowest price
-</p>
-
-</div>
-
-</div>
-      {/* SEARCH CHART */}
-
-<div className={`p-6 rounded-2xl mt-10 ${
-  darkMode
-  ? "bg-white/5 backdrop-blur-md border border-white/10"
-  : "bg-white shadow"
-}`}>
-
-<h2 className="text-xl font-semibold mb-6">
-📊 Food Search Analytics
-</h2>
-
-<div className="h-72">
-
-<ResponsiveContainer width="100%" height="100%">
-<BarChart data={chartData}>
-
-<XAxis dataKey="name" stroke={darkMode ? "#aaa" : "#444"} />
-<YAxis stroke={darkMode ? "#aaa" : "#444"} />
-<Tooltip />
-
-<Bar
-dataKey="searches"
-fill="#3b82f6"
-radius={[8,8,0,0]}
-/>
-
-</BarChart>
-</ResponsiveContainer>
-
-</div>
-
-</div>
-{/* RECENT SEARCHES */}
-
-<div className={`p-6 rounded-2xl shadow mt-10 ${
-  darkMode
-    ? "bg-white/5 backdrop-blur-md border border-white/10"
-    : "bg-white"
-}`}>
-
-  <h2 className="text-xl font-semibold mb-4">
-    🕓 Recent Searches
-  </h2>
-
-  <div className="overflow-x-auto">
-
-<table className="w-full text-left">
-
-<thead className={`text-sm ${
-  darkMode
-    ? "text-gray-300 border-b border-white/10"
-    : "text-gray-600 border-b"
-}`}>
-
-<tr>
-<th className="py-3">Food</th>
-<th className="py-3">City</th>
-<th className="py-3">Winner</th>
-</tr>
-
-</thead>
-
-<tbody>
-
-{(user.searchHistory || []).slice(0,6).map((search, index) => {
-
-const winnerColor =
-search.winner === "zomato"
-? "bg-red-500/10 text-red-400"
-: search.winner === "swiggy"
-? "bg-orange-500/10 text-orange-400"
-: "bg-gray-500/10 text-gray-400";
-
-return (
-
-<tr
-key={index}
-className={`transition ${
-darkMode
-? "hover:bg-white/5 border-b border-white/10"
-: "hover:bg-slate-100 border-b"
-}`}
->
-
-<td className="py-3 font-medium">
-{getFoodIcon(search.item)} {search.item}
-</td>
-
-<td className="py-3">
-📍 {search.city}
-</td>
-
-<td className="py-3">
-
-{search.winner ? (
-
-<span className={`px-3 py-1 text-xs rounded-full capitalize ${winnerColor}`}>
-🏆 {search.winner}
-</span>
-
-) : (
-
-<span className="text-gray-400 text-sm">
-—
-</span>
-
-)}
-
-</td>
-
-</tr>
-
-);
-
-})}
-
-</tbody>
-
-</table>
-
-</div>
-
-</div>
-
-    </div>
-    </div>
+    </>
   );
 }

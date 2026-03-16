@@ -41,7 +41,18 @@ export default function App() {
   const [item, setItem] = useState("");
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
-  const [serviceType, setServiceType] = useState("food");
+  const location = useLocation();
+
+const [serviceType, setServiceType] = useState(
+  location.state?.service || "food"
+);
+useEffect(() => {
+
+if(location.state?.service){
+setServiceType(location.state.service);
+}
+
+}, [location]);
  const isBasketMode =
   serviceType === "grocery" &&
   result?.basket &&
@@ -69,7 +80,7 @@ const [authError, setAuthError] = useState("");
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   
-  const location = useLocation();
+ 
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [mobilePlatform, setMobilePlatform] = useState("zomato");
   const groceryImages = {
