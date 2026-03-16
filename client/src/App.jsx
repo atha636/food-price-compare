@@ -649,7 +649,10 @@ const handleClearHistory = async () => {
   
     <Routes>
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/grocery-dashboard" element={<GroceryDashboard />} />
+      <Route
+  path="/grocery-dashboard"
+  element={<GroceryDashboard theme={theme} />}
+/>
 <Route path="/analytics" element={<Analytics />} />
 <Route path="/history" element={<History />} />
 <Route path="/favourites" element={<Favourites />} />

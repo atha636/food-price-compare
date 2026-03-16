@@ -6,6 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
+const randomUseragent = require("random-useragent");
 
 // ==============================
 // REQUEST DELAY
@@ -20,6 +21,7 @@ const User = require("./models/User");
 const crypto = require("crypto");
 const sendVerificationEmail = require("./utils/sendEmail");
 const zomatoCache = new Map();
+const groceryCache = new Map();
 
 
 const app = express();
@@ -446,61 +448,190 @@ const detectCategory = (product) => {
 
 const fetchZepto = async (item) => {
 
-  return [
-    {
-      name: `${item} (Zepto Fresh)`,
-      price: 48,
-      time: 10,
-      rating: 4.4,
-      image: `https://source.unsplash.com/600x400/?${item},grocery`,
-      url: "https://www.zeptonow.com/"
-    }
-  ];
+try{
+
+const res = await axios.get(
+`https://api.zeptonow.com/v1/search`,
+{
+params:{ q:item },
+headers:{
+"User-Agent": randomUseragent.getRandom(),
+"Accept":"application/json"
+}
+}
+);
+
+const product = res.data?.products?.[0];
+
+if(!product){
+return [{ name:item, price:58, time:10, image:"", url:"https://www.zeptonow.com"}];
+}
+
+return [{
+name:product.name,
+price:product.price,
+time:10,
+rating:4.4,
+image:product.imageUrl,
+url:`https://www.zeptonow.com/search?q=${item}`
+}];
+
+}catch(err){
+
+console.log("Zepto scraping failed",err.message);
+
+return [{
+name:`${item} (Zepto)`,
+price:58,
+time:10,
+rating:4.4,
+image:`https://source.unsplash.com/600x400/?${item},grocery`,
+url:"https://www.zeptonow.com"
+}];
+
+}
 
 };
 
 const fetchInstamart = async (item) => {
 
-  return [
-    {
-      name: `${item} (Instamart)`,
-      price: 52,
-      time: 14,
-      rating: 4.3,
-      image: `https://source.unsplash.com/600x400/?${item},grocery`,
-      url: "https://www.swiggy.com/instamart"
-    }
-  ];
+try{
+
+const res = await axios.get(
+"https://www.swiggy.com/dapi/instamart/search",
+{
+params:{ q:item },
+headers:{
+"User-Agent": randomUseragent.getRandom(),
+"Accept":"application/json",
+"Referer":"https://www.swiggy.com/instamart"
+}
+}
+);
+
+const product = res.data?.data?.products?.[0];
+
+if(!product){
+return [{ name:item, price:62, time:14, image:"", url:"https://www.swiggy.com/instamart"}];
+}
+
+return [{
+name:product.name,
+price:product.price,
+time:14,
+rating:4.3,
+image:product.image,
+url:`https://www.swiggy.com/instamart/search?q=${item}`
+}];
+
+}catch(err){
+
+console.log("Instamart scraping failed",err.message);
+
+return [{
+name:`${item} (Instamart)`,
+price:62,
+time:14,
+rating:4.3,
+image:`https://source.unsplash.com/600x400/?${item},grocery`,
+url:"https://www.swiggy.com/instamart"
+}];
+
+}
 
 };
 
 const fetchBlinkit = async (item) => {
 
-  return [
-    {
-      name: `${item} (Blinkit)`,
-      price: 46,
-      time: 9,
-      rating: 4.5,
-     image: `https://source.unsplash.com/600x400/?${item},grocery`,
-      url: "https://blinkit.com/"
-    }
-  ];
+try{
+
+const res = await axios.get(
+`https://blinkit.com/v1/search`,
+{
+params:{ q:item },
+headers:{
+"User-Agent": randomUseragent.getRandom(),
+"Accept":"application/json",
+"Referer":"https://blinkit.com/"
+}
+}
+);
+
+const product = res.data?.products?.[0];
+
+if(!product){
+return [{ name:item, price:55, time:9, image:"", url:"https://blinkit.com"}];
+}
+
+return [{
+name:product.name,
+price:product.price,
+time:9,
+rating:4.5,
+image:product.image_url,
+url:`https://blinkit.com/s/?q=${item}`
+}];
+
+}catch(err){
+
+console.log("Blinkit scraping failed",err.message);
+
+return [{
+name:`${item} (Blinkit)`,
+price:55,
+time:9,
+rating:4.5,
+image:`https://source.unsplash.com/600x400/?${item},grocery`,
+url:"https://blinkit.com"
+}];
+
+}
 
 };
 
 const fetchJioMart = async (item) => {
 
-  return [
-    {
-      name: `${item} (JioMart)`,
-      price: 50,
-      time: 25,
-      rating: 4.2,
-      image: `https://source.unsplash.com/600x400/?${item},grocery`,
-      url: "https://www.jiomart.com/"
-    }
-  ];
+try{
+
+const url = `https://www.jiomart.com/search/${item}`;
+
+const res = await axios.get(url,{
+headers:{
+"User-Agent": randomUseragent.getRandom()
+}
+});
+
+const $ = cheerio.load(res.data);
+
+const name = $(".product-name").first().text().trim();
+const priceText = $(".price").first().text().replace(/[^\d]/g,"");
+const image = $(".product-image img").first().attr("src");
+
+const price = parseInt(priceText) || 70;
+
+return [{
+name:name || `${item} (JioMart)`,
+price,
+time:25,
+rating:4.2,
+image:image || `https://source.unsplash.com/600x400/?${item},grocery`,
+url:url
+}];
+
+}catch(err){
+
+console.log("JioMart scraping failed",err.message);
+
+return [{
+name:`${item} (JioMart)`,
+price:65,
+time:25,
+rating:4.2,
+image:`https://source.unsplash.com/600x400/?${item},grocery`,
+url:"https://www.jiomart.com"
+}];
+
+}
 
 };
 /* ==============================
@@ -1007,11 +1138,28 @@ if (zomatoList.length === 0) {
 
 }
 
-    if (serviceType === "grocery") {
+   if (serviceType === "grocery") {
+
+  const cacheKey = `${item}-${city}`;
+
+  // ⭐ CHECK CACHE FIRST
+  if (groceryCache.has(cacheKey)) {
+    console.log("Returning grocery data from cache");
+    return res.json(groceryCache.get(cacheKey));
+  }
 
   const products = detectMultipleProducts(item);
 
   const basketData = await buildBasket(products);
+
+  const responseData = {
+    serviceType,
+    city,
+    products,
+    basket: basketData.basket,
+    totals: basketData.totals,
+    basketWinner: basketData.basketWinner
+  };
 
   /* ⭐ SAVE SEARCH HISTORY */
 
@@ -1031,22 +1179,19 @@ if (zomatoList.length === 0) {
       city,
       serviceType: "grocery",
       winner,
-      bestPrice
+      bestPrice,
+      totals: basketData.totals
     });
 
-    user.searchHistory = user.searchHistory.slice(0, 10);
+    user.searchHistory = user.searchHistory.slice(0, 20);
 
     await user.save();
   }
 
-  return res.json({
-    serviceType,
-    city,
-    products,
-    basket: basketData.basket,
-    totals: basketData.totals,
-    basketWinner: basketData.basketWinner
-  });
+  // ⭐ SAVE RESULT IN CACHE
+  groceryCache.set(cacheKey, responseData);
+
+  return res.json(responseData);
 
 }
 
