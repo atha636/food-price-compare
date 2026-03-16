@@ -450,29 +450,37 @@ const fetchZepto = async (item) => {
 
 try{
 
-const res = await axios.get(
-`https://api.zeptonow.com/v1/search`,
-{
-params:{ q:item },
-headers:{
-"User-Agent": randomUseragent.getRandom(),
-"Accept":"application/json"
-}
-}
-);
+const browser = await puppeteer.launch({
+headless:true,
+args:["--no-sandbox"]
+});
 
-const product = res.data?.products?.[0];
+const page = await browser.newPage();
 
-if(!product){
-return [{ name:item, price:58, time:10, image:"", url:"https://www.zeptonow.com"}];
-}
+await page.goto(`https://www.zeptonow.com/search?q=${item}`,{
+waitUntil:"networkidle2"
+});
+
+const product = await page.evaluate(()=>{
+
+const name = document.querySelector("h3")?.innerText;
+const price = document.querySelector("[data-testid='price']")?.innerText;
+const image = document.querySelector("img")?.src;
+
+return {name,price,image};
+
+});
+
+await browser.close();
+
+const parsedPrice = parseInt(product.price?.replace(/[^\d]/g,"")) || 65;
 
 return [{
-name:product.name,
-price:product.price,
+name:product.name || item,
+price:parsedPrice,
 time:10,
 rating:4.4,
-image:product.imageUrl,
+image:product.image,
 url:`https://www.zeptonow.com/search?q=${item}`
 }];
 
@@ -482,7 +490,7 @@ console.log("Zepto scraping failed",err.message);
 
 return [{
 name:`${item} (Zepto)`,
-price:58,
+price:65,
 time:10,
 rating:4.4,
 image:`https://source.unsplash.com/600x400/?${item},grocery`,
@@ -495,80 +503,57 @@ url:"https://www.zeptonow.com"
 
 const fetchInstamart = async (item) => {
 
-try{
 
-const res = await axios.get(
-"https://www.swiggy.com/dapi/instamart/search",
-{
-params:{ q:item },
-headers:{
-"User-Agent": randomUseragent.getRandom(),
-"Accept":"application/json",
-"Referer":"https://www.swiggy.com/instamart"
-}
-}
-);
-
-const product = res.data?.data?.products?.[0];
-
-if(!product){
-return [{ name:item, price:62, time:14, image:"", url:"https://www.swiggy.com/instamart"}];
-}
-
-return [{
-name:product.name,
-price:product.price,
-time:14,
-rating:4.3,
-image:product.image,
-url:`https://www.swiggy.com/instamart/search?q=${item}`
-}];
-
-}catch(err){
-
-console.log("Instamart scraping failed",err.message);
-
+  
 return [{
 name:`${item} (Instamart)`,
 price:62,
 time:14,
 rating:4.3,
 image:`https://source.unsplash.com/600x400/?${item},grocery`,
-url:"https://www.swiggy.com/instamart"
+url:`https://www.swiggy.com/instamart/search?q=${item}`
 }];
 
-}
+
 
 };
+
 
 const fetchBlinkit = async (item) => {
 
 try{
 
-const res = await axios.get(
-`https://blinkit.com/v1/search`,
-{
-params:{ q:item },
-headers:{
-"User-Agent": randomUseragent.getRandom(),
-"Accept":"application/json",
-"Referer":"https://blinkit.com/"
-}
-}
-);
+const browser = await puppeteer.launch({
+headless:true,
+args:["--no-sandbox"]
+});
 
-const product = res.data?.products?.[0];
+const page = await browser.newPage();
 
-if(!product){
-return [{ name:item, price:55, time:9, image:"", url:"https://blinkit.com"}];
-}
+await page.goto(`https://blinkit.com/s/?q=${item}`,{
+waitUntil:"networkidle2"
+});
+
+const product = await page.evaluate(()=>{
+
+const name = document.querySelector("h3")?.innerText;
+const price = document.querySelector("[data-testid='price']")?.innerText;
+const image = document.querySelector("img")?.src;
+
+return {name,price,image};
+
+});
+
+await browser.close();
+
+const parsedPrice = parseInt(product.price?.replace(/[^\d]/g,"")) || 60;
 
 return [{
-name:product.name,
-price:product.price,
+name:product.name || item,
+price:parsedPrice,
 time:9,
 rating:4.5,
-image:product.image_url,
+image:product.image,
 url:`https://blinkit.com/s/?q=${item}`
 }];
 
@@ -578,7 +563,7 @@ console.log("Blinkit scraping failed",err.message);
 
 return [{
 name:`${item} (Blinkit)`,
-price:55,
+price:60,
 time:9,
 rating:4.5,
 image:`https://source.unsplash.com/600x400/?${item},grocery`,
