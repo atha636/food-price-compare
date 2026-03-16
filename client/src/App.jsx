@@ -4,6 +4,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Verified from "./pages/Verified";
 import Dashboard from "./pages/Dashboard";
+import GroceryDashboard from "./pages/GroceryDashboard";
 import Favourites from "./pages/Favourites";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -648,6 +649,7 @@ const handleClearHistory = async () => {
   
     <Routes>
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/grocery-dashboard" element={<GroceryDashboard />} />
 <Route path="/analytics" element={<Analytics />} />
 <Route path="/history" element={<History />} />
 <Route path="/favourites" element={<Favourites />} />

@@ -722,7 +722,7 @@ bestPrice
 });
 
     // Keep only last 5
-    user.searchHistory = user.searchHistory.slice(0, 5);
+    user.searchHistory = user.searchHistory.slice(0, 20);
 
     await user.save();
 
@@ -1013,14 +1013,40 @@ if (zomatoList.length === 0) {
 
   const basketData = await buildBasket(products);
 
-return res.json({
-  serviceType,
-  city,
-  products,
-  basket: basketData.basket,
-  totals: basketData.totals,
-  basketWinner: basketData.basketWinner
-});
+  /* ⭐ SAVE SEARCH HISTORY */
+
+  const user = await User.findById(req.user.id);
+
+  if (user) {
+
+    if (!Array.isArray(user.searchHistory)) {
+      user.searchHistory = [];
+    }
+
+    const winner = basketData.basketWinner;
+    const bestPrice = basketData.totals[winner];
+
+    user.searchHistory.unshift({
+      item,
+      city,
+      serviceType: "grocery",
+      winner,
+      bestPrice
+    });
+
+    user.searchHistory = user.searchHistory.slice(0, 10);
+
+    await user.save();
+  }
+
+  return res.json({
+    serviceType,
+    city,
+    products,
+    basket: basketData.basket,
+    totals: basketData.totals,
+    basketWinner: basketData.basketWinner
+  });
 
 }
 

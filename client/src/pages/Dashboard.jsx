@@ -159,6 +159,17 @@ className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center g
 </button>
 
 <button
+onClick={()=>navigate("/grocery-dashboard")}
+className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
+  location.pathname === "/grocery-dashboard"
+    ? "bg-green-600 text-white shadow-lg"
+    : "hover:bg-white/10"
+}`}
+>
+🛒 Grocery Dashboard
+</button>
+
+<button
 onClick={()=>navigate("/analytics")}
 className={`w-full text-left px-4 py-3 rounded-xl transition flex items-center gap-3 ${
   location.pathname === "/analytics"
