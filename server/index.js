@@ -6,8 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
-const randomUseragent = require("random-useragent");
-const puppeteer = require("puppeteer");
+
 
 // ==============================
 // REQUEST DELAY
@@ -443,181 +442,66 @@ const detectCategory = (product) => {
 
   return "other";
 };
+
+
+
+
 // ==============================
-// GROCERY FETCH (SIMULATION FOR NOW)
+// MARKET PRICE SCRAPER (HYBRID METHOD)
 // ==============================
 
-const fetchZepto = async (item) => {
+const fetchMarketPrice = async (item) => {
 
-try{
+try {
 
-const browser = await puppeteer.launch({
-headless:true,
-args:["--no-sandbox"]
-});
+const url = `https://www.amazon.in/s?k=${item}`;
 
-const page = await browser.newPage();
-
-await page.goto(`https://www.zeptonow.com/search?q=${item}`,{
-waitUntil:"networkidle2"
-});
-
-const product = await page.evaluate(()=>{
-
-const name = document.querySelector("h3")?.innerText;
-const price = document.querySelector("[data-testid='price']")?.innerText;
-const image = document.querySelector("img")?.src;
-
-return {name,price,image};
-
-});
-
-await browser.close();
-
-const parsedPrice = parseInt(product.price?.replace(/[^\d]/g,"")) || 65;
-
-return [{
-name:product.name || item,
-price:parsedPrice,
-time:10,
-rating:4.4,
-image:product.image,
-url:`https://www.zeptonow.com/search?q=${item}`
-}];
-
-}catch(err){
-
-console.log("Zepto scraping failed",err.message);
-
-return [{
-name:`${item} (Zepto)`,
-price:65,
-time:10,
-rating:4.4,
-image:`https://source.unsplash.com/600x400/?${item},grocery`,
-url:"https://www.zeptonow.com"
-}];
-
-}
-
-};
-
-const fetchInstamart = async (item) => {
-
-
-
-return [{
-name:`${item} (Instamart)`,
-price:62,
-time:14,
-rating:4.3,
-image:`https://source.unsplash.com/600x400/?${item},grocery`,
-url:`https://www.swiggy.com/instamart/search?q=${item}`
-}];
-
-
-
-};
-
-
-const fetchBlinkit = async (item) => {
-
-try{
-
-const browser = await puppeteer.launch({
-headless:true,
-args:["--no-sandbox"]
-});
-
-const page = await browser.newPage();
-
-await page.goto(`https://blinkit.com/s/?q=${item}`,{
-waitUntil:"networkidle2"
-});
-
-const product = await page.evaluate(()=>{
-
-const name = document.querySelector("h3")?.innerText;
-const price = document.querySelector("[data-testid='price']")?.innerText;
-const image = document.querySelector("img")?.src;
-
-return {name,price,image};
-
-});
-
-await browser.close();
-
-const parsedPrice = parseInt(product.price?.replace(/[^\d]/g,"")) || 60;
-
-return [{
-name:product.name || item,
-price:parsedPrice,
-time:9,
-rating:4.5,
-image:product.image,
-url:`https://blinkit.com/s/?q=${item}`
-}];
-
-}catch(err){
-
-console.log("Blinkit scraping failed",err.message);
-
-return [{
-name:`${item} (Blinkit)`,
-price:60,
-time:9,
-rating:4.5,
-image:`https://source.unsplash.com/600x400/?${item},grocery`,
-url:"https://blinkit.com"
-}];
-
-}
-
-};
-
-const fetchJioMart = async (item) => {
-
-try{
-
-const url = `https://www.jiomart.com/search/${item}`;
+await sleep(300 + Math.random()*400);
 
 const res = await axios.get(url,{
 headers:{
-"User-Agent": randomUseragent.getRandom()
+"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+"Accept-Language":"en-IN,en;q=0.9"
 }
 });
 
 const $ = cheerio.load(res.data);
 
-const name = $(".product-name").first().text().trim();
-const priceText = $(".price").first().text().replace(/[^\d]/g,"");
-const image = $(".product-image img").first().attr("src");
+const priceText =
+$(".a-price-whole").first().text() ||
+$(".a-offscreen").first().text();
 
-const price = parseInt(priceText) || 70;
 
-return [{
-name:name || `${item} (JioMart)`,
-price,
-time:25,
-rating:4.2,
-image:image || `https://source.unsplash.com/600x400/?${item},grocery`,
-url:url
-}];
+if(!priceText) return null;
 
-}catch(err){
+const clean = priceText.replace(/[^\d]/g,"");
+return parseInt(clean);
 
-console.log("JioMart scraping failed",err.message);
+} catch(err){
 
-return [{
-name:`${item} (JioMart)`,
-price:65,
-time:25,
-rating:4.2,
-image:`https://source.unsplash.com/600x400/?${item},grocery`,
-url:"https://www.jiomart.com"
-}];
+console.log("Market price scraping failed:", err.message);
+
+return null;
 
 }
+
+};
+
+
+// ==============================
+// PLATFORM PRICE GENERATOR
+// ==============================
+
+const generatePlatformPrices = (basePrice) => {
+
+return {
+
+blinkit: basePrice + 2,
+zepto: basePrice + 5,
+instamart: basePrice + 3,
+jiomart: basePrice - 1
+
+};
 
 };
 /* ==============================
@@ -1000,58 +884,60 @@ res.status(500).json({ message:"Server error" });
 
 const buildBasket = async (products) => {
 
-  let zeptoTotal = 0;
-  let blinkitTotal = 0;
-  let instamartTotal = 0;
-  let jiomartTotal = 0;
+let zeptoTotal = 0;
+let blinkitTotal = 0;
+let instamartTotal = 0;
+let jiomartTotal = 0;
 
-  const basket = [];
+const basket = [];
 
-  for (const product of products) {
-    console.log("Scraping grocery product:", product);
+await Promise.all(products.map(async (product) => {
 
-    const [zepto, blinkit, instamart, jiomart] =
-await Promise.all([
-  fetchZepto(product),
-  fetchBlinkit(product),
-  fetchInstamart(product),
-  fetchJioMart(product)
-]);
+console.log("Scraping grocery product:", product);
 
-    zeptoTotal += zepto[0].price;
-    blinkitTotal += blinkit[0].price;
-    instamartTotal += instamart[0].price;
-    jiomartTotal += jiomart[0].price;
+// ⭐ get real market price
+const marketPrice = await fetchMarketPrice(product);
+console.log("Market price:", product, marketPrice);
 
-    const category = detectCategory(product);
+const basePrice = marketPrice || 60;
+
+// ⭐ generate platform prices
+const prices = generatePlatformPrices(basePrice);
+
+zeptoTotal += prices.zepto;
+blinkitTotal += prices.blinkit;
+instamartTotal += prices.instamart;
+jiomartTotal += prices.jiomart;
+
+const category = detectCategory(product);
 
 basket.push({
-  product,
-  category,
-  zepto: zepto[0].price,
-  blinkit: blinkit[0].price,
-  instamart: instamart[0].price,
-  jiomart: jiomart[0].price
+product,
+category,
+zepto: prices.zepto,
+blinkit: prices.blinkit,
+instamart: prices.instamart,
+jiomart: prices.jiomart
 });
 
-  }
+}));
 
-  const totals = {
-  zepto: zeptoTotal,
-  blinkit: blinkitTotal,
-  instamart: instamartTotal,
-  jiomart: jiomartTotal
+const totals = {
+zepto: basket.reduce((sum,i)=>sum+i.zepto,0),
+blinkit: basket.reduce((sum,i)=>sum+i.blinkit,0),
+instamart: basket.reduce((sum,i)=>sum+i.instamart,0),
+jiomart: basket.reduce((sum,i)=>sum+i.jiomart,0)
 };
 
 const basketWinner = Object.entries(totals)
 .reduce((a,b)=>a[1] < b[1] ? a : b)[0];
 
 return {
-  basket,
-  totals,
-  basketWinner
+basket,
+totals,
+basketWinner
 };
-  
+
 
 };
 /* ==============================
@@ -1130,12 +1016,14 @@ if (zomatoList.length === 0) {
   const cacheKey = `${item}-${city}`;
 
   // ⭐ CHECK CACHE FIRST
-  if (groceryCache.has(cacheKey)) {
-    console.log("Returning grocery data from cache");
-    return res.json(groceryCache.get(cacheKey));
-  }
+ const cached = groceryCache.get(cacheKey);
 
-  const products = detectMultipleProducts(item);
+if (cached && Date.now() - cached.time < 300000) { // 5 minutes
+  console.log("Returning grocery data from cache");
+  return res.json(cached.data);
+}
+
+  const products = detectMultipleProducts(item).slice(0,6);
 
   const basketData = await buildBasket(products);
 
@@ -1176,7 +1064,10 @@ if (zomatoList.length === 0) {
   }
 
   // ⭐ SAVE RESULT IN CACHE
-  groceryCache.set(cacheKey, responseData);
+  groceryCache.set(cacheKey, {
+  data: responseData,
+  time: Date.now()
+});
 
   return res.json(responseData);
 
