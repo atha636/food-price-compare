@@ -1008,6 +1008,7 @@ const buildBasket = async (products) => {
   const basket = [];
 
   for (const product of products) {
+    console.log("Scraping grocery product:", product);
 
     const [zepto, blinkit, instamart, jiomart] =
 await Promise.all([
