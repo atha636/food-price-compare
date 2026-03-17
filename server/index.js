@@ -961,33 +961,34 @@ app.post("/compare", authMiddleware, async (req, res) => {
 
   try {
 
-    // convert city → coordinates
-   const locationQuery =
-  serviceType === "ride"
-    ? `${item}, ${city}` // full pickup + drop context
-    : city;
+    let lat, lng;
 
-const geo = await axios.get(
-  `https://nominatim.openstreetmap.org/search`,
-  {
-    params: {
-      format: "json",
-      q: locationQuery
-    },
-    headers: {
-      "User-Agent": "pricecompare-app"
+    
+// ✅ ONLY for food & grocery
+if (serviceType !== "ride") {
+
+  const geo = await axios.get(
+    "https://nominatim.openstreetmap.org/search",
+    {
+      params: {
+        format: "json",
+        q: city
+      },
+      headers: {
+        "User-Agent": "pricecompare-app"
+      }
     }
+  );
+
+  if (!geo.data || geo.data.length === 0) {
+    return res.status(400).json({
+      message: "City not found"
+    });
   }
-);
 
-if (!geo.data || geo.data.length === 0) {
-  return res.status(400).json({
-    message: "City not found"
-  });
+  lat = geo.data[0].lat;
+  lng = geo.data[0].lon;
 }
-
-const lat = geo.data[0].lat;
-const lng = geo.data[0].lon;
 
 if (!lat || !lng) {
   return res.status(400).json({
@@ -1108,7 +1109,7 @@ if (serviceType === "ride") {
   const dropGeo = await axios.get(
     "https://nominatim.openstreetmap.org/search",
     {
-      params: { format: "json", q: item },
+      params: { format: "json", q: `${item}, ${city}` },
       headers: { "User-Agent": "pricecompare-app" }
     }
   );
@@ -1119,11 +1120,20 @@ if (serviceType === "ride") {
   const dropLat = dropGeo.data[0]?.lat;
   const dropLng = dropGeo.data[0]?.lon;
 
-  if (!pickupLat || !dropLat) {
-    return res.status(400).json({
-      message: "Invalid pickup or drop location"
-    });
-  }
+  if (!pickupLat || !pickupLng || !dropLat || !dropLng) {
+
+  console.log("Geo failed:", {
+    pickup: city,
+    drop: item
+  });
+
+  return res.status(400).json({
+    message: "Location not found. Try more specific place."
+  });
+}
+console.log("Pickup Geo:", pickupGeo.data[0]);
+console.log("Drop Geo:", dropGeo.data[0]);
+
 
   const distance = calculateDistance(
     parseFloat(pickupLat),
