@@ -1383,72 +1383,59 @@ if (serviceType === "ride") {
 
 
 {serviceType === "ride" && result && (
-  <div className="w-full max-w-5xl flex flex-col gap-4">
+  <div className="flex flex-col gap-6 w-full max-w-5xl">
 
     {/* 🗺️ MAP */}
-    <RideMap
-      pickupCoords={result.pickupCoords}
-      dropCoords={result.dropCoords}
-    />
+    <div className="w-full h-[320px] rounded-2xl overflow-hidden shadow-lg">
+      <RideMap
+        pickupCoords={result.pickupCoords}
+        dropCoords={result.dropCoords}
+      />
+    </div>
 
-    {/* 🚗 RIDE CARDS */}
+    {/* 🚗 RIDE CARDS BELOW MAP */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
       {Object.entries(result.platforms).map(([name, data]) => {
+
         const isWinner = result.winner === name;
 
         return (
-          <div key={name} className="p-4 rounded-xl border">
-            <h2 className="font-bold capitalize">{name}</h2>
-            <p>⏱ {data.time} mins</p>
-            <p className="text-green-400 font-bold">₹{data.price}</p>
+          <div
+            key={name}
+            className={`p-5 rounded-2xl border transition-all hover:scale-105 hover:shadow-xl ${
+              isWinner
+                ? "bg-green-500/10 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                : dm
+                ? "bg-white/5 border-white/10"
+                : "bg-white border-slate-200"
+            }`}
+          >
+            <h2 className="font-bold text-lg capitalize mb-2 flex items-center gap-1">
+              {name === "uber" && "🚗 Uber"}
+              {name === "ola" && "🛺 Ola"}
+              {name === "rapido" && "🏍 Rapido"}
+              {name === "indrive" && "💸 InDrive"}
+
+              {isWinner && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white ml-1">
+                  🏆
+                </span>
+              )}
+            </h2>
+
+            <p className="text-sm opacity-70">⏱ {data.time} mins</p>
+
+            <p className="text-2xl font-bold text-green-400 mt-1">
+              ₹{data.price}
+            </p>
+
           </div>
         );
       })}
+
     </div>
-  </div>
-)}
 
-                 
-                {serviceType === "ride" && result && (
-  <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-    {Object.entries(result.platforms).map(([name, data]) => {
-
-      const isWinner = result.winner === name;
-
-      return (
-        <div
-          key={name}
-          className={`p-5 rounded-2xl border transition-all ${
-            isWinner
-              ? "bg-green-500/10 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-              : dm
-              ? "bg-white/5 border-white/10"
-              : "bg-white border-slate-200"
-          }`}
-        >
-          <h2 className="font-bold text-lg capitalize mb-2 flex items-center gap-1">
-            {name === "uber" && "🚗 Uber"}
-            {name === "ola" && "🛺 Ola"}
-            {name === "rapido" && "🏍 Rapido"}
-            {name === "indrive" && "💸 InDrive"}
-
-            {isWinner && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white ml-1">
-                🏆
-              </span>
-            )}
-          </h2>
-
-          <p className="text-sm opacity-70">⏱ {data.time} mins</p>
-
-          <p className="text-2xl font-bold text-green-400 mt-1">
-            ₹{data.price}
-          </p>
-
-        </div>
-      );
-    })}
   </div>
 )}
 
