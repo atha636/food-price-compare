@@ -8,15 +8,13 @@ import GroceryDashboard from "./pages/GroceryDashboard";
 import Favourites from "./pages/Favourites";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import CountUp from "react-countup";
 import Analytics from "./pages/Analytics";
 import History from "./pages/History";
 import VerificationFailed from "./pages/VerificationFailed";
-
 import { useLocation } from "react-router-dom";
 import { Heart } from "lucide-react";
-
 import Settings from "./pages/Settings";
 import {
   BarChart,
@@ -27,1931 +25,1532 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+/* ─── Font injection ─── */
+const FontStyle = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    * { font-family: 'Plus Jakarta Sans', sans-serif; }
+    h1,h2,.brand { font-family: 'Syne', sans-serif; }
+
+    :root {
+      --bg: #07091a;
+      --surface: rgba(255,255,255,0.04);
+      --surface-hover: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.09);
+      --border-glow: rgba(79,142,247,0.35);
+      --blue: #4F8EF7;
+      --blue-dim: rgba(79,142,247,0.15);
+      --orange: #FF6B35;
+      --orange-dim: rgba(255,107,53,0.15);
+      --red: #EF4444;
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.15);
+      --purple: #a855f7;
+      --yellow: #eab308;
+      --text: #e2e8f0;
+      --text-muted: rgba(226,232,240,0.5);
+      --radius: 16px;
+    }
+
+    body { background: var(--bg); }
+
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+    }
+    .glass-hover:hover {
+      background: var(--surface-hover);
+      border-color: var(--border-glow);
+    }
+    .neon-blue { box-shadow: 0 0 30px rgba(79,142,247,0.25); }
+    .neon-orange { box-shadow: 0 0 30px rgba(255,107,53,0.25); }
+    .neon-green { box-shadow: 0 0 30px rgba(34,197,94,0.25); }
+    .neon-red { box-shadow: 0 0 30px rgba(239,68,68,0.25); }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .shimmer-effect::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes gradient-shift {
+      0%,100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #4F8EF7, #6366f1, #4F8EF7);
+      background-size: 200% 200%;
+      animation: gradient-shift 3s ease infinite;
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    input, select {
+      color-scheme: dark;
+    }
+    input::placeholder { color: rgba(226,232,240,0.3) !important; }
+
+    /* Light mode overrides */
+    .light-mode {
+      --bg: #f0f4ff;
+      --surface: rgba(255,255,255,0.85);
+      --surface-hover: rgba(255,255,255,0.95);
+      --border: rgba(0,0,0,0.08);
+      --border-glow: rgba(79,142,247,0.3);
+      --text: #1e293b;
+      --text-muted: rgba(30,41,59,0.5);
+    }
+    .light-mode body { background: var(--bg); }
+    .light-mode input::placeholder { color: rgba(30,41,59,0.35) !important; }
+  `}</style>
+);
+
 function getBestRestaurant(list) {
   if (!list || list.length === 0) return null;
-
-  return list.reduce((a, b) =>
-    a.price < b.price ? a : b
-  );
+  return list.reduce((a, b) => (a.price < b.price ? a : b));
 }
 
 export default function App() {
-  
   const [user, setUser] = useState(null);
   const [item, setItem] = useState("");
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
   const location = useLocation();
 
-const [serviceType, setServiceType] = useState(
-  location.state?.service || "food"
-);
-useEffect(() => {
+  const [serviceType, setServiceType] = useState(
+    location.state?.service || "food"
+  );
+  useEffect(() => {
+    if (location.state?.service) {
+      setServiceType(location.state.service);
+    }
+  }, [location]);
 
-if(location.state?.service){
-setServiceType(location.state.service);
-}
+  const isBasketMode =
+    serviceType === "grocery" && result?.basket && result.basket.length > 0;
 
-}, [location]);
- const isBasketMode =
-  serviceType === "grocery" &&
-  result?.basket &&
-  result.basket.length > 0;
-  
-  const basketWinner =
-isBasketMode
-? Object.entries(result.totals)
-.reduce((a,b)=>a[1] < b[1] ? a : b)[0]
-: null;
+  const basketWinner = isBasketMode
+    ? Object.entries(result.totals).reduce((a, b) =>
+        a[1] < b[1] ? a : b
+      )[0]
+    : null;
 
   const [loading, setLoading] = useState(false);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [pendingCompare, setPendingCompare] = useState(false);
   const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-const [isLoggedIn, setIsLoggedIn] = useState(false);
-const [loginLoading, setLoginLoading] = useState(false);
-const [isRegisterMode, setIsRegisterMode] = useState(false);
-const [name, setName] = useState("");
-const [authError, setAuthError] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [name, setName] = useState("");
+  const [authError, setAuthError] = useState("");
   const [history, setHistory] = useState([]);
-  const [favourites,setFavourites] = useState([]);
+  const [favourites, setFavourites] = useState([]);
   const [insights, setInsights] = useState(null);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
-  
- 
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [mobilePlatform, setMobilePlatform] = useState("zomato");
+
   const groceryImages = {
-  milk: "https://images.unsplash.com/photo-1550583724-b2692b85b150",
-  bread: "https://images.unsplash.com/photo-1608198093002-ad4e005484ec",
-  rice: "https://images.unsplash.com/photo-1586201375761-83865001e31c",
-  eggs: "https://images.unsplash.com/photo-1518569656558-1f25e69d93d7",
-  vegetables: "https://images.unsplash.com/photo-1540420773420-3366772f4999",
-  fruits: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b",
-  potato: "https://images.unsplash.com/photo-1518977676601-b53f82aba655",
-  onion: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb",
-  tomato: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337"
-};
-const categoryColors = {
-  dairy: "bg-blue-500",
-  bakery: "bg-yellow-500",
-  fruits: "bg-red-500",
-  vegetables: "bg-green-500",
-  pantry: "bg-orange-500",
-  other: "bg-gray-500"
-};
+    milk: "https://images.unsplash.com/photo-1550583724-b2692b85b150",
+    bread: "https://images.unsplash.com/photo-1608198093002-ad4e005484ec",
+    rice: "https://images.unsplash.com/photo-1586201375761-83865001e31c",
+    eggs: "https://images.unsplash.com/photo-1518569656558-1f25e69d93d7",
+    vegetables: "https://images.unsplash.com/photo-1540420773420-3366772f4999",
+    fruits: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b",
+    potato: "https://images.unsplash.com/photo-1518977676601-b53f82aba655",
+    onion: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb",
+    tomato: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337",
+  };
+
+  const categoryColors = {
+    dairy: "bg-blue-500",
+    bakery: "bg-yellow-500",
+    fruits: "bg-red-500",
+    vegetables: "bg-green-500",
+    pantry: "bg-orange-500",
+    other: "bg-gray-500",
+  };
+
   const [theme, setTheme] = useState(
-  localStorage.getItem("theme") || "system"
-);
-useEffect(() => {
-
-const root = document.documentElement;
-
-if (theme === "dark") {
-  root.classList.add("dark");
-} 
-else if (theme === "light") {
-  root.classList.remove("dark");
-} 
-else {
-  // system mode
-  const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-  if (systemDark) {
-    root.classList.add("dark");
-  } else {
-    root.classList.remove("dark");
-  }
-}
-
-localStorage.setItem("theme", theme);
-
-}, [theme]);
-  const winner =
-  serviceType === "food" && result
-  
-    ? (() => {
-      
-
-        const zomatoBest =
-          result.zomatoList && result.zomatoList.length > 0
-            ? result.zomatoList.reduce((a, b) =>
-  a.score < b.score ? a : b
-)
-            : null;
-
-        const swiggyBest =
-          result.swiggyList && result.swiggyList.length > 0
-            ? result.swiggyList.reduce((a, b) =>
-  a.score < b.score ? a : b
-)
-            : null;
-
-        if (!zomatoBest && swiggyBest) return "swiggy";
-        if (!swiggyBest && zomatoBest) return "zomato";
-        if (!zomatoBest && !swiggyBest) return null;
-
-        if (zomatoBest.price < swiggyBest.price) return "zomato";
-        if (swiggyBest.price < zomatoBest.price) return "swiggy";
-
-        return null;
-      })()
-    : null;
-
-
-    const savingsData =
-  serviceType === "food" && result
-  
-    ? (() => {const groceryInsights =
-  serviceType === "grocery" && result
-    ? (() => {
-      
-
-        const platforms = [
-          { name: "Zepto", data: result.zeptoList },
-          { name: "Blinkit", data: result.blinkitList },
-          { name: "Instamart", data: result.instamartList },
-          { name: "JioMart", data: result.jiomartList }
-        ];
-
-        const items = platforms
-          .map(p => ({
-            name: p.name,
-            item: p.data?.[0]
-          }))
-          .filter(p => p.item);
-
-        if (items.length < 2) return null;
-
-        const cheapest = items.reduce((a, b) =>
-          a.item.price < b.item.price ? a : b
-        );
-
-        const fastest = items.reduce((a, b) =>
-          a.item.time < b.item.time ? a : b
-        );
-
-        const mostExpensive = items.reduce((a, b) =>
-          a.item.price > b.item.price ? a : b
-        );
-
-        const savings = mostExpensive.item.price - cheapest.item.price;
-
-        return {
-          cheapestPlatform: cheapest.name,
-          fastestPlatform: fastest.name,
-          savings
-        };
-
-      })()
-    : null;
-        const zomatoBest = getBestRestaurant(result.zomatoList);
-const swiggyBest = getBestRestaurant(result.swiggyList);
-
-if (!zomatoBest || !swiggyBest) return null;
-
-        const cheaperPrice = Math.min(
-          zomatoBest.price,
-          swiggyBest.price
-        );
-
-        const expensivePrice = Math.max(
-          zomatoBest.price,
-          swiggyBest.price
-        );
-
-        const difference = expensivePrice - cheaperPrice;
-
-        return {
-          perOrder: difference,
-          monthly: difference * 8,
-          yearly: difference * 96,
-          percentage: (
-            (difference / expensivePrice) *
-            100
-          ).toFixed(1),
-        };
-      })()
-    : null;
-    const groceryWinner =
-  serviceType === "grocery" && result
-    ? (() => {
-
-        const platforms = [
-          { name: "zepto", data: result.zeptoList },
-          { name: "blinkit", data: result.blinkitList },
-          { name: "instamart", data: result.instamartList },
-          { name: "jiomart", data: result.jiomartList }
-        ];
-
-        let best = null;
-
-        platforms.forEach(p => {
-          const item = p.data?.[0];
-          if (!item) return;
-
-          if (!best || item.price < best.price) {
-            best = { platform: p.name, price: item.price };
-          }
-        });
-
-        return best?.platform || null;
-
-      })()
-    : null;
-    
-  const [sortBy, setSortBy] = useState("price");
-  const particlesInit = async (engine) => {
-  await loadSlim(engine);
-};
-const handleGetLocation = () => {
-  if (!navigator.geolocation) {
-    alert("Geolocation not supported");
-    return;
-  }
-
-  setDetectingLocation(true);
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const { latitude, longitude } = position.coords;
-
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-        );
-        const data = await res.json();
-
-        const detectedCity =
-          data.address.city ||
-          data.address.town ||
-          data.address.state ||
-          "";
-
-        setCity(detectedCity);
-      } catch (err) {
-        console.error("Location fetch error", err);
-      } finally {
-        setDetectingLocation(false);
-      }
-    },
-    () => {
-      setDetectingLocation(false);
-      alert("Location permission denied");
-    }
+    localStorage.getItem("theme") || "system"
   );
-};
 
-  
   useEffect(() => {
-  const savedTheme = localStorage.getItem("theme");
-  if (savedTheme === "dark") {
-    setDarkMode(true);
-  }
-}, []);
-useEffect(() => {
-  localStorage.setItem("theme", darkMode ? "dark" : "light");
-}, [darkMode]);
-useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else if (theme === "light") {
+      root.classList.remove("dark");
+    } else {
+      const systemDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      if (systemDark) root.classList.add("dark");
+      else root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
-if(location.state?.item && location.state?.city){
+  const winner =
+    serviceType === "food" && result
+      ? (() => {
+          const zomatoBest =
+            result.zomatoList && result.zomatoList.length > 0
+              ? result.zomatoList.reduce((a, b) =>
+                  a.score < b.score ? a : b
+                )
+              : null;
+          const swiggyBest =
+            result.swiggyList && result.swiggyList.length > 0
+              ? result.swiggyList.reduce((a, b) =>
+                  a.score < b.score ? a : b
+                )
+              : null;
+          if (!zomatoBest && swiggyBest) return "swiggy";
+          if (!swiggyBest && zomatoBest) return "zomato";
+          if (!zomatoBest && !swiggyBest) return null;
+          if (zomatoBest.price < swiggyBest.price) return "zomato";
+          if (swiggyBest.price < zomatoBest.price) return "swiggy";
+          return null;
+        })()
+      : null;
 
-const { item, city, serviceType } = location.state;
+  const savingsData =
+    serviceType === "food" && result
+      ? (() => {
+          const groceryInsights =
+            serviceType === "grocery" && result
+              ? (() => {
+                  const platforms = [
+                    { name: "Zepto", data: result.zeptoList },
+                    { name: "Blinkit", data: result.blinkitList },
+                    { name: "Instamart", data: result.instamartList },
+                    { name: "JioMart", data: result.jiomartList },
+                  ];
+                  const items = platforms
+                    .map((p) => ({ name: p.name, item: p.data?.[0] }))
+                    .filter((p) => p.item);
+                  if (items.length < 2) return null;
+                  const cheapest = items.reduce((a, b) =>
+                    a.item.price < b.item.price ? a : b
+                  );
+                  const fastest = items.reduce((a, b) =>
+                    a.item.time < b.item.time ? a : b
+                  );
+                  const mostExpensive = items.reduce((a, b) =>
+                    a.item.price > b.item.price ? a : b
+                  );
+                  const savings = mostExpensive.item.price - cheapest.item.price;
+                  return {
+                    cheapestPlatform: cheapest.name,
+                    fastestPlatform: fastest.name,
+                    savings,
+                  };
+                })()
+              : null;
 
-setItem(item);
-setCity(city);
+          const zomatoBest = getBestRestaurant(result.zomatoList);
+          const swiggyBest = getBestRestaurant(result.swiggyList);
+          if (!zomatoBest || !swiggyBest) return null;
+          const cheaperPrice = Math.min(zomatoBest.price, swiggyBest.price);
+          const expensivePrice = Math.max(zomatoBest.price, swiggyBest.price);
+          const difference = expensivePrice - cheaperPrice;
+          return {
+            perOrder: difference,
+            monthly: difference * 8,
+            yearly: difference * 96,
+            percentage: ((difference / expensivePrice) * 100).toFixed(1),
+          };
+        })()
+      : null;
 
-if(serviceType){
-setServiceType(serviceType);
-}
+  const groceryWinner =
+    serviceType === "grocery" && result
+      ? (() => {
+          const platforms = [
+            { name: "zepto", data: result.zeptoList },
+            { name: "blinkit", data: result.blinkitList },
+            { name: "instamart", data: result.instamartList },
+            { name: "jiomart", data: result.jiomartList },
+          ];
+          let best = null;
+          platforms.forEach((p) => {
+            const item = p.data?.[0];
+            if (!item) return;
+            if (!best || item.price < best.price) {
+              best = { platform: p.name, price: item.price };
+            }
+          });
+          return best?.platform || null;
+        })()
+      : null;
 
-setTimeout(()=>{
-handleCompare(item, city);
-},200);
+  const [sortBy, setSortBy] = useState("price");
 
-// 🔥 CLEAR STATE AFTER USE
-window.history.replaceState({}, document.title);
+  const particlesInit = async (engine) => {
+    await loadSlim(engine);
+  };
 
-}
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported");
+      return;
+    }
+    setDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await res.json();
+          const detectedCity =
+            data.address.city ||
+            data.address.town ||
+            data.address.state ||
+            "";
+          setCity(detectedCity);
+        } catch (err) {
+          console.error("Location fetch error", err);
+        } finally {
+          setDetectingLocation(false);
+        }
+      },
+      () => {
+        setDetectingLocation(false);
+        alert("Location permission denied");
+      }
+    );
+  };
 
-},[location.state]);
-useEffect(() => {
-  const autoLogin = async () => {
-    const token = localStorage.getItem("token");
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") setDarkMode(true);
+  }, []);
 
-    if (!token) return;
+  useEffect(() => {
+    localStorage.setItem("theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
 
+  useEffect(() => {
+    if (location.state?.item && location.state?.city) {
+      const { item, city, serviceType } = location.state;
+      setItem(item);
+      setCity(city);
+      if (serviceType) setServiceType(serviceType);
+      setTimeout(() => {
+        handleCompare(item, city);
+      }, 200);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const autoLogin = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const userRes = await axios.get(
+          "https://food-price-compare-production.up.railway.app/me",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setUser(userRes.data);
+        setIsLoggedIn(true);
+        setHistory(userRes.data.searchHistory || []);
+        setFavourites(
+          (userRes.data.favourites || []).map(
+            (f) => f.name + f.platform + f.city
+          )
+        );
+        const insightsRes = await axios.get(
+          "https://food-price-compare-production.up.railway.app/insights",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setInsights(insightsRes.data);
+      } catch (err) {
+        console.log("Auto login failed");
+        localStorage.removeItem("token");
+        setIsLoggedIn(false);
+        setUser(null);
+        setHistory([]);
+        setInsights(null);
+      }
+    };
+    autoLogin();
+  }, []);
+
+  const handleLogin = async () => {
+    setLoginLoading(true);
+    setAuthError("");
     try {
-      // 🔥 Restore user
+      const res = await axios.post(
+        "https://food-price-compare-production.up.railway.app/login",
+        { email, password }
+      );
+      const token = res.data.token;
+      localStorage.setItem("token", token);
       const userRes = await axios.get(
         "https://food-price-compare-production.up.railway.app/me",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setUser(userRes.data);
       setIsLoggedIn(true);
-      setHistory(userRes.data.searchHistory || []);
       setFavourites(
-  (userRes.data.favourites || []).map(
-    f => f.name + f.platform + f.city
-  )
-);
-
-      // 🔥 Restore insights
-      const insightsRes = await axios.get(
-        "https://food-price-compare-production.up.railway.app/insights",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        (userRes.data.favourites || []).map(
+          (f) => f.name + f.platform + f.city
+        )
       );
-
-      setInsights(insightsRes.data);
-
+      if (pendingCompare) {
+        setPendingCompare(false);
+        handleCompare();
+      }
+      setShowLoginPopup(false);
     } catch (err) {
-      console.log("Auto login failed");
-
-      // Token expired → logout silently
-      localStorage.removeItem("token");
-      setIsLoggedIn(false);
-      setUser(null);
-      setHistory([]);
-      setInsights(null);
+      setAuthError(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoginLoading(false);
     }
   };
 
-  autoLogin();
-}, []);
-const handleLogin = async () => {
-  setLoginLoading(true);
-  setAuthError("");
-
-  try {
-    const res = await axios.post(
-      "https://food-price-compare-production.up.railway.app/login",
-      { email, password }
-    );
-
-    const token = res.data.token;
-    localStorage.setItem("token", token);
-
-    // 🔥 Fetch user after login
-    const userRes = await axios.get(
-      "https://food-price-compare-production.up.railway.app/me",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    setUser(userRes.data);
-    setIsLoggedIn(true);
-    setFavourites(
-  (userRes.data.favourites || []).map(
-    f => f.name + f.platform + f.city
-  )
-);
-    
-
-    // 🔥 Run pending compare automatically
-    if (pendingCompare) {
-      setPendingCompare(false);
-      handleCompare();
+  const handleSignup = async () => {
+    setLoginLoading(true);
+    setAuthError("");
+    try {
+      await axios.post(
+        "https://food-price-compare-production.up.railway.app/signup",
+        { name, email, password }
+      );
+      const res = await axios.post(
+        "https://food-price-compare-production.up.railway.app/login",
+        { email, password }
+      );
+      const token = res.data.token;
+      localStorage.setItem("token", token);
+      const userRes = await axios.get(
+        "https://food-price-compare-production.up.railway.app/me",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUser(userRes.data);
+      setIsLoggedIn(true);
+      setHistory(userRes.data.searchHistory || []);
+      setShowLoginPopup(false);
+      setIsRegisterMode(false);
+      setFavourites(
+        (userRes.data.favourites || []).map(
+          (f) => f.name + f.platform + f.city
+        )
+      );
+    } catch (err) {
+      setAuthError(err.response?.data?.message || "Signup failed");
     }
-
-    // 🔥 Close popup AFTER everything done
-    setShowLoginPopup(false);
-
-  } catch (err) {
-    setAuthError(err.response?.data?.message || "Login failed");
-  } finally {
     setLoginLoading(false);
-  }
-};
-const handleSignup = async () => {
-  setLoginLoading(true);
-  setAuthError("");
+  };
 
-  try {
-    // 1️⃣ Signup
-    await axios.post(
-      "https://food-price-compare-production.up.railway.app/signup",
-      { name, email, password }
-    );
-
-    // 2️⃣ Login manually after signup
-    const res = await axios.post(
-      "https://food-price-compare-production.up.railway.app/login",
-      { email, password }
-    );
-
-    const token = res.data.token;
-    localStorage.setItem("token", token);
-
-    // 3️⃣ Fetch user
-    const userRes = await axios.get(
-      "https://food-price-compare-production.up.railway.app/me",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    setUser(userRes.data);
-    setIsLoggedIn(true);
-    setHistory(userRes.data.searchHistory || []);
-    setShowLoginPopup(false);
-    setIsRegisterMode(false);
-    setFavourites(
-  (userRes.data.favourites || []).map(
-    f => f.name + f.platform + f.city
-  )
-);
-
-  } catch (err) {
-  setAuthError(err.response?.data?.message || "Signup failed");
-}
-
-  setLoginLoading(false);
-};
-
-const handleLogout = () => {
-  localStorage.removeItem("token");
-
-  setIsLoggedIn(false);
-  setUser(null);
-  setHistory([]);
-  setInsights(null);
-
-  // 🔥 ADD THESE
-  setResult(null);
-  setItem("");
-  setCity("");
-};
-
-
-const addFavourite = async (name, platform, city, price, image) => {
-
-  const token = localStorage.getItem("token");
-  const key = name + platform + city;
-
-  const isAlreadyFav = favourites.includes(key);
-
-  // Optimistic UI
-  setFavourites(prev =>
-    isAlreadyFav ? prev.filter(f => f !== key) : [...prev, key]
-  );
-
-  try {
-
-    await axios.post(
-      "https://food-price-compare-production.up.railway.app/add-favourite",
-      { name, platform, city, price, image },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-  } catch (err) {
-
-    // revert UI if API fails
-    setFavourites(prev =>
-      isAlreadyFav ? [...prev, key] : prev.filter(f => f !== key)
-    );
-
-    console.log("Favourite toggle failed");
-
-  }
-
-};
- const handleCompare = async (customItem, customCity) => {
-  const searchItem = customItem || item;
-const searchCity = customCity || city;
-
-if (!searchItem || !searchCity) {
-  setError("Please enter food item and city.");
-  return;
-}
-
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-  setPendingCompare(true);   // remember user wanted to compare
-  setShowLoginPopup(true);
-  return;
-}
-
-  setError("");
-  setLoading(true);
-  setResult(null);
-  
-
-  try {
-    const response = await axios.post(
-  "https://food-price-compare-production.up.railway.app/compare",
-  { item: searchItem, city: searchCity, serviceType },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    setResult(response.data);
-     console.log("API RESPONSE:", response.data);
-    let winner = null;
-let bestPrice = null;
-
-if (response.data.serviceType === "food") {
-
-  const zomatoBest = getBestRestaurant(response.data.zomatoList);
-const swiggyBest = getBestRestaurant(response.data.swiggyList);
-
-if (!zomatoBest && swiggyBest) {
-  winner = "swiggy";
-  bestPrice = swiggyBest.price;
-}
-else if (!swiggyBest && zomatoBest) {
-  winner = "zomato";
-  bestPrice = zomatoBest.price;
-}
-else if (zomatoBest && swiggyBest) {
-  if (zomatoBest.price < swiggyBest.price) {
-    winner = "zomato";
-    bestPrice = zomatoBest.price;
-  } else {
-    winner = "swiggy";
-    bestPrice = swiggyBest.price;
-  }
-}
-
-}
-console.log("WINNER:", winner);
-console.log("BEST PRICE:", bestPrice);
-console.log("Saving search:", searchItem, searchCity, winner, bestPrice);
-await axios.post(
-  "https://food-price-compare-production.up.railway.app/save-search",
-  {
-  item: searchItem,
-  city: searchCity,
-    serviceType,
-    winner,
-    bestPrice
-  },
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-)
-.then(async () => {
-  const res = await axios.get(
-    "https://food-price-compare-production.up.railway.app/me",
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  setUser(res.data);   // ⭐ THIS WAS MISSING
-  setHistory(res.data.searchHistory || []);
-setFavourites(
-  (res.data.favourites || []).map(
-    f => f.name + f.platform + f.city
-  )
-);
-})
-.catch(err => console.log("Save failed:", err.response?.data));
-  } catch (err) {
-    console.log("Compare failed:", err);
-    setError("Unable to fetch prices. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
-const handleClearHistory = async () => {
-  const token = localStorage.getItem("token");
-
-  try {
-    await axios.delete(
-      "https://food-price-compare-production.up.railway.app/clear-history",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    setUser(null);
     setHistory([]);
+    setInsights(null);
+    setResult(null);
+    setItem("");
+    setCity("");
+  };
 
-  } catch (err) {
-    console.log("Failed to clear history");
-  }
-};
+  const addFavourite = async (name, platform, city, price, image) => {
+    const token = localStorage.getItem("token");
+    const key = name + platform + city;
+    const isAlreadyFav = favourites.includes(key);
+    setFavourites((prev) =>
+      isAlreadyFav ? prev.filter((f) => f !== key) : [...prev, key]
+    );
+    try {
+      await axios.post(
+        "https://food-price-compare-production.up.railway.app/add-favourite",
+        { name, platform, city, price, image },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      setFavourites((prev) =>
+        isAlreadyFav ? [...prev, key] : prev.filter((f) => f !== key)
+      );
+      console.log("Favourite toggle failed");
+    }
+  };
+
+  const handleCompare = async (customItem, customCity) => {
+    const searchItem = customItem || item;
+    const searchCity = customCity || city;
+    if (!searchItem || !searchCity) {
+      setError("Please enter food item and city.");
+      return;
+    }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setPendingCompare(true);
+      setShowLoginPopup(true);
+      return;
+    }
+    setError("");
+    setLoading(true);
+    setResult(null);
+    try {
+      const response = await axios.post(
+        "https://food-price-compare-production.up.railway.app/compare",
+        { item: searchItem, city: searchCity, serviceType },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setResult(response.data);
+      console.log("API RESPONSE:", response.data);
+      let winner = null;
+      let bestPrice = null;
+      if (response.data.serviceType === "food") {
+        const zomatoBest = getBestRestaurant(response.data.zomatoList);
+        const swiggyBest = getBestRestaurant(response.data.swiggyList);
+        if (!zomatoBest && swiggyBest) {
+          winner = "swiggy";
+          bestPrice = swiggyBest.price;
+        } else if (!swiggyBest && zomatoBest) {
+          winner = "zomato";
+          bestPrice = zomatoBest.price;
+        } else if (zomatoBest && swiggyBest) {
+          if (zomatoBest.price < swiggyBest.price) {
+            winner = "zomato";
+            bestPrice = zomatoBest.price;
+          } else {
+            winner = "swiggy";
+            bestPrice = swiggyBest.price;
+          }
+        }
+      }
+      await axios
+        .post(
+          "https://food-price-compare-production.up.railway.app/save-search",
+          { item: searchItem, city: searchCity, serviceType, winner, bestPrice },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        .then(async () => {
+          const res = await axios.get(
+            "https://food-price-compare-production.up.railway.app/me",
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setUser(res.data);
+          setHistory(res.data.searchHistory || []);
+          setFavourites(
+            (res.data.favourites || []).map(
+              (f) => f.name + f.platform + f.city
+            )
+          );
+        })
+        .catch((err) => console.log("Save failed:", err.response?.data));
+    } catch (err) {
+      console.log("Compare failed:", err);
+      setError("Unable to fetch prices. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(
+        "https://food-price-compare-production.up.railway.app/clear-history",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setHistory([]);
+    } catch (err) {
+      console.log("Failed to clear history");
+    }
+  };
+
+  /* ─── color helpers ─── */
+  const dm = darkMode;
+
   return (
-  
     <Routes>
       <Route path="/dashboard" element={<Dashboard />} />
       <Route
-  path="/grocery-dashboard"
-  element={<GroceryDashboard theme={theme} />}
-/>
-<Route path="/analytics" element={<Analytics />} />
-<Route path="/history" element={<History />} />
-<Route path="/favourites" element={<Favourites />} />
-<Route
-path="/settings"
-element={<Settings theme={theme} setTheme={setTheme} />}
-/>
+        path="/grocery-dashboard"
+        element={<GroceryDashboard theme={theme} />}
+      />
+      <Route path="/analytics" element={<Analytics />} />
+      <Route path="/history" element={<History />} />
+      <Route path="/favourites" element={<Favourites />} />
+      <Route
+        path="/settings"
+        element={<Settings theme={theme} setTheme={setTheme} />}
+      />
+
       <Route
         path="/"
         element={
-          <div
-            className={`relative min-h-screen w-full overflow-hidden transition-all duration-500 ${
-              darkMode
-                ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black"
-                : "bg-gradient-to-br from-slate-100 via-white to-blue-50"
-            }`}
-          >
-      {(winner || groceryWinner || basketWinner) && (
-  <motion.div
-    initial={{ opacity: 0, y: -20, scale: 0.9 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ duration: 0.4 }}
-    className="fixed top-6 right-6 z-50"
-  >
-    <div
-      className="px-5 py-2 rounded-full shadow-2xl text-sm font-semibold backdrop-blur-md border bg-green-500/20 text-green-300 border-green-400/30"
-    >
-      🏆 {winner
-  ? winner === "zomato"
-    ? "Zomato Wins"
-    : "Swiggy Wins"
-  : basketWinner
-  ? `${basketWinner.charAt(0).toUpperCase() + basketWinner.slice(1)} Basket Cheapest`
-  : `${groceryWinner.charAt(0).toUpperCase() + groceryWinner.slice(1)} Wins`}
-    </div>
-  </motion.div>
-)}
-      {darkMode && (
-        <Particles
-          id="tsparticles"
-          init={particlesInit}
-          options={{
-            fullScreen: { enable: false },
-            background: { color: "transparent" },
-            particles: {
-              number: { value: 60 },
-              color: { value: "#ffffff" },
-              size: { value: 6 },
-              opacity: { value: 0.8 },
-              move: {
-                enable: true,
-                speed: 1,
-              },
-            },
-          }}
-          className="absolute inset-0 z-0"
-        />
-      )}
-
-      {darkMode && (
-        <>
-          <div className="absolute w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-3xl animate-pulse top-[-100px] left-[-100px]" />
-          <div className="absolute w-[400px] h-[400px] bg-purple-500/20 rounded-full blur-3xl animate-pulse bottom-[-100px] right-[-100px]" />
-        </>
-      )}
-
-      {/* Top bar */}
-      <div className="relative z-10 flex flex-col items-center pt-4 px-4">
-        <h2 className="text-xl font-bold">
-          {darkMode ? "DARK MODE ACTIVE" : "LIGHT MODE ACTIVE"}
-        </h2>
-
-        {/* Insight bar */}
-        {serviceType === "food" &&
-          result?.zomatoList &&
-          result?.swiggyList && (
-            
-            
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="hidden lg:flex justify-center mt-4"
+          <>
+            <FontStyle />
+            <div
+              className={`relative min-h-screen w-full overflow-x-hidden transition-all duration-500 ${
+                dm
+                  ? "bg-[#07091a] text-[#e2e8f0]"
+                  : "bg-[#f0f4ff] text-[#1e293b]"
+              }`}
             >
+              {/* ── ambient blobs ── */}
               <div
-                className={`px-6 py-3 rounded-xl shadow-lg text-sm font-medium ${
-                  darkMode
-                    ? "bg-blue-500/20 text-blue-200 border border-blue-400/30"
-                    : "bg-white text-slate-700 border border-slate-200"
-                }`}
+                className="pointer-events-none fixed inset-0 overflow-hidden"
+                style={{ zIndex: 0 }}
               >
-                {(() => {
-                 const zomatoBest = getBestRestaurant(result.zomatoList);
-const swiggyBest = getBestRestaurant(result.swiggyList);
-const zomatoFastest = result.zomatoList.length > 0
-  ? result.zomatoList.reduce((a, b) => a.time < b.time ? a : b)
-  : null;
-const swiggyFastest = result.swiggyList.length > 0
-  ? result.swiggyList.reduce((a, b) => a.time < b.time ? a : b)
-  : null;
-  
+                <div
+                  className={`absolute w-[600px] h-[600px] rounded-full blur-[120px] opacity-20 -top-32 -left-32 transition-all ${
+                    dm ? "bg-blue-600" : "bg-blue-300"
+                  }`}
+                />
+                <div
+                  className={`absolute w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 -bottom-32 -right-32 transition-all ${
+                    dm ? "bg-purple-700" : "bg-indigo-300"
+                  }`}
+                />
+                <div
+                  className={`absolute w-[300px] h-[300px] rounded-full blur-[100px] opacity-10 top-1/2 left-1/2 transition-all ${
+                    dm ? "bg-orange-600" : "bg-orange-300"
+                  }`}
+                />
+              </div>
 
-// ADD THIS LINE RIGHT HERE ↓
-if (!zomatoBest || !swiggyBest || !zomatoFastest || !swiggyFastest) return null;
+              {/* ── particles (dark only) ── */}
+              {dm && (
+                <Particles
+                  id="tsparticles"
+                  init={particlesInit}
+                  options={{
+                    fullScreen: { enable: false },
+                    background: { color: "transparent" },
+                    particles: {
+                      number: { value: 40 },
+                      color: { value: ["#4F8EF7", "#a855f7", "#22c55e"] },
+                      size: { value: { min: 1, max: 3 } },
+                      opacity: { value: { min: 0.1, max: 0.5 } },
+                      move: { enable: true, speed: 0.5 },
+                      links: {
+                        enable: true,
+                        color: "#4F8EF7",
+                        opacity: 0.1,
+                        distance: 120,
+                      },
+                    },
+                  }}
+                  className="absolute inset-0 z-0"
+                />
+              )}
 
-const priceDifference = Math.abs(   // ← this line already exists, keep it
-                    zomatoBest.price - swiggyBest.price
-                  );
-                  const timeDifference = Math.abs(
-                    zomatoFastest.time - swiggyFastest.time
-                  );
+              {/* ── Winner badge ── */}
+              <AnimatePresence>
+                {(winner || groceryWinner || basketWinner) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -30, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -30, scale: 0.8 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    className="fixed top-5 right-5 z-50"
+                  >
+                    <div
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold border backdrop-blur-md ${
+                        dm
+                          ? "bg-green-500/15 text-green-300 border-green-400/30 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                          : "bg-green-50 text-green-700 border-green-300 shadow-lg"
+                      }`}
+                    >
+                      <span className="text-base">🏆</span>
+                      {winner
+                        ? winner === "zomato"
+                          ? "Zomato Wins"
+                          : "Swiggy Wins"
+                        : basketWinner
+                        ? `${
+                            basketWinner.charAt(0).toUpperCase() +
+                            basketWinner.slice(1)
+                          } Basket Cheapest`
+                        : `${
+                            groceryWinner.charAt(0).toUpperCase() +
+                            groceryWinner.slice(1)
+                          } Wins`}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                  return (
-                    <div className="flex flex-col items-center gap-1">
-                      <span>
-                        {zomatoBest.price < swiggyBest.price
-                          ? `🔥 Zomato saves you ₹${priceDifference}`
-                          : swiggyBest.price < zomatoBest.price
-                          ? `🔥 Swiggy saves you ₹${priceDifference}`
-                          : "⚖️ Both platforms have similar pricing"}
-                      </span>
-                      <span className="text-xs opacity-80">
-                        {zomatoFastest.time < swiggyFastest.time
-                          ? `⚡ Zomato delivers ${timeDifference} mins faster`
-                          : swiggyFastest.time < zomatoFastest.time
-                          ? `⚡ Swiggy delivers ${timeDifference} mins faster`
-                          : "⏱ Delivery time is similar on both platforms"}
-                      </span>
-                      <div className="w-full mt-3">
+              {/* ── Top insight bars ── */}
+              <div className="relative z-10 flex flex-col items-center pt-5 px-4 gap-3">
+                {/* Food insight bar */}
+                {serviceType === "food" &&
+                  result?.zomatoList &&
+                  result?.swiggyList && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="hidden lg:flex justify-center w-full max-w-2xl"
+                    >
+                      <div
+                        className={`w-full px-6 py-4 rounded-2xl text-sm font-medium border ${
+                          dm
+                            ? "bg-blue-500/10 text-blue-200 border-blue-400/20"
+                            : "bg-white text-slate-700 border-slate-200 shadow-md"
+                        }`}
+                      >
                         {(() => {
-                          const maxPrice = Math.max(
-                            zomatoBest.price,
-                            swiggyBest.price
+                          const zomatoBest = getBestRestaurant(
+                            result.zomatoList
                           );
-                          const zomatoPercent =
-                            (zomatoBest.price / maxPrice) * 100;
-                          const swiggyPercent =
-                            (swiggyBest.price / maxPrice) * 100;
+                          const swiggyBest = getBestRestaurant(
+                            result.swiggyList
+                          );
+                          const zomatoFastest =
+                            result.zomatoList.length > 0
+                              ? result.zomatoList.reduce((a, b) =>
+                                  a.time < b.time ? a : b
+                                )
+                              : null;
+                          const swiggyFastest =
+                            result.swiggyList.length > 0
+                              ? result.swiggyList.reduce((a, b) =>
+                                  a.time < b.time ? a : b
+                                )
+                              : null;
+                          if (
+                            !zomatoBest ||
+                            !swiggyBest ||
+                            !zomatoFastest ||
+                            !swiggyFastest
+                          )
+                            return null;
+                          const priceDifference = Math.abs(
+                            zomatoBest.price - swiggyBest.price
+                          );
+                          const timeDifference = Math.abs(
+                            zomatoFastest.time - swiggyFastest.time
+                          );
                           return (
-                            <div className="space-y-2 mt-2">
-                              <div>
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span>Zomato</span>
-                                  <span>₹{zomatoBest.price}</span>
-                                </div>
-                                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-red-500 transition-all duration-700"
-                                    style={{ width: `${zomatoPercent}%` }}
-                                  />
-                                </div>
-                              </div>
-                              <div>
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span>Swiggy</span>
-                                  <span>₹{swiggyBest.price}</span>
-                                </div>
-                                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-orange-500 transition-all duration-700"
-                                    style={{ width: `${swiggyPercent}%` }}
-                                  />
-                                </div>
+                            <div className="flex flex-col items-center gap-2">
+                              <span className="font-semibold">
+                                {zomatoBest.price < swiggyBest.price
+                                  ? `🔥 Zomato saves you ₹${priceDifference}`
+                                  : swiggyBest.price < zomatoBest.price
+                                  ? `🔥 Swiggy saves you ₹${priceDifference}`
+                                  : "⚖️ Both platforms have similar pricing"}
+                              </span>
+                              <span className={`text-xs ${dm ? "opacity-70" : "text-slate-500"}`}>
+                                {zomatoFastest.time < swiggyFastest.time
+                                  ? `⚡ Zomato delivers ${timeDifference} mins faster`
+                                  : swiggyFastest.time < zomatoFastest.time
+                                  ? `⚡ Swiggy delivers ${timeDifference} mins faster`
+                                  : "⏱ Delivery time is similar on both platforms"}
+                              </span>
+                              <div className="w-full mt-2 space-y-2">
+                                {(() => {
+                                  const maxPrice = Math.max(
+                                    zomatoBest.price,
+                                    swiggyBest.price
+                                  );
+                                  const zomatoPercent =
+                                    (zomatoBest.price / maxPrice) * 100;
+                                  const swiggyPercent =
+                                    (swiggyBest.price / maxPrice) * 100;
+                                  return (
+                                    <>
+                                      <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                          <span className="font-medium text-red-400">Zomato</span>
+                                          <span className="font-bold">₹{zomatoBest.price}</span>
+                                        </div>
+                                        <div className={`h-2 rounded-full overflow-hidden ${dm ? "bg-white/10" : "bg-slate-100"}`}>
+                                          <div
+                                            className="h-full bg-red-500 rounded-full transition-all duration-700"
+                                            style={{ width: `${zomatoPercent}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                          <span className="font-medium text-orange-400">Swiggy</span>
+                                          <span className="font-bold">₹{swiggyBest.price}</span>
+                                        </div>
+                                        <div className={`h-2 rounded-full overflow-hidden ${dm ? "bg-white/10" : "bg-slate-100"}`}>
+                                          <div
+                                            className="h-full bg-orange-500 rounded-full transition-all duration-700"
+                                            style={{ width: `${swiggyPercent}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
                           );
                         })()}
                       </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </motion.div>
-          )}
-          {/* Grocery Insight bar */}
-{serviceType === "grocery" && result && (
-  <motion.div
-    initial={{ opacity: 0, y: -10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4 }}
-    className="hidden lg:flex justify-center mt-4"
-  >
-    <div
-      className={`px-6 py-3 rounded-xl shadow-lg text-sm font-medium ${
-        darkMode
-          ? "bg-green-500/20 text-green-200 border border-green-400/30"
-          : "bg-white text-slate-700 border border-slate-200"
-      }`}
-    >
-      {(() => {
-        // ✅ FIX: read from result.basket[0] instead of non-existent list fields
-        const itemCount = result.basket?.length || 0;
-        const totals = result.totals;
-if (!totals) return null;
+                    </motion.div>
+                  )}
 
-const platforms = [
-  { name: "Zepto", price: totals.zepto, time: 10 },
-  { name: "Blinkit", price: totals.blinkit, time: 9 },
-  { name: "Instamart", price: totals.instamart, time: 14 },
-  { name: "JioMart", price: totals.jiomart, time: 25 }
-];
-
-        if (platforms.length < 2) return null;
-
-        const cheapest = platforms.reduce((a, b) =>
-          a.price < b.price ? a : b
-        );
-
-        const fastest = platforms.reduce((a, b) =>
-          a.time < b.time ? a : b
-        );
-
-        const mostExpensive = platforms.reduce((a, b) =>
-          a.price > b.price ? a : b
-        );
-
-        const savings = mostExpensive.price - cheapest.price;
-
-        return (
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-xs opacity-80">
-🛒 Basket ({itemCount} items)
-</span>
-
-            <span>
-  🔥 <span
-    className={
-      cheapest.name === "Zepto"
-        ? "text-purple-400 font-semibold"
-        : cheapest.name === "Blinkit"
-        ? "text-yellow-400 font-semibold"
-        : cheapest.name === "Instamart"
-        ? "text-orange-400 font-semibold"
-        : "text-blue-400 font-semibold"
-    }
-  >
-    {cheapest.name}
-  </span>{" "}
-  best price ₹{cheapest.price}
-</span>
-
-<span className="text-xs opacity-80">
-  ⚡ <span
-    className={
-      fastest.name === "Zepto"
-        ? "text-purple-400 font-semibold"
-        : fastest.name === "Blinkit"
-        ? "text-yellow-400 font-semibold"
-        : fastest.name === "Instamart"
-        ? "text-orange-400 font-semibold"
-        : "text-blue-400 font-semibold"
-    }
-  >
-    {fastest.name}
-  </span>{" "}
-  fastest delivery {fastest.time} mins
-</span>
-
-            <span className="text-xs opacity-80">
-              💰 You save ₹{savings}
-            </span>
-
-          </div>
-        );
-
-      })()}
-    </div>
-  </motion.div>
-)}
-
-        {/* Savings */}
-        {savingsData && savingsData.perOrder > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className={`mt-4 p-4 rounded-xl text-sm ${
-              darkMode
-                ? "bg-green-500/10 border border-green-400/30 text-green-300"
-                : "bg-green-50 border border-green-200 text-green-700"
-            }`}
-          >
-            <div className="font-semibold mb-1">💰 Smart Savings Insight</div>
-            <div>You save ₹{savingsData.perOrder} this order.</div>
-            <div>~ ₹{savingsData.monthly} monthly (8 orders).</div>
-            <div>~ ₹{savingsData.yearly} yearly.</div>
-            <div>{savingsData.percentage}% cheaper than competitor.</div>
-          </motion.div>
-        )}
-
-        {/* Mobile Platform Toggle */}
-        {serviceType === "food" && result && (
-          <div className="flex lg:hidden justify-center gap-4 mt-4 mb-2">
-            <button
-              onClick={() => setMobilePlatform("zomato")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                mobilePlatform === "zomato"
-                  ? "bg-red-500 text-white"
-                  : "bg-white/20 text-gray-600"
-              }`}
-            >
-              Zomato
-            </button>
-            <button
-              onClick={() => setMobilePlatform("swiggy")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                mobilePlatform === "swiggy"
-                  ? "bg-orange-500 text-white"
-                  : "bg-white/20 text-gray-600"
-              }`}
-            >
-              Swiggy
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ── THREE-COLUMN ROW: Zomato | Center Card | Swiggy ── */}
-      <div className="relative z-10 flex flex-col lg:flex-row items-start justify-center gap-8 px-4 lg:px-8 py-6">
-
-        {/* ✅ FIX: Left Grocery Panel — Zepto & Blinkit from result.basket[0] */}
-        {serviceType === "grocery" && result && (
-  <div
-    className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
-      darkMode
-        ? "bg-white/5 backdrop-blur-md text-white"
-        : "bg-white shadow-md"
-    }`}
-  >
-    <h3 className="text-center font-bold mb-4 text-purple-400">
-      Grocery Stores
-    </h3>
-
-    {[
-      {
-        name: "Zepto",
-        price: result.basket?.[0]?.zepto,
-        time: 10,
-        url: "https://www.zeptonow.com/",
-        borderClass: "border-purple-400 shadow-purple-400/30"
-      },
-      {
-        name: "Blinkit",
-        price: result.basket?.[0]?.blinkit,
-        time: 9,
-        url: "https://blinkit.com/",
-        borderClass: "border-yellow-400 shadow-yellow-400/30"
-      }
-    ].map((platform, index) => (
-      <div
-        key={platform.name + index}
-        className={`mb-4 p-3 rounded-xl border transition-all hover:scale-105 ${platform.borderClass}`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-semibold opacity-80">
-            {platform.name}
-          </span>
-        </div>
-        <div
-className={`${
-result.basket?.length > 1
-? "flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
-: "flex justify-center"
-}`}
->
-
-{result.basket?.map((item, i) => {
-
-const imageKey = item.product.toLowerCase().split(" ")[0]
-
-return (
-
-<div
-key={i}
-className={`${
-result.basket?.length > 1
-? "min-w-[150px]"
-: "w-full"
-} bg-white/5 rounded-xl p-2 flex-shrink-0`}
->
-
-<a
-href={
-platform.name === "Zepto"
-? `https://www.zeptonow.com/search?query=${item.product}`
-: platform.name === "Blinkit"
-? `https://blinkit.com/s/?q=${item.product}`
-: platform.name === "Instamart"
-? `https://www.swiggy.com/instamart/search?query=${item.product}`
-: `https://www.jiomart.com/search/${item.product}`
-}
-target="_blank"
-rel="noopener noreferrer"
->
-
-<img
-src={groceryImages[imageKey]}
-className="w-full h-24 object-cover rounded-lg mb-2 hover:scale-105 transition cursor-pointer"
-/>
-
-</a>
-
-<span
-className={`${categoryColors[item.category || "other"]} text-white text-xs px-2 py-1 rounded`}
->
-{item.category}
-</span>
-
-<div className="font-semibold text-xs mt-1 capitalize">
-{item.product}
-</div>
-
-<div className="flex justify-between text-xs mt-1">
-<span>
-₹{platform.name === "Zepto"
-? item.zepto
-: item.blinkit}
-</span>
-
-<span>⏱ {platform.time}m</span>
-</div>
-
-</div>
-
-)
-
-})}
-
-</div>
-        
-        <a
-          href={platform.url}
-          target="_blank"
-          className="block mt-2 text-center bg-green-500 text-white py-1 rounded-lg"
-        >
-          Order
-        </a>
-      </div>
-    ))}
-  </div>
-)}
-
-        {/* Zomato Panel */}
-        {serviceType === "food" && result?.zomatoList && (
-          <div
-            className={`${mobilePlatform === "zomato" ? "block" : "hidden"} 
-            lg:block w-full lg:w-80 rounded-2xl p-4 lg:max-h-[550px] lg:overflow-y-auto transition-all duration-500 ${
-              darkMode
-                ? "bg-white/5 backdrop-blur-md text-slate-200"
-                : "bg-white shadow-md text-slate-800"
-            } ${
-              winner === "zomato"
-                ? "shadow-[0_0_40px_rgba(239,68,68,0.4)]"
-                : ""
-            }`}
-          >
-            <h3
-              className={`sticky top-0 z-10 py-3 text-center font-bold backdrop-blur-md ${
-                darkMode
-                  ? "bg-gray-900/80 text-red-400"
-                  : "bg-white/80 text-orange-500"
-              }`}
-            >
-              Zomato
-            </h3>
-
-            {loading ? (
-              <>
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-              </>
-            ) : (
-              [...result.zomatoList]
-                .sort((a, b) => a.price - b.price)
-                .map((rest, index) => (
-  <div
-    key={rest.name + "zomato"}
-                    className={`w-full py-3 border-b text-sm transition-all duration-300 
-                    hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 
-                    cursor-pointer ${
-                      index === 0
-                        ? "bg-green-500/10 border-green-400/30 rounded-lg"
-                        : "border-white/10"
-                    }`}
+                {/* Grocery insight bar */}
+                {serviceType === "grocery" && result && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="hidden lg:flex justify-center w-full max-w-2xl"
                   >
-                    <motion.div
-  key={rest.name + "zomato-card"}
-                      layout
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.08 }}
-                      className={`relative w-full p-4 mb-4 rounded-2xl overflow-hidden transition-all duration-300 ${
-                        darkMode
-                          ? "bg-white/5 backdrop-blur-md border border-white/10"
-                          : "bg-white shadow-md border border-slate-200"
-                      } ${
-                        index === 0
-                          ? "ring-2 ring-green-400 shadow-green-400/30"
-                          : ""
+                    <div
+                      className={`w-full px-6 py-4 rounded-2xl text-sm font-medium border ${
+                        dm
+                          ? "bg-green-500/10 text-green-200 border-green-400/20"
+                          : "bg-white text-slate-700 border-slate-200 shadow-md"
                       }`}
                     >
-                      <div className="relative h-40 rounded-xl overflow-hidden mb-3">
+                      {(() => {
+                        const itemCount = result.basket?.length || 0;
+                        const totals = result.totals;
+                        if (!totals) return null;
+                        const platforms = [
+                          { name: "Zepto", price: totals.zepto, time: 10 },
+                          { name: "Blinkit", price: totals.blinkit, time: 9 },
+                          { name: "Instamart", price: totals.instamart, time: 14 },
+                          { name: "JioMart", price: totals.jiomart, time: 25 },
+                        ];
+                        if (platforms.length < 2) return null;
+                        const cheapest = platforms.reduce((a, b) =>
+                          a.price < b.price ? a : b
+                        );
+                        const fastest = platforms.reduce((a, b) =>
+                          a.time < b.time ? a : b
+                        );
+                        const mostExpensive = platforms.reduce((a, b) =>
+                          a.price > b.price ? a : b
+                        );
+                        const savings = mostExpensive.price - cheapest.price;
+                        const colorMap = {
+                          Zepto: "text-purple-400",
+                          Blinkit: "text-yellow-400",
+                          Instamart: "text-orange-400",
+                          JioMart: "text-blue-400",
+                        };
+                        return (
+                          <div className="flex flex-col items-center gap-1">
+                            <span className={`text-xs ${dm ? "opacity-60" : "text-slate-400"}`}>
+                              🛒 Basket ({itemCount} items)
+                            </span>
+                            <span className="font-semibold">
+                              🔥{" "}
+                              <span className={colorMap[cheapest.name]}>
+                                {cheapest.name}
+                              </span>{" "}
+                              best price ₹{cheapest.price}
+                            </span>
+                            <span className={`text-xs ${dm ? "opacity-70" : "text-slate-500"}`}>
+                              ⚡{" "}
+                              <span className={colorMap[fastest.name]}>
+                                {fastest.name}
+                              </span>{" "}
+                              fastest delivery {fastest.time} mins
+                            </span>
+                            <span className={`text-xs font-medium ${dm ? "text-green-400" : "text-green-600"}`}>
+                              💰 You save ₹{savings}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </motion.div>
+                )}
 
-                        <div className="overflow-hidden rounded-lg">
-                          <img
-                            src={rest.image || `https://loremflickr.com/600/400/${item}?random=${index}`}
-                            alt={rest.name}
-                            className="w-full h-40 object-cover rounded-lg transition-transform duration-500 hover:scale-110"
+                {/* Savings insight */}
+                {savingsData && savingsData.perOrder > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`w-full max-w-2xl px-5 py-4 rounded-2xl text-sm border ${
+                      dm
+                        ? "bg-green-500/10 border-green-400/20 text-green-300"
+                        : "bg-green-50 border-green-200 text-green-700 shadow-sm"
+                    }`}
+                  >
+                    <div className="font-semibold mb-2 flex items-center gap-2">
+                      <span className="text-base">💰</span> Smart Savings Insight
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: "This Order", value: `₹${savingsData.perOrder}` },
+                        { label: "Monthly (8x)", value: `₹${savingsData.monthly}` },
+                        { label: "Yearly", value: `₹${savingsData.yearly}` },
+                        { label: "Cheaper by", value: `${savingsData.percentage}%` },
+                      ].map((s) => (
+                        <div
+                          key={s.label}
+                          className={`px-3 py-2 rounded-xl text-center ${
+                            dm ? "bg-white/5" : "bg-green-100"
+                          }`}
+                        >
+                          <div className="font-bold text-base">{s.value}</div>
+                          <div className="text-xs opacity-70">{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Mobile platform toggle */}
+                {serviceType === "food" && result && (
+                  <div className="flex lg:hidden justify-center gap-3 mt-1">
+                    {["zomato", "swiggy"].map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setMobilePlatform(p)}
+                        className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                          mobilePlatform === p
+                            ? p === "zomato"
+                              ? "bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                              : "bg-orange-500 text-white shadow-[0_0_15px_rgba(255,107,53,0.4)]"
+                            : dm
+                            ? "bg-white/8 text-white/60 border border-white/10"
+                            : "bg-white text-slate-500 border border-slate-200"
+                        }`}
+                      >
+                        {p === "zomato" ? "🍅 Zomato" : "🟠 Swiggy"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── THREE-COLUMN LAYOUT ── */}
+              <div className="relative z-10 flex flex-col lg:flex-row items-start justify-center gap-6 px-4 lg:px-8 py-6">
+
+                {/* ── LEFT: Grocery Panel (Zepto + Blinkit) ── */}
+                {serviceType === "grocery" && result && (
+                  <GroceryPanel
+                    platforms={[
+                      { name: "Zepto", price: result.basket?.[0]?.zepto, time: 10, url: "https://www.zeptonow.com/", color: "purple", borderClass: dm ? "border-purple-500/40" : "border-purple-300" },
+                      { name: "Blinkit", price: result.basket?.[0]?.blinkit, time: 9, url: "https://blinkit.com/", color: "yellow", borderClass: dm ? "border-yellow-500/40" : "border-yellow-300" },
+                    ]}
+                    basket={result.basket}
+                    groceryImages={groceryImages}
+                    categoryColors={categoryColors}
+                    dm={dm}
+                    title="Quick Commerce"
+                    titleColor="text-purple-400"
+                  />
+                )}
+
+                {/* ── LEFT: Zomato Panel ── */}
+                {serviceType === "food" && result?.zomatoList && (
+                  <PlatformPanel
+                    show={mobilePlatform === "zomato"}
+                    platform="zomato"
+                    label="Zomato"
+                    color="red"
+                    list={result.zomatoList}
+                    item={item}
+                    loading={loading}
+                    winner={winner}
+                    dm={dm}
+                    favourites={favourites}
+                    city={city}
+                    addFavourite={addFavourite}
+                  />
+                )}
+
+                {/* ── CENTER CARD ── */}
+                <div
+                  className={`relative z-10 w-full max-w-md lg:max-w-sm xl:max-w-md rounded-3xl shadow-2xl transition-all duration-500 overflow-hidden ${
+                    dm
+                      ? "bg-[#0d1025] border border-white/[0.07] shadow-[0_25px_60px_rgba(0,0,0,0.6)]"
+                      : "bg-white border border-slate-200/80 shadow-[0_25px_60px_rgba(0,0,0,0.1)]"
+                  }`}
+                >
+                  {/* card top gradient strip */}
+                  <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500" />
+
+                  <div className="p-7">
+                    {/* ── Top bar: Dashboard / Logout / Theme ── */}
+                    <div className="flex justify-end mb-5 gap-2 flex-wrap">
+                      {isLoggedIn && (
+                        <button
+                          onClick={() => (window.location.href = "/dashboard")}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                            dm
+                              ? "bg-blue-500/15 text-blue-300 border-blue-400/30 hover:bg-blue-500/25"
+                              : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+                          }`}
+                        >
+                          📊 Dashboard
+                        </button>
+                      )}
+                      {isLoggedIn && (
+                        <button
+                          onClick={handleLogout}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                            dm
+                              ? "bg-red-500/15 text-red-300 border-red-400/30 hover:bg-red-500/25"
+                              : "bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
+                          }`}
+                        >
+                          ← Logout
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setDarkMode(!dm)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                          dm
+                            ? "bg-white/8 text-white/70 border-white/15 hover:bg-white/12"
+                            : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                        }`}
+                      >
+                        {dm ? "☀ Light" : "🌙 Dark"}
+                      </button>
+                    </div>
+
+                    {/* ── Service Selector ── */}
+                    <div className={`flex p-1 rounded-2xl mb-6 ${dm ? "bg-white/5" : "bg-slate-100"}`}>
+                      {["food", "grocery", "ride"].map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setServiceType(type)}
+                          className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                            serviceType === type
+                              ? dm
+                                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(79,142,247,0.4)]"
+                                : "bg-blue-600 text-white shadow-sm"
+                              : dm
+                              ? "text-white/40 hover:text-white/60"
+                              : "text-slate-400 hover:text-slate-600"
+                          }`}
+                        >
+                          {type === "food" && "🍔 Food"}
+                          {type === "grocery" && "🛒 Grocery"}
+                          {type === "ride" && "🚗 Ride"}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* ── Welcome / Insights ── */}
+                    {user && (
+                      <div className={`mb-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 ${
+                        dm
+                          ? "bg-green-500/10 text-green-300 border border-green-400/20"
+                          : "bg-green-50 text-green-700 border border-green-200"
+                      }`}>
+                        <span>👋</span>
+                        <span>Welcome back, <strong>{user.name}</strong></span>
+                      </div>
+                    )}
+
+                    {insights && (
+                      <div className={`mb-4 p-4 rounded-xl text-sm border ${
+                        dm
+                          ? "bg-blue-500/8 border-blue-400/20 text-blue-200"
+                          : "bg-blue-50 border-blue-200 text-blue-700"
+                      }`}>
+                        <div className="font-semibold mb-2 flex items-center gap-1">
+                          <span>📊</span> Your Insights
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { label: "Searches", value: insights.totalSearches },
+                            { label: "Top Food", value: insights.favouriteFood },
+                            { label: "Top City", value: insights.favouriteCity },
+                          ].map((ins) => (
+                            <div key={ins.label} className={`text-center py-2 rounded-lg ${dm ? "bg-white/5" : "bg-white"}`}>
+                              <div className="font-bold text-sm">{ins.value}</div>
+                              <div className="text-xs opacity-60">{ins.label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Brand header ── */}
+                    <div className="text-center mb-7">
+                      <h1
+                        className="brand text-3xl font-extrabold tracking-tight"
+                        style={{
+                          background: dm
+                            ? "linear-gradient(135deg, #4F8EF7, #a855f7, #FF6B35)"
+                            : "linear-gradient(135deg, #1d4ed8, #7c3aed)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          backgroundClip: "text",
+                        }}
+                      >
+                        PriceCompare
+                      </h1>
+                      <p className={`mt-1 text-sm ${dm ? "text-white/40" : "text-slate-400"}`}>
+                        {serviceType === "food" && "Find the cheapest bite in seconds"}
+                        {serviceType === "grocery" && "Compare grocery prices instantly"}
+                        {serviceType === "ride" && "Compare ride fares instantly"}
+                      </p>
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
+                        style={{
+                          background: dm
+                            ? "rgba(79,142,247,0.12)"
+                            : "rgba(79,142,247,0.1)",
+                          color: dm ? "#93c5fd" : "#2563eb",
+                          border: `1px solid ${dm ? "rgba(79,142,247,0.25)" : "rgba(79,142,247,0.25)"}`,
+                        }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                        Live Price Comparison Engine
+                      </div>
+                    </div>
+
+                    {/* ── Inputs ── */}
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base pointer-events-none">
+                          {serviceType === "food" ? "🍽️" : serviceType === "grocery" ? "🥬" : "📍"}
+                        </span>
+                        <input
+                          type="text"
+                          placeholder={
+                            serviceType === "food"
+                              ? "Food item (e.g. Pizza)"
+                              : serviceType === "grocery"
+                              ? "Grocery item (e.g. Milk)"
+                              : "Ride location"
+                          }
+                          value={item}
+                          onChange={(e) => setItem(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleCompare()}
+                          className={`w-full pl-11 pr-4 py-3.5 rounded-xl outline-none text-sm font-medium transition-all duration-200 ${
+                            dm
+                              ? "bg-white/6 text-white border border-white/10 focus:border-blue-400/60 focus:bg-white/8 focus:shadow-[0_0_0_3px_rgba(79,142,247,0.15)]"
+                              : "bg-slate-50 text-slate-800 border border-slate-200 focus:border-blue-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(79,142,247,0.1)]"
+                          }`}
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base pointer-events-none">🌆</span>
+                          <input
+                            type="text"
+                            placeholder="City (e.g. Indore)"
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleCompare()}
+                            className={`w-full pl-11 pr-4 py-3.5 rounded-xl outline-none text-sm font-medium transition-all duration-200 ${
+                              dm
+                                ? "bg-white/6 text-white border border-white/10 focus:border-blue-400/60 focus:bg-white/8 focus:shadow-[0_0_0_3px_rgba(79,142,247,0.15)]"
+                                : "bg-slate-50 text-slate-800 border border-slate-200 focus:border-blue-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(79,142,247,0.1)]"
+                            }`}
                           />
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                        <div className="absolute bottom-2 left-3 text-white font-semibold text-sm">
-                          {rest.name}
-                        </div>
-                        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                          ⭐ {rest.rating}
-                        </div>
-                        {index === 0 && (
-                          <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
-                            BEST DEAL
-                          </div>
-                          
-                        )}
-                        <button
-onClick={() => addFavourite(rest.name, "zomato", city, rest.price, rest.image)}
-className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
->
-<motion.span
-animate={{ scale: favourites.includes(rest.name + "zomato" + city) ? 1.2 : 1 }}
-className={favourites.includes(rest.name + "zomato" + city) ? "text-red-500" : "text-white"}
->
-❤️
-</motion.span>
-</button>
+                        <motion.button
+                          type="button"
+                          onClick={handleGetLocation}
+                          whileTap={{ scale: 0.92 }}
+                          whileHover={{ scale: 1.05 }}
+                          className={`px-4 py-3.5 rounded-xl font-semibold text-sm transition-all relative overflow-hidden ${
+                            dm
+                              ? "bg-blue-500/20 text-blue-300 border border-blue-400/30 hover:bg-blue-500/30"
+                              : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                          } ${detectingLocation ? "shadow-[0_0_20px_rgba(79,142,247,0.5)]" : ""}`}
+                        >
+                          {detectingLocation ? (
+                            <motion.span
+                              animate={{ rotate: 360 }}
+                              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                              className="block"
+                            >
+                              📡
+                            </motion.span>
+                          ) : (
+                            "📍"
+                          )}
+                          {detectingLocation && (
+                            <span className="absolute inset-0 rounded-xl border-2 border-blue-400 animate-ping opacity-40" />
+                          )}
+                        </motion.button>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm opacity-80">⏱ {rest.time} mins • 📍 {rest.distance} km </div>
-                        <div className="text-lg font-bold text-blue-500">
-                          ₹<CountUp end={rest.price} duration={1} />
-                        </div>
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
-                    </motion.div>
 
-                    <div className="flex justify-between items-center w-full">
-                      <span className="font-medium text-left">{rest.name}</span>
-                      <div className="flex items-center gap-2">
-                        {index === 0 && (
-                          <span className="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full">
-                            BEST
-                          </span>
+                      {/* ── Compare button ── */}
+                      <motion.button
+                        onClick={() => handleCompare()}
+                        disabled={loading}
+                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.01 }}
+                        className={`w-full flex items-center justify-center gap-2.5 font-bold py-4 rounded-xl text-white text-sm transition-all duration-300 relative overflow-hidden disabled:opacity-60 btn-primary shadow-[0_4px_20px_rgba(79,142,247,0.35)] hover:shadow-[0_6px_30px_rgba(79,142,247,0.5)]`}
+                      >
+                        {loading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Comparing prices...
+                          </>
+                        ) : (
+                          <>
+                            <span>🔍</span> Compare Prices
+                          </>
                         )}
-                        <span className="font-semibold">₹{rest.price}</span>
-                        <a
- href={rest.url}
- target="_blank"
- className="mt-3 px-3 py-1 bg-red-500 rounded-lg text-white hover:bg-red-600"
->
-Order Now
-</a>
+                      </motion.button>
+
+                      {loading && (
+                        <p className={`text-xs text-center ${dm ? "text-blue-400/70" : "text-blue-500"}`}>
+                          ⚡ Fetching live prices from all platforms…
+                        </p>
+                      )}
+                    </div>
+
+                    {/* ── Error ── */}
+                    {error && (
+                      <motion.p
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`text-center mt-4 text-sm px-4 py-3 rounded-xl border ${
+                          dm
+                            ? "bg-red-500/10 text-red-300 border-red-400/20"
+                            : "bg-red-50 text-red-600 border-red-200"
+                        }`}
+                      >
+                        ⚠️ {error}
+                      </motion.p>
+                    )}
+
+                    {/* ── Basket Mode ── */}
+                    {isBasketMode && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`mt-6 p-4 rounded-2xl border ${
+                          dm
+                            ? "bg-white/4 border-white/8"
+                            : "bg-slate-50 border-slate-200"
+                        }`}
+                      >
+                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                          <span>🛒</span> Basket Comparison
+                        </h3>
+                        <div className="space-y-2">
+                          {Object.entries(result.totals).map(([platform, price]) => (
+                            <div
+                              key={platform}
+                              className={`flex justify-between items-center px-4 py-2.5 rounded-xl text-sm transition-all ${
+                                basketWinner === platform
+                                  ? dm
+                                    ? "bg-green-500/15 border border-green-400/30 text-green-300 font-bold"
+                                    : "bg-green-50 border border-green-300 text-green-700 font-bold"
+                                  : dm
+                                  ? "bg-white/4"
+                                  : "bg-white"
+                              }`}
+                            >
+                              <span className="capitalize flex items-center gap-1.5">
+                                {basketWinner === platform && (
+                                  <span className="text-xs">🏆</span>
+                                )}
+                                {platform}
+                              </span>
+                              <span className="font-bold">₹{price}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {isBasketMode && (
+                      <div className="mt-4">
+                        <h4 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${dm ? "text-white/40" : "text-slate-400"}`}>
+                          Basket Items
+                        </h4>
+                        <div className="space-y-1.5">
+                          {result.basket.map((bItem, index) => (
+                            <div
+                              key={index}
+                              className={`flex justify-between items-center text-xs p-3 rounded-xl transition-all ${
+                                dm
+                                  ? "bg-white/4 border border-white/6 hover:bg-white/7"
+                                  : "bg-slate-50 border border-slate-100 hover:bg-white"
+                              }`}
+                            >
+                              <span className="font-semibold capitalize">{bItem.product}</span>
+                              <div className="flex gap-3 font-semibold">
+                                <span className="text-purple-400">Z ₹{bItem.zepto}</span>
+                                <span className="text-yellow-400">B ₹{bItem.blinkit}</span>
+                                <span className="text-orange-400">I ₹{bItem.instamart}</span>
+                                <span className="text-blue-400">J ₹{bItem.jiomart}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex justify-between text-xs mt-1 opacity-80 w-full">
-                      <span>⭐ {rest.rating}</span>
-                      <span>{rest.time} mins</span>
-                    </div>
+                    )}
+
+                    {/* ── Recent searches ── */}
+                    {history.length > 0 && (
+                      <div className={`mt-6 pt-5 border-t ${dm ? "border-white/6" : "border-slate-100"}`}>
+                        <div className="flex justify-between items-center mb-3">
+                          <p className={`text-xs font-semibold uppercase tracking-wider ${dm ? "text-white/40" : "text-slate-400"}`}>
+                            Recent Searches
+                          </p>
+                          <button
+                            onClick={handleClearHistory}
+                            className={`text-xs font-medium transition-colors ${
+                              dm ? "text-red-400/70 hover:text-red-400" : "text-red-400 hover:text-red-500"
+                            }`}
+                          >
+                            Clear all
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {history.map((search, index) => (
+                            <button
+                              key={index}
+                              onClick={async () => {
+                                setLoading(true);
+                                setError("");
+                                setItem(search.item);
+                                setCity(search.city);
+                                const token = localStorage.getItem("token");
+                                try {
+                                  const response = await axios.post(
+                                    "https://food-price-compare-production.up.railway.app/compare",
+                                    {
+                                      item: search.item,
+                                      city: search.city,
+                                      serviceType: search.serviceType || "food",
+                                    },
+                                    { headers: { Authorization: `Bearer ${token}` } }
+                                  );
+                                  setResult(response.data);
+                                } catch (err) {
+                                  console.log("History compare failed");
+                                  setError("Failed to load saved search.");
+                                } finally {
+                                  setLoading(false);
+                                }
+                              }}
+                              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
+                                dm
+                                  ? "bg-white/6 hover:bg-white/10 text-white/60 hover:text-white border border-white/8"
+                                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
+                              }`}
+                            >
+                              🕒 {search.item} · {search.city}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))
-            )}
-          </div>
-        )}
-
-        {/* ── CENTER CARD ── */}
-        <div
-          className={`relative z-10 w-full max-w-lg rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
-            darkMode ? "bg-gray-800 text-white" : "bg-white text-slate-800"
-          }`}
-        >
-          <div className="flex justify-end mb-4 gap-2">
-            {isLoggedIn && (
-  <button
-    onClick={() => window.location.href = "/dashboard"}
-    className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm"
-  >
-    Dashboard
-  </button>
-)}
-
-  {isLoggedIn && (
-    <button
-      onClick={handleLogout}
-      className="px-3 py-1 bg-red-500 text-white rounded-full text-sm"
-    >
-      Logout
-    </button>
-  )}
-
-  <button
-    onClick={() => setDarkMode(!darkMode)}
-    className="text-sm px-3 py-1 rounded-full border transition"
-  >
-    {darkMode ? "☀ Light" : "🌙 Dark"}
-  </button>
-</div>
-
-          
-
-
-  
-{/* Service Selector */}
-          <div className="flex justify-center gap-3 mb-6">
-            {["food", "grocery", "ride"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setServiceType(type)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                  serviceType === type
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "bg-white/10 text-gray-400 hover:bg-white/20"
-                }`}
-              >
-                {type === "food" && "🍔 Food"}
-                {type === "grocery" && "🛒 Grocery"}
-                {type === "ride" && "🚗 Ride"}
-              </button>
-            ))}
-          </div>
-          {user && (
-  <div className="mb-4 text-sm text-green-400 font-medium">
-    👋 Welcome, {user.name}
-  </div>
-)}
-{insights && (
-  <div className={`mb-4 p-3 rounded-xl text-sm ${
-    darkMode
-      ? "bg-blue-500/10 border border-blue-400/30 text-blue-300"
-      : "bg-blue-50 border border-blue-200 text-blue-700"
-  }`}>
-    📊 Your Insights <br/>
-    Total Searches: {insights.totalSearches} <br/>
-    Favourite Food: {insights.favouriteFood} <br/>
-    Favourite City: {insights.favouriteCity}
-  </div>
-)}
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
-              PriceCompare
-            </h1>
-            <p className={`mt-2 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-              {serviceType === "food" && "Compare food prices instantly"}
-{serviceType === "grocery" && "Compare grocery prices instantly"}
-{serviceType === "ride" && "Compare ride fares instantly"}
-            </p>
-            <div className="mt-3 flex justify-center">
-              <span
-                className={`text-xs px-3 py-1 rounded-full transition ${
-                  darkMode
-                    ? "bg-blue-500/20 text-blue-300"
-                    : "bg-blue-100 text-blue-600"
-                }`}
-              >
-                Live Price Comparison Engine
-              </span>
-            </div>
-          </div>
-
-          {/* Inputs */}
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder={
-  serviceType === "food"
-    ? "Food item (e.g. Pizza)"
-    : serviceType === "grocery"
-    ? "Grocery item (e.g. Milk)"
-    : "Ride location"
-}
-              value={item}
-              onChange={(e) => setItem(e.target.value)}
-              className={`w-full rounded-xl px-4 py-3 outline-none transition ${
-                darkMode
-                  ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
-                  : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
-              }`}
-            />
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="City (e.g. Indore)"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className={`w-full rounded-xl px-4 py-3 outline-none transition ${
-                  darkMode
-                    ? "bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:ring-2 focus:ring-blue-400"
-                    : "bg-white text-black placeholder-gray-500 border border-slate-300 focus:ring-2 focus:ring-blue-500"
-                }`}
-              />
-
-              <motion.button
-                type="button"
-                onClick={handleGetLocation}
-                whileTap={{ scale: 0.9 }}
-                whileHover={{ scale: 1.05 }}
-                className={`relative px-4 py-3 rounded-xl overflow-hidden flex items-center justify-center transition-all duration-300 ${
-                  darkMode
-                    ? "bg-blue-500 hover:bg-blue-600 text-white"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                } ${detectingLocation ? "shadow-[0_0_20px_rgba(59,130,246,0.6)]" : ""}`}
-              >
-                {detectingLocation ? (
-                  <motion.div
-                    initial={{ rotate: 0 }}
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    className="text-white"
-                  >
-                    📡
-                  </motion.div>
-                ) : (
-                  <motion.span
-                    initial={{ y: 0 }}
-                    whileHover={{ y: -2 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    📍
-                  </motion.span>
-                )}
-                {detectingLocation && (
-                  <span className="absolute inset-0 rounded-xl border-2 border-blue-400 animate-ping opacity-50"></span>
-                )}
-              </motion.button>
-            </div>
-
-            <button
-              onClick={() => handleCompare()}
-              disabled={loading}
-              className={`w-full flex items-center justify-center gap-2
-              font-semibold py-3 rounded-xl text-white
-              transition-all duration-300
-              bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600
-              bg-[length:200%_200%]
-              animate-[gradient_4s_ease_infinite]
-              hover:scale-[1.03]
-              hover:shadow-xl hover:shadow-blue-500/40
-              disabled:opacity-60`}
-            >
-              {loading && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              )}
-              {loading ? "Comparing..." : "Compare Prices"}
-            </button>
-{loading && (
-  <p className="text-xs text-blue-400 mb-2">
-    Loading from history...
-  </p>
-)}
-            {history.length > 0 && (
-              <div className="mt-6">
-                <div className="flex justify-between items-center mb-2">
-  <p className="text-sm text-slate-500">Recent Searches</p>
-
-  <button
-    onClick={handleClearHistory}
-    className="text-xs text-red-400 hover:text-red-500"
-  >
-    Clear
-  </button>
-</div>
-                <div className="flex flex-wrap gap-2">
-                  {history.map((search, index) => (
-                    <button
-                      key={index}
-                      onClick={async () => {
-
-  setLoading(true);   // 🔥 ADD THIS
-  setError("");       // 🔥 clear old errors
-
-  setItem(search.item);
-  setCity(search.city);
-
-  const token = localStorage.getItem("token");
-
-  try {
-    const response = await axios.post(
-      "https://food-price-compare-production.up.railway.app/compare",
-      {
-        item: search.item,
-        city: search.city,
-        serviceType: search.serviceType || "food"
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    setResult(response.data);
-  } catch (err) {
-    console.log("History compare failed");
-    setError("Failed to load saved search.");
-  } finally {
-    setLoading(false);   // 🔥 ADD THIS
-  }
-}}
-                      className={`text-xs px-3 py-1 rounded-full transition ${
-                        darkMode
-                          ? "bg-white/10 hover:bg-white/20 text-white"
-                          : "bg-slate-200 hover:bg-slate-300 text-slate-800"
-                      }`}
-                    >
-                      {search.item} - {search.city}
-                    </button>
-                  ))}
                 </div>
+                {/* ── END CENTER CARD ── */}
+
+                {/* ── RIGHT: Grocery Panel (Instamart + JioMart) ── */}
+                {serviceType === "grocery" && result && (
+                  <GroceryPanel
+                    platforms={[
+                      { name: "Instamart", price: result.basket?.[0]?.instamart, time: 14, url: "https://www.swiggy.com/instamart", color: "orange", borderClass: dm ? "border-orange-500/40" : "border-orange-300" },
+                      { name: "JioMart", price: result.basket?.[0]?.jiomart, time: 25, url: "https://www.jiomart.com/", color: "blue", borderClass: dm ? "border-blue-500/40" : "border-blue-300" },
+                    ]}
+                    basket={result.basket}
+                    groceryImages={groceryImages}
+                    categoryColors={categoryColors}
+                    dm={dm}
+                    title="More Stores"
+                    titleColor="text-blue-400"
+                  />
+                )}
+
+                {/* ── RIGHT: Swiggy Panel ── */}
+                {serviceType === "food" && result?.swiggyList && (
+                  <PlatformPanel
+                    show={mobilePlatform === "swiggy"}
+                    platform="swiggy"
+                    label="Swiggy"
+                    color="orange"
+                    list={result.swiggyList}
+                    item={item}
+                    loading={loading}
+                    winner={winner}
+                    dm={dm}
+                    favourites={favourites}
+                    city={city}
+                    addFavourite={addFavourite}
+                  />
+                )}
               </div>
-            )}
-          </div>
+              {/* ── END THREE-COLUMN ── */}
 
-          {/* Error */}
-          {error && <p className="text-red-500 text-center mt-4">{error}</p>}
-
-          {isBasketMode && (
-
-<div className={`mt-6 p-5 rounded-2xl max-w-md mx-auto ${
-darkMode
-? "bg-white/5 border border-white/10"
-: "bg-slate-100"
-}`}>
-
-<h3 className="text-lg font-semibold mb-3">
-🛒 Basket Comparison
-</h3>
-
-<div className="space-y-2">
-
-{Object.entries(result.totals).map(([platform,price]) => (
-
-<div
-key={platform}
-className={`flex justify-between p-3 rounded-lg ${
-basketWinner === platform
-? "bg-green-500/20 border border-green-400 font-semibold"
-: "bg-white/10"
-}`}
->
-
-<span className="capitalize">
-{platform}
-</span>
-
-<span className="font-bold">
-₹{price}
-</span>
-
-</div>
-
-))}
-
-</div>
-
-</div>
-
-)}
-
-{isBasketMode && (
-
-<div className="mt-4">
-
-<h4 className="text-sm mb-2 opacity-80">
-Basket Items
-</h4>
-
-<div className="space-y-2">
-
-{result.basket.map((item, index) => (
-  <div
-    key={index}
-    className="flex justify-between items-center text-sm p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition"
-  >
-    
-    <span className="font-medium capitalize">
-      {item.product}
-    </span>
-
-    <div className="flex gap-4 text-xs font-semibold">
-
-      <span className="text-purple-400">🟣 Z ₹{item.zepto}</span>
-<span className="text-yellow-400">🟡 B ₹{item.blinkit}</span>
-<span className="text-orange-400">🟠 I ₹{item.instamart}</span>
-<span className="text-blue-400">🔵 J ₹{item.jiomart}</span>
-    </div>
-
-  </div>
-))}
-
-</div>
-
-</div>
-
-)}
-
-         
-          
-        </div>
-        {/* ── END CENTER CARD ── */}
-
-        {/* ✅ FIX: Right Grocery Panel — Instamart & JioMart from result.basket[0] */}
-        {serviceType === "grocery" && result && (
-  <div
-    className={`w-full lg:w-72 rounded-2xl p-4 transition-all ${
-      darkMode
-        ? "bg-white/5 backdrop-blur-md text-white"
-        : "bg-white shadow-md"
-    }`}
-  >
-    <h3 className="text-center font-bold mb-4 text-blue-400">
-      More Stores
-    </h3>
-
-    {[
-      {
-        name: "Instamart",
-        price: result.basket?.[0]?.instamart,
-        time: 14,
-        url: "https://www.swiggy.com/instamart",
-        borderClass: "border-orange-400 shadow-orange-400/30"
-      },
-      {
-        name: "JioMart",
-        price: result.basket?.[0]?.jiomart,
-        time: 25,
-        url: "https://www.jiomart.com/",
-        borderClass: "border-blue-400 shadow-blue-400/30"
-      }
-    ].map((platform, index) => (
-      <div
-        key={platform.name + index}
-        className={`mb-4 p-3 rounded-xl border transition-all hover:scale-105 ${platform.borderClass}`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-semibold opacity-80">
-            {platform.name}
-          </span>
-        </div>
-        <div
-className={`${
-result.basket?.length > 1
-? "flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
-: "flex justify-center"
-}`}
->
-
-{result.basket?.map((item, i) => {
-
-const imageKey = item.product.toLowerCase().split(" ")[0]
-
-return (
-
-<div
-key={i}
-className={`${
-result.basket?.length > 1
-? "min-w-[150px]"
-: "w-full"
-} bg-white/5 rounded-xl p-2 flex-shrink-0`}
->
-
-<a
-href={
-platform.name === "Zepto"
-? `https://www.zeptonow.com/search?query=${item.product}`
-: platform.name === "Blinkit"
-? `https://blinkit.com/s/?q=${item.product}`
-: platform.name === "Instamart"
-? `https://www.swiggy.com/instamart/search?query=${item.product}`
-: `https://www.jiomart.com/search/${item.product}`
-}
-target="_blank"
-rel="noopener noreferrer"
->
-
-<img
-src={groceryImages[imageKey]}
-className="w-full h-24 object-cover rounded-lg mb-2 hover:scale-105 transition cursor-pointer"
-/>
-
-</a>
-
-<span
-className={`${categoryColors[item.category || "other"]} text-white text-xs px-2 py-1 rounded`}
->
-{item.category}
-</span>
-
-<div className="font-semibold text-xs mt-1 capitalize">
-{item.product}
-</div>
-
-<div className="flex justify-between text-xs mt-1">
-<span>
-₹{platform.name === "Zepto"
-? item.zepto
-: item.blinkit}
-</span>
-
-<span>⏱ {platform.time}m</span>
-</div>
-
-</div>
-
-)
-
-})}
-
-</div>
-        
-        <a
-          href={platform.url}
-          target="_blank"
-          className="block mt-2 text-center bg-green-500 text-white py-1 rounded-lg"
-        >
-          Order
-        </a>
-      </div>
-    ))}
-  </div>
-)}
-
-        {/* Swiggy Panel */}
-        {serviceType === "food" && result?.swiggyList && (
-          <div
-            className={`${mobilePlatform === "swiggy" ? "block" : "hidden"} 
-            lg:block w-full lg:w-80 rounded-2xl p-4 lg:max-h-[550px] lg:overflow-y-auto transition-all duration-500 ${
-              darkMode
-                ? "bg-white/5 backdrop-blur-md text-slate-200"
-                : "bg-white shadow-md text-slate-800"
-            } ${
-              winner === "swiggy"
-                ? "shadow-[0_0_40px_rgba(249,115,22,0.4)]"
-                : ""
-            }`}
-          >
-            <h3
-              className={`sticky top-0 z-10 py-3 text-center font-bold backdrop-blur-md ${
-                darkMode
-                  ? "bg-gray-900/80 text-orange-400"
-                  : "bg-white/80 text-orange-500"
-              }`}
-            >
-              Swiggy
-            </h3>
-
-            {loading ? (
-              <>
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-              </>
-            ) : (
-              [...result.swiggyList]
-                .sort((a, b) => a.price - b.price)
-                .map((rest, index) => (
-  <div
-    key={rest.name + "swiggy"}
-                    className={`w-full py-3 border-b text-sm transition-all duration-300 
-                    hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 
-                    cursor-pointer ${
-                      index === 0
-                        ? "bg-green-500/10 border-green-400/30 rounded-lg"
-                        : "border-white/10"
-                    }`}
+              {/* ── Login Popup ── */}
+              <AnimatePresence>
+                {showLoginPopup && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                   >
                     <motion.div
-  key={rest.name + "swiggy-card"}
-                      layout
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.08 }}
-                      className={`relative w-full p-4 mb-4 rounded-2xl overflow-hidden transition-all duration-300 ${
-                        darkMode
-                          ? "bg-white/5 backdrop-blur-md border border-white/10"
-                          : "bg-white shadow-md border border-slate-200"
-                      } ${
-                        index === 0
-                          ? "ring-2 ring-green-400 shadow-green-400/30"
-                          : ""
+                      initial={{ opacity: 0, y: 30, scale: 0.92 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 30, scale: 0.92 }}
+                      transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                      className={`w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden ${
+                        dm
+                          ? "bg-[#0d1025] border border-white/10"
+                          : "bg-white border border-slate-200"
                       }`}
                     >
-                      <div className="relative h-40 rounded-xl overflow-hidden mb-3">
- 
-                        <div className="overflow-hidden rounded-lg">
-                         <img
-  src={
-    rest.image
-      ? rest.image
-      : `https://loremflickr.com/600/400/${item}?random=${index}`
-  }
-  onError={(e) => {
-    e.target.src = `https://loremflickr.com/600/400/${item}?random=${index}`;
-  }}
-  alt={rest.name}
-  className="w-full h-40 object-cover rounded-lg transition-transform duration-500 hover:scale-110"
-/>
+                      <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500" />
+                      <div className="p-7">
+                        <h2 className={`brand text-xl font-bold mb-1 text-center ${dm ? "text-white" : "text-slate-800"}`}>
+                          {isRegisterMode ? "Create Account" : "Welcome Back"}
+                        </h2>
+                        <p className={`text-xs text-center mb-6 ${dm ? "text-white/40" : "text-slate-400"}`}>
+                          {isRegisterMode
+                            ? "Sign up to save your comparisons"
+                            : "Login to compare prices"}
+                        </p>
+
+                        <div className="space-y-3">
+                          {isRegisterMode && (
+                            <input
+                              type="text"
+                              placeholder="Full Name"
+                              value={name}
+                              onChange={(e) => setName(e.target.value)}
+                              className={`w-full px-4 py-3 rounded-xl text-sm outline-none border transition-all ${
+                                dm
+                                  ? "bg-white/6 text-white border-white/10 focus:border-blue-400/50 placeholder-white/30"
+                                  : "bg-slate-50 text-slate-800 border-slate-200 focus:border-blue-400"
+                              }`}
+                            />
+                          )}
+                          <input
+                            type="email"
+                            placeholder="Email address"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className={`w-full px-4 py-3 rounded-xl text-sm outline-none border transition-all ${
+                              dm
+                                ? "bg-white/6 text-white border-white/10 focus:border-blue-400/50 placeholder-white/30"
+                                : "bg-slate-50 text-slate-800 border-slate-200 focus:border-blue-400"
+                            }`}
+                          />
+                          <input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className={`w-full px-4 py-3 rounded-xl text-sm outline-none border transition-all ${
+                              dm
+                                ? "bg-white/6 text-white border-white/10 focus:border-blue-400/50 placeholder-white/30"
+                                : "bg-slate-50 text-slate-800 border-slate-200 focus:border-blue-400"
+                            }`}
+                          />
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                        <div className="absolute bottom-2 left-3 text-white font-semibold text-sm">
-                          {rest.name}
-                        </div>
-                        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                          ⭐ {rest.rating}
-                        </div>
-                        {index === 0 && (
-                          <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
-                            BEST DEAL
+
+                        {authError && (
+                          <div className={`mt-3 p-3 rounded-xl text-xs border ${
+                            dm
+                              ? "bg-blue-500/10 border-blue-400/20 text-blue-300"
+                              : "bg-blue-50 border-blue-200 text-blue-600"
+                          }`}>
+                            📧 Please verify your email first. Check your inbox or spam folder.
                           </div>
                         )}
+
                         <button
-onClick={() => addFavourite(rest.name, "swiggy", city, rest.price, rest.image)}
-className="absolute top-10 left-2 bg-black/60 p-2 rounded-full backdrop-blur transition hover:scale-110"
->
-<motion.span
-animate={{ scale: favourites.includes(rest.name + "swiggy" + city) ? 1.2 : 1 }}
-className={favourites.includes(rest.name + "swiggy" + city) ? "text-red-500" : "text-white"}
->
-❤️
-</motion.span>
-</button>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm opacity-80">⏱ {rest.time} mins • 📍 {rest.distance} km</div>
-                        <div className="text-lg font-bold text-blue-500">
-                          ₹<CountUp end={rest.price} duration={1} />
+                          onClick={isRegisterMode ? handleSignup : handleLogin}
+                          disabled={loginLoading}
+                          className="w-full mt-4 btn-primary py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_4px_15px_rgba(79,142,247,0.3)]"
+                        >
+                          {loginLoading && (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          )}
+                          {loginLoading
+                            ? isRegisterMode
+                              ? "Creating account..."
+                              : "Logging in..."
+                            : isRegisterMode
+                            ? "Create Account"
+                            : "Login"}
+                        </button>
+
+                        <div className={`flex items-center gap-3 my-4 text-xs ${dm ? "text-white/30" : "text-slate-400"}`}>
+                          <div className={`flex-1 h-px ${dm ? "bg-white/10" : "bg-slate-200"}`} />
+                          OR
+                          <div className={`flex-1 h-px ${dm ? "bg-white/10" : "bg-slate-200"}`} />
                         </div>
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
-                    </motion.div>
 
-                    <div className="flex justify-between items-center w-full">
-                      <span className="font-medium text-left">{rest.name}</span>
-                      <div className="flex items-center gap-2">
-                        {index === 0 && (
-                          <span className="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full">
-                            BEST
+                        <div className="flex justify-center">
+                          <GoogleLogin
+                            onSuccess={async (credentialResponse) => {
+                              try {
+                                const res = await axios.post(
+                                  "https://food-price-compare-production.up.railway.app/google-login",
+                                  { token: credentialResponse.credential }
+                                );
+                                const token = res.data.token;
+                                localStorage.setItem("token", token);
+                                const userRes = await axios.get(
+                                  "https://food-price-compare-production.up.railway.app/me",
+                                  { headers: { Authorization: `Bearer ${token}` } }
+                                );
+                                setUser(userRes.data);
+                                setIsLoggedIn(true);
+                                setShowLoginPopup(false);
+                                setHistory(userRes.data.searchHistory || []);
+                              } catch (err) {
+                                console.log("Google login failed");
+                              }
+                            }}
+                            onError={() => console.log("Google Login Failed")}
+                          />
+                        </div>
+
+                        <p className={`text-center text-xs mt-4 ${dm ? "text-white/40" : "text-slate-400"}`}>
+                          {isRegisterMode
+                            ? "Already have an account? "
+                            : "Don't have an account? "}
+                          <span
+                            onClick={() => setIsRegisterMode(!isRegisterMode)}
+                            className="text-blue-500 font-semibold cursor-pointer hover:underline"
+                          >
+                            {isRegisterMode ? "Login" : "Register"}
                           </span>
-                        )}
-                        <span className="font-semibold">₹{rest.price}</span>
-                        <a
- href={rest.url}
- target="_blank"
- className="mt-3 px-3 py-1 bg-orange-500 rounded-lg text-white hover:bg-orange-600"
->
-Order Now
-</a>
+                        </p>
+
+                        <button
+                          onClick={() => {
+                            setShowLoginPopup(false);
+                            setIsRegisterMode(false);
+                          }}
+                          className={`w-full mt-3 text-xs py-2 rounded-xl transition-all ${
+                            dm
+                              ? "text-white/30 hover:text-white/50 hover:bg-white/5"
+                              : "text-slate-400 hover:text-slate-500 hover:bg-slate-50"
+                          }`}
+                        >
+                          Cancel
+                        </button>
                       </div>
-                    </div>
-                    <div className="flex justify-between text-xs mt-1 opacity-80 w-full">
-                      <span>⭐ {rest.rating}</span>
-                      <span>{rest.time} mins</span>
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-        )}
-
-      </div>
-      {/* ── END THREE-COLUMN ROW ── */}
-{showLoginPopup && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-80 shadow-xl">
-      
-      <h2 className="text-lg font-bold mb-4 text-center">
-  {isRegisterMode ? "Create Account" : "Login to Continue"}
-</h2>
-
-{isRegisterMode && (
-  <input
-    type="text"
-    placeholder="Full Name"
-    value={name}
-    onChange={(e) => setName(e.target.value)}
-    className="w-full mb-3 px-3 py-2 border rounded"
-  />
-)}
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full mb-3 px-3 py-2 border rounded"
-      />
-
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full mb-3 px-3 py-2 border rounded"
-      />
-
-      {/* NORMAL LOGIN */}
-     {authError && (
-  <div className="mb-3 p-3 rounded-lg bg-blue-500/10 border border-blue-400 text-blue-300 text-sm">
-    📧 Please verify your email first.  
-    Check your inbox or spam folder.
-  </div>
-)}
-      <button
-  onClick={isRegisterMode ? handleSignup : handleLogin}
-  disabled={loginLoading}
-  className="w-full bg-blue-600 text-white py-2 rounded mb-2 flex items-center justify-center gap-2 disabled:opacity-60"
->
-  {loginLoading && (
-    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-  )}
-  {loginLoading
-    ? (isRegisterMode ? "Creating..." : "Logging in...")
-    : (isRegisterMode ? "Register" : "Login")}
-</button>
-
-      {/* 🔽 ADD THIS GOOGLE SECTION 🔽 */}
-
-      <div className="text-center text-sm text-gray-400 my-2">OR</div>
-
-      <GoogleLogin
-        onSuccess={async (credentialResponse) => {
-          try {
-            const res = await axios.post(
-              "https://food-price-compare-production.up.railway.app/google-login",
-              { token: credentialResponse.credential }
-            );
-
-            const token = res.data.token;
-            localStorage.setItem("token", token);
-
-            const userRes = await axios.get(
-              "https://food-price-compare-production.up.railway.app/me",
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
-
-            setUser(userRes.data);
-            setIsLoggedIn(true);
-            setShowLoginPopup(false);
-            setHistory(userRes.data.searchHistory || []);
-
-          } catch (err) {
-            console.log("Google login failed");
-          }
-        }}
-        onError={() => {
-          console.log("Google Login Failed");
-        }}
-      />
-
-      {/* 🔼 END GOOGLE SECTION 🔼 */}
-
-      <p className="text-center text-sm text-gray-500 mt-3">
-  {isRegisterMode ? "Already have an account?" : "Don't have an account?"}
-  <span
-    onClick={() => setIsRegisterMode(!isRegisterMode)}
-    className="ml-1 text-blue-500 font-semibold cursor-pointer"
-  >
-    {isRegisterMode ? "Login" : "Register"}
-  </span>
-</p>
-
-<button
-  onClick={() => {
-    setShowLoginPopup(false);
-    setIsRegisterMode(false);
-  }}
-  className="w-full text-sm text-gray-500 mt-2"
->
-  Cancel
-</button>
-
-    </div>
-  </div>
-)}
-              </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </>
         }
       />
 
@@ -1959,13 +1558,343 @@ Order Now
       <Route path="/verification-failed" element={<VerificationFailed />} />
       <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
-
-);
+  );
 }
 
+/* ─── Platform Panel (Zomato / Swiggy) ─── */
+function PlatformPanel({
+  show,
+  platform,
+  label,
+  color,
+  list,
+  item,
+  loading,
+  winner,
+  dm,
+  favourites,
+  city,
+  addFavourite,
+}) {
+  const isWinner = winner === platform;
+  const accentColor = color === "red" ? "#EF4444" : "#FF6B35";
+
+  return (
+    <div
+      className={`${show ? "block" : "hidden"} lg:block w-full lg:w-80 rounded-2xl overflow-hidden transition-all duration-500 ${
+        dm
+          ? "bg-[#0d1025] border border-white/[0.07]"
+          : "bg-white border border-slate-200 shadow-md"
+      } ${isWinner ? `shadow-[0_0_40px_${color === "red" ? "rgba(239,68,68,0.25)" : "rgba(255,107,53,0.25)"}]` : ""}`}
+      style={isWinner ? { borderColor: `${accentColor}40` } : {}}
+    >
+      {/* platform header */}
+      <div
+        className={`sticky top-0 z-10 flex items-center justify-center gap-2 py-3.5 backdrop-blur-md border-b ${
+          dm
+            ? "bg-[#0d1025]/90 border-white/6"
+            : "bg-white/90 border-slate-100"
+        }`}
+      >
+        <span
+          className="font-bold text-sm"
+          style={{ color: accentColor }}
+        >
+          {label}
+        </span>
+        {isWinner && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-400/30 font-semibold">
+            🏆 Winner
+          </span>
+        )}
+      </div>
+
+      <div className="p-3 space-y-3 lg:max-h-[580px] lg:overflow-y-auto scrollbar-hide">
+        {loading ? (
+          <>
+            <SkeletonCard dm={dm} />
+            <SkeletonCard dm={dm} />
+            <SkeletonCard dm={dm} />
+          </>
+        ) : (
+          [...list]
+            .sort((a, b) => a.price - b.price)
+            .map((rest, index) => (
+              <RestaurantCard
+                key={rest.name + platform}
+                rest={rest}
+                index={index}
+                platform={platform}
+                item={item}
+                city={city}
+                dm={dm}
+                favourites={favourites}
+                addFavourite={addFavourite}
+                accentColor={accentColor}
+              />
+            ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Restaurant Card ─── */
+function RestaurantCard({
+  rest,
+  index,
+  platform,
+  item,
+  city,
+  dm,
+  favourites,
+  addFavourite,
+  accentColor,
+}) {
+  const isFav = favourites.includes(rest.name + platform + city);
+  const isBest = index === 0;
+
+  return (
+    <motion.div
+      key={rest.name + platform + "-card"}
+      layout
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.06 }}
+      className={`relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 cursor-pointer ${
+        dm
+          ? "bg-white/4 border border-white/7 hover:border-white/14"
+          : "bg-white border border-slate-100 shadow-sm hover:shadow-md"
+      } ${isBest ? `ring-1 shadow-lg` : ""}`}
+      style={
+        isBest
+          ? {
+              ringColor: accentColor,
+              boxShadow: `0 4px 20px ${accentColor}20`,
+              borderColor: `${accentColor}30`,
+            }
+          : {}
+      }
+    >
+      {/* image */}
+      <div className="relative h-36 overflow-hidden">
+        <img
+          src={
+            rest.image ||
+            `https://loremflickr.com/600/400/${item}?random=${index}`
+          }
+          onError={(e) => {
+            e.target.src = `https://loremflickr.com/600/400/${item}?random=${index}`;
+          }}
+          alt={rest.name}
+          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+        {isBest && (
+          <div
+            className="absolute top-2 left-2 px-2 py-1 rounded-full text-white text-[10px] font-bold animate-pulse"
+            style={{ background: accentColor }}
+          >
+            BEST DEAL
+          </div>
+        )}
+
+        <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-medium">
+          ⭐ {rest.rating}
+        </div>
+
+        {/* fav button */}
+        <button
+          onClick={() =>
+            addFavourite(rest.name, platform, city, rest.price, rest.image)
+          }
+          className="absolute top-10 left-2 w-8 h-8 flex items-center justify-center bg-black/50 backdrop-blur-md rounded-full transition-all hover:scale-110"
+        >
+          <motion.span
+            animate={{ scale: isFav ? 1.25 : 1 }}
+            transition={{ type: "spring", stiffness: 400 }}
+            className={isFav ? "text-red-500" : "text-white/70"}
+          >
+            ❤️
+          </motion.span>
+        </button>
+
+        {/* name overlay */}
+        <div className="absolute bottom-2 left-3 right-3">
+          <div className="text-white font-semibold text-sm leading-tight line-clamp-1">
+            {rest.name}
+          </div>
+        </div>
+      </div>
+
+      {/* details */}
+      <div className="p-3">
+        <div className="flex justify-between items-center">
+          <div className={`text-xs ${dm ? "text-white/50" : "text-slate-400"}`}>
+            ⏱ {rest.time} min · 📍 {rest.distance} km
+          </div>
+          <div className="text-lg font-bold" style={{ color: accentColor }}>
+            ₹<CountUp end={rest.price} duration={0.8} />
+          </div>
+        </div>
+        <a
+          href={rest.url}
+          target="_blank"
+          className="mt-2.5 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+          style={{ background: accentColor }}
+          rel="noreferrer"
+        >
+          Order Now →
+        </a>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Grocery Panel ─── */
+function GroceryPanel({
+  platforms,
+  basket,
+  groceryImages,
+  categoryColors,
+  dm,
+  title,
+  titleColor,
+}) {
+  return (
+    <div
+      className={`w-full lg:w-72 rounded-2xl overflow-hidden transition-all ${
+        dm
+          ? "bg-[#0d1025] border border-white/[0.07]"
+          : "bg-white border border-slate-200 shadow-md"
+      }`}
+    >
+      <div
+        className={`py-3 text-center font-bold text-sm border-b ${
+          dm ? "border-white/6" : "border-slate-100"
+        } ${titleColor}`}
+      >
+        {title}
+      </div>
+      <div className="p-3 space-y-3">
+        {platforms.map((platform, pIndex) => (
+          <div
+            key={platform.name + pIndex}
+            className={`rounded-xl border p-3 transition-all hover:scale-[1.01] ${
+              dm ? `bg-white/3 ${platform.borderClass}` : `bg-slate-50 ${platform.borderClass} border`
+            }`}
+          >
+            <div className={`flex items-center justify-between mb-2.5`}>
+              <span className="text-xs font-bold">{platform.name}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${dm ? "bg-white/8 text-white/50" : "bg-slate-200 text-slate-500"}`}>
+                ⏱ {platform.time}m
+              </span>
+            </div>
+
+            <div
+              className={`${
+                basket?.length > 1
+                  ? "flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
+                  : "flex justify-center"
+              }`}
+            >
+              {basket?.map((bItem, i) => {
+                const imageKey = bItem.product.toLowerCase().split(" ")[0];
+                return (
+                  <div
+                    key={i}
+                    className={`${
+                      basket?.length > 1 ? "min-w-[130px]" : "w-full"
+                    } rounded-xl overflow-hidden flex-shrink-0 ${
+                      dm ? "bg-white/5" : "bg-white shadow-sm"
+                    }`}
+                  >
+                    <a
+                      href={
+                        platform.name === "Zepto"
+                          ? `https://www.zeptonow.com/search?query=${bItem.product}`
+                          : platform.name === "Blinkit"
+                          ? `https://blinkit.com/s/?q=${bItem.product}`
+                          : platform.name === "Instamart"
+                          ? `https://www.swiggy.com/instamart/search?query=${bItem.product}`
+                          : `https://www.jiomart.com/search/${bItem.product}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img
+                        src={groceryImages[imageKey]}
+                        className="w-full h-20 object-cover hover:scale-105 transition-transform"
+                        alt={bItem.product}
+                      />
+                    </a>
+                    <div className="p-2">
+                      <span
+                        className={`${
+                          categoryColors[bItem.category || "other"]
+                        } text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold`}
+                      >
+                        {bItem.category}
+                      </span>
+                      <div className={`font-semibold text-xs mt-1 capitalize ${dm ? "text-white/80" : "text-slate-700"}`}>
+                        {bItem.product}
+                      </div>
+                      <div className="flex justify-between items-center text-xs mt-1">
+                        <span className="font-bold">
+                          ₹
+                          {platform.name === "Zepto"
+                            ? bItem.zepto
+                            : platform.name === "Blinkit"
+                            ? bItem.blinkit
+                            : platform.name === "Instamart"
+                            ? bItem.instamart
+                            : bItem.jiomart}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <a
+              href={platform.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 flex items-center justify-center gap-1 w-full py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-xl transition-all hover:scale-[1.02]"
+            >
+              Order on {platform.name} →
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Skeleton Card ─── */
+function SkeletonCard({ dm }) {
+  return (
+    <div
+      className={`relative rounded-2xl overflow-hidden ${
+        dm ? "bg-white/4" : "bg-slate-100"
+      }`}
+    >
+      <div className={`h-36 ${dm ? "bg-white/6" : "bg-slate-200"}`} />
+      <div className="p-3 space-y-2">
+        <div className={`h-3 w-3/4 rounded-full ${dm ? "bg-white/6" : "bg-slate-200"}`} />
+        <div className={`h-3 w-1/2 rounded-full ${dm ? "bg-white/4" : "bg-slate-100"}`} />
+        <div className={`h-8 rounded-xl mt-2 ${dm ? "bg-white/6" : "bg-slate-200"}`} />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
+    </div>
+  );
+}
+
+/* ─── Price Card (unchanged logic) ─── */
 function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
   const percentage = (price / maxPrice) * 100;
-
   return (
     <div
       className={`relative overflow-hidden flex flex-col p-5 rounded-2xl transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1 ${
@@ -1974,8 +1903,7 @@ function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
           : "bg-white/10 border border-white/20"
       }`}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
-
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none" />
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <img src={logo} alt={name} className="w-5 h-5 object-contain" />
@@ -1987,12 +1915,10 @@ function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
           </span>
         )}
       </div>
-
       <div className="mt-3 text-3xl font-bold">
         ₹<CountUp end={price} duration={1} separator="," />
       </div>
       <p className="text-sm mt-1 opacity-80">⏱ {time} mins</p>
-
       <div className="mt-4 h-3 bg-white/10 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
@@ -2001,20 +1927,6 @@ function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
           style={{ width: `${percentage}%` }}
         />
       </div>
-    </div>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div className="relative w-full p-4 mb-6 rounded-2xl overflow-hidden bg-white/40 backdrop-blur-md">
-      <div className="h-40 rounded-xl bg-slate-300 mb-3" />
-      <div className="flex justify-between items-center">
-        <div className="h-4 w-24 bg-slate-300 rounded" />
-        <div className="h-4 w-16 bg-slate-300 rounded" />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] animate-shimmer pointer-events-none"></div>
-      
     </div>
   );
 }
