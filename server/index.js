@@ -962,12 +962,17 @@ app.post("/compare", authMiddleware, async (req, res) => {
   try {
 
     // convert city → coordinates
-   const geo = await axios.get(
+   const locationQuery =
+  serviceType === "ride"
+    ? `${item}, ${city}` // full pickup + drop context
+    : city;
+
+const geo = await axios.get(
   `https://nominatim.openstreetmap.org/search`,
   {
     params: {
       format: "json",
-      q: city
+      q: locationQuery
     },
     headers: {
       "User-Agent": "pricecompare-app"

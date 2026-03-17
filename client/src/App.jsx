@@ -1143,7 +1143,7 @@ export default function App() {
                             type="text"
                             placeholder={
   serviceType === "ride"
-    ? "Pickup location (e.g. Indore)"
+    ? "Pickup location (e.g. Sector 15A Chandigarh)"
     : "City (e.g. Indore)"
 }
                             value={city}
