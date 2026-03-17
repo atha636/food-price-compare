@@ -474,8 +474,8 @@ const fetchMarketPrice = async (item) => {
 
     // ✅ IMAGE (NEW)
     const image =
-      $("img.s-image").first().attr("src") ||
-      $("img").first().attr("src");
+  $("img.s-image").first().attr("src")?.replace("_AC_UL320_", "_AC_UL200_") ||
+  $("img").first().attr("src");
 
     if(!priceText) return null;
 

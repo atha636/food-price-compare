@@ -1827,6 +1827,7 @@ function GroceryPanel({
   src={
     bItem.image || groceryImages[imageKey]
   }
+  loading="lazy"
   onError={(e) => {
     e.target.src = groceryImages[imageKey];
   }}
