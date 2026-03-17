@@ -1097,7 +1097,6 @@ if (cached && Date.now() - cached.time < 300000) { // 5 minutes
  // ride panel
 if (serviceType === "ride") {
 
-  // 🔥 pickup & drop coords
   const pickupGeo = await axios.get(
     "https://nominatim.openstreetmap.org/search",
     {
@@ -1116,24 +1115,18 @@ if (serviceType === "ride") {
 
   const pickupLat = pickupGeo.data[0]?.lat;
   const pickupLng = pickupGeo.data[0]?.lon;
-
   const dropLat = dropGeo.data[0]?.lat;
   const dropLng = dropGeo.data[0]?.lon;
 
   if (!pickupLat || !pickupLng || !dropLat || !dropLng) {
+    console.log("Geo failed:", { pickup: city, drop: item });
+    return res.status(400).json({
+      message: "Location not found. Try more specific place."
+    });
+  }
 
-  console.log("Geo failed:", {
-    pickup: city,
-    drop: item
-  });
-
-  return res.status(400).json({
-    message: "Location not found. Try more specific place."
-  });
-}
-console.log("Pickup Geo:", pickupGeo.data[0]);
-console.log("Drop Geo:", dropGeo.data[0]);
-
+  console.log("Pickup Geo:", pickupGeo.data[0]);
+  console.log("Drop Geo:", dropGeo.data[0]);
 
   const distance = calculateDistance(
     parseFloat(pickupLat),
@@ -1143,7 +1136,6 @@ console.log("Drop Geo:", dropGeo.data[0]);
   );
 
   const finalDistance = Math.round(distance * 10) / 10;
-
   const baseFare = finalDistance * 12;
 
   const platforms = {
@@ -1176,10 +1168,12 @@ console.log("Drop Geo:", dropGeo.data[0]);
     distance: finalDistance,
     platforms,
     winner,
-  pickupCoords: [parseFloat(pickupLat), parseFloat(pickupLng)],
-  dropCoords: [parseFloat(dropLat), parseFloat(dropLng)]
+    pickupCoords: [parseFloat(pickupLat), parseFloat(pickupLng)],
+    dropCoords: [parseFloat(dropLat), parseFloat(dropLng)]
   });
+
 }
+
 
   } catch (err) {
 
