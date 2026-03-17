@@ -505,8 +505,14 @@ if (serviceType === "ride") {
   };
 
   const handleCompare = async (customItem, customCity) => {
-    const searchItem = customItem || item;
-    const searchCity = customCity || city;
+   let searchItem = customItem || item;
+let searchCity = customCity || city;
+
+// 🔥 FIX FOR RIDE
+if (serviceType === "ride") {
+  searchItem = item;   // drop
+  searchCity = city;   // pickup
+}
     if (!searchItem || !searchCity) {
       setError("Please enter food item and city.");
       return;
@@ -520,6 +526,11 @@ if (serviceType === "ride") {
     setError("");
     setLoading(true);
     setResult(null);
+    console.log("SENDING DATA:", {
+  item: searchItem,
+  city: searchCity,
+  serviceType
+});
     try {
       const response = await axios.post(
         "https://food-price-compare-production.up.railway.app/compare",
@@ -1138,7 +1149,7 @@ if (serviceType === "ride") {
     ? "Food item (e.g. Pizza)"
     : serviceType === "grocery"
     ? "Grocery item (e.g. Milk)"
-    : "Drop location (e.g. Airport)"
+    : "Drop location (e.g. Mohali)"
 }
                           value={item}
                           onChange={(e) => setItem(e.target.value)}
