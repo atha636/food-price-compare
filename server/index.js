@@ -990,7 +990,7 @@ if (serviceType !== "ride") {
   lng = geo.data[0].lon;
 }
 
-if (!lat || !lng) {
+if (serviceType !== "ride" && (!lat || !lng)) {
   return res.status(400).json({
     message: "Invalid city. Please try another location."
   });
