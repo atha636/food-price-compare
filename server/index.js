@@ -963,7 +963,7 @@ app.post("/compare", authMiddleware, async (req, res) => {
 
     let lat, lng;
 
-    
+
 // ✅ ONLY for food & grocery
 if (serviceType !== "ride") {
 
@@ -1109,7 +1109,7 @@ if (serviceType === "ride") {
   const dropGeo = await axios.get(
     "https://nominatim.openstreetmap.org/search",
     {
-      params: { format: "json", q: `${item}, ${city}` },
+      params: { format: "json", q: `${item}, India` },
       headers: { "User-Agent": "pricecompare-app" }
     }
   );
