@@ -1048,6 +1048,8 @@ if (cached && Date.now() - cached.time < 300000) { // 5 minutes
     basketWinner: basketData.basketWinner
   };
 
+
+  
   /* ⭐ SAVE SEARCH HISTORY */
 
   const user = await User.findById(req.user.id);
@@ -1085,25 +1087,9 @@ if (cached && Date.now() - cached.time < 300000) { // 5 minutes
 
 }
 
-  } catch (err) {
 
-    console.log("COMPARE ERROR:", err.message);
-
-    res.status(500).json({
-      message: "Compare failed"
-    });
-
-  }
-
-});
-
-
+ // ride panel
 if (serviceType === "ride") {
-
-  const { item, city } = req.body;
-
-  // item = drop location
-  // city = pickup location
 
   const distance = Math.floor(Math.random() * 10) + 3;
 
@@ -1140,7 +1126,23 @@ if (serviceType === "ride") {
     platforms,
     winner
   });
-}
+} 
+
+
+
+  } catch (err) {
+
+    console.log("COMPARE ERROR:", err.message);
+
+    res.status(500).json({
+      message: "Compare failed"
+    });
+
+  }
+
+});
+
+
 
 /* ==============================
    DATABASE CONNECTION
