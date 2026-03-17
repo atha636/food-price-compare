@@ -1082,19 +1082,9 @@ export default function App() {
 
                     {/* ── Brand header ── */}
                     <div className="text-center mb-7">
-                      <h1
-                        className="brand text-3xl font-extrabold tracking-tight"
-                        style={{
-                          background: dm
-                            ? "linear-gradient(135deg, #4F8EF7, #a855f7, #FF6B35)"
-                            : "linear-gradient(135deg, #1d4ed8, #7c3aed)",
-                          WebkitBackgroundClip: "text",
-                          WebkitTextFillColor: "transparent",
-                          backgroundClip: "text",
-                        }}
-                      >
-                        PriceCompare
-                      </h1>
+                     <h1 className="brand text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500 bg-[length:200%_200%] bg-clip-text text-transparent animate-[gradientMove_4s_ease_infinite]">
+  PriceCompare
+</h1>
                       <p className={`mt-1 text-sm ${dm ? "text-white/40" : "text-slate-400"}`}>
                         {serviceType === "food" && "Find the cheapest bite in seconds"}
                         {serviceType === "grocery" && "Compare grocery prices instantly"}
