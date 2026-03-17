@@ -1096,26 +1096,62 @@ if (cached && Date.now() - cached.time < 300000) { // 5 minutes
  // ride panel
 if (serviceType === "ride") {
 
-  const distance = Math.floor(Math.random() * 10) + 3;
+  // 🔥 pickup & drop coords
+  const pickupGeo = await axios.get(
+    "https://nominatim.openstreetmap.org/search",
+    {
+      params: { format: "json", q: city },
+      headers: { "User-Agent": "pricecompare-app" }
+    }
+  );
 
-  const baseFare = distance * 12;
+  const dropGeo = await axios.get(
+    "https://nominatim.openstreetmap.org/search",
+    {
+      params: { format: "json", q: item },
+      headers: { "User-Agent": "pricecompare-app" }
+    }
+  );
+
+  const pickupLat = pickupGeo.data[0]?.lat;
+  const pickupLng = pickupGeo.data[0]?.lon;
+
+  const dropLat = dropGeo.data[0]?.lat;
+  const dropLng = dropGeo.data[0]?.lon;
+
+  if (!pickupLat || !dropLat) {
+    return res.status(400).json({
+      message: "Invalid pickup or drop location"
+    });
+  }
+
+  const distance = calculateDistance(
+    parseFloat(pickupLat),
+    parseFloat(pickupLng),
+    parseFloat(dropLat),
+    parseFloat(dropLng)
+  );
+
+  const finalDistance = Math.round(distance * 10) / 10;
+
+  const baseFare = finalDistance * 12;
 
   const platforms = {
     uber: {
-      price: baseFare + Math.floor(Math.random() * 40),
-      time: Math.floor(Math.random() * 10) + 5
+      price: Math.round(baseFare + Math.random() * 40),
+      time: Math.floor(finalDistance * 2 + 5)
     },
     ola: {
-      price: baseFare + Math.floor(Math.random() * 35),
-      time: Math.floor(Math.random() * 12) + 6
+      price: Math.round(baseFare + Math.random() * 35),
+      time: Math.floor(finalDistance * 2.5 + 6)
     },
     rapido: {
-      price: baseFare - 10 + Math.floor(Math.random() * 25),
-      time: Math.floor(Math.random() * 8) + 4
+      price: Math.round(baseFare - 10 + Math.random() * 25),
+      time: Math.floor(finalDistance * 1.5 + 4)
     },
     indrive: {
-      price: baseFare - 5 + Math.floor(Math.random() * 30),
-      time: Math.floor(Math.random() * 15) + 6
+      price: Math.round(baseFare - 5 + Math.random() * 30),
+      time: Math.floor(finalDistance * 2.8 + 6)
     }
   };
 
@@ -1127,13 +1163,13 @@ if (serviceType === "ride") {
     serviceType: "ride",
     pickup: city,
     drop: item,
-    distance,
+    distance: finalDistance,
     platforms,
-    winner
+    winner,
+  pickupCoords: [parseFloat(pickupLat), parseFloat(pickupLng)],
+  dropCoords: [parseFloat(dropLat), parseFloat(dropLng)]
   });
-} 
-
-
+}
 
   } catch (err) {
 

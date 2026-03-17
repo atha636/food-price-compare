@@ -14,6 +14,8 @@ import Analytics from "./pages/Analytics";
 import History from "./pages/History";
 import VerificationFailed from "./pages/VerificationFailed";
 import { useLocation } from "react-router-dom";
+import "leaflet/dist/leaflet.css";
+import RideMap from "./components/RideMap";
 import { Heart } from "lucide-react";
 import Settings from "./pages/Settings";
 import {
@@ -315,12 +317,25 @@ export default function App() {
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
           );
           const data = await res.json();
-          const detectedCity =
-            data.address.city ||
-            data.address.town ||
-            data.address.state ||
-            "";
-          setCity(detectedCity);
+          // ✅ clean full address (better than display_name)
+const fullAddress = [
+  data.address?.suburb,
+  data.address?.road,
+  data.address?.city
+].filter(Boolean).join(", ");
+
+// ✅ fallback city
+const detectedCity =
+  data.address.city ||
+  data.address.town ||
+  data.address.state ||
+  "";
+
+if (serviceType === "ride") {
+  setCity(fullAddress); // 🔥 full pickup location
+} else {
+  setCity(detectedCity); // normal behavior
+}
         } catch (err) {
           console.error("Location fetch error", err);
         } finally {
@@ -1354,6 +1369,33 @@ export default function App() {
                   </div>
                 </div>
                 {/* ── END CENTER CARD ── */}
+
+
+{serviceType === "ride" && result && (
+  <div className="w-full max-w-5xl flex flex-col gap-4">
+
+    {/* 🗺️ MAP */}
+    <RideMap
+      pickupCoords={result.pickupCoords}
+      dropCoords={result.dropCoords}
+    />
+
+    {/* 🚗 RIDE CARDS */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {Object.entries(result.platforms).map(([name, data]) => {
+        const isWinner = result.winner === name;
+
+        return (
+          <div key={name} className="p-4 rounded-xl border">
+            <h2 className="font-bold capitalize">{name}</h2>
+            <p>⏱ {data.time} mins</p>
+            <p className="text-green-400 font-bold">₹{data.price}</p>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
 
                  
                 {serviceType === "ride" && result && (
