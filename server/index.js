@@ -452,38 +452,47 @@ const detectCategory = (product) => {
 
 const fetchMarketPrice = async (item) => {
 
-try {
+  try {
 
-const url = `https://www.amazon.in/s?k=${item}`;
+    const url = `https://www.amazon.in/s?k=${item}`;
 
-await sleep(300 + Math.random()*400);
+    await sleep(300 + Math.random()*400);
 
-const res = await axios.get(url,{
-headers:{
-"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-"Accept-Language":"en-IN,en;q=0.9"
-}
-});
+    const res = await axios.get(url,{
+      headers:{
+        "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        "Accept-Language":"en-IN,en;q=0.9"
+      }
+    });
 
-const $ = cheerio.load(res.data);
+    const $ = cheerio.load(res.data);
 
-const priceText =
-$(".a-price-whole").first().text() ||
-$(".a-offscreen").first().text();
+    // ✅ PRICE
+    const priceText =
+      $(".a-price-whole").first().text() ||
+      $(".a-offscreen").first().text();
 
+    // ✅ IMAGE (NEW)
+    const image =
+      $("img.s-image").first().attr("src") ||
+      $("img").first().attr("src");
 
-if(!priceText) return null;
+    if(!priceText) return null;
 
-const clean = priceText.replace(/[^\d]/g,"");
-return parseInt(clean);
+    const clean = priceText.replace(/[^\d]/g,"");
 
-} catch(err){
+    return {
+      price: parseInt(clean),
+      image
+    };
 
-console.log("Market price scraping failed:", err.message);
+  } catch(err){
 
-return null;
+    console.log("Market price scraping failed:", err.message);
 
-}
+    return null;
+
+  }
 
 };
 
@@ -900,6 +909,7 @@ const marketPrice = await fetchMarketPrice(product);
 console.log("Market price:", product, marketPrice);
 
 const basePrice = marketPrice || 60;
+const image = marketData?.image || null;
 
 // ⭐ generate platform prices
 const prices = generatePlatformPrices(basePrice);
@@ -912,12 +922,13 @@ jiomartTotal += prices.jiomart;
 const category = detectCategory(product);
 
 basket.push({
-product,
-category,
-zepto: prices.zepto,
-blinkit: prices.blinkit,
-instamart: prices.instamart,
-jiomart: prices.jiomart
+  product,
+  category,
+  image, // ✅ ADD THIS LINE
+  zepto: prices.zepto,
+  blinkit: prices.blinkit,
+  instamart: prices.instamart,
+  jiomart: prices.jiomart
 });
 
 }));

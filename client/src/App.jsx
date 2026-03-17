@@ -1824,10 +1824,15 @@ function GroceryPanel({
                       rel="noopener noreferrer"
                     >
                       <img
-                        src={groceryImages[imageKey]}
-                        className="w-full h-20 object-cover hover:scale-105 transition-transform"
-                        alt={bItem.product}
-                      />
+  src={
+    bItem.image || groceryImages[imageKey]
+  }
+  onError={(e) => {
+    e.target.src = groceryImages[imageKey];
+  }}
+  className="w-full h-20 object-cover hover:scale-105 transition-transform"
+  alt={bItem.product}
+/>
                     </a>
                     <div className="p-2">
                       <span
