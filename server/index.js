@@ -905,10 +905,10 @@ await Promise.all(products.map(async (product) => {
 console.log("Scraping grocery product:", product);
 
 // ⭐ get real market price
-const marketPrice = await fetchMarketPrice(product);
-console.log("Market price:", product, marketPrice);
+const marketData = await fetchMarketPrice(product);
+console.log("Market price:", product, marketData);
 
-const basePrice = marketPrice || 60;
+const basePrice = marketData?.price || 60;
 const image = marketData?.image || null;
 
 // ⭐ generate platform prices
