@@ -471,17 +471,9 @@ export default function Favourites() {
                 }}>
                   ● Saved Spots
                 </p>
-                <h1 style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 800, lineHeight: 1.1,
-                  background: darkMode
-                    ? "linear-gradient(135deg,#f1f5f9 30%,#f472b6 100%)"
-                    : "linear-gradient(135deg,#0f172a 30%,#db2777 100%)",
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}>
-                  Your Favourites
-                </h1>
+                <h1 className="brand text-3xl font-extrabold bg-gradient-to-r from-white via-pink-400 to-pink-500 bg-clip-text text-transparent">
+  Your Favourites
+</h1>
                 <p style={{ color: textMuted, fontSize: "14px", marginTop: "6px" }}>
                   {favourites.length} saved restaurant{favourites.length !== 1 ? "s" : ""}
                 </p>

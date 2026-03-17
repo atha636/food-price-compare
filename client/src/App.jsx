@@ -1108,17 +1108,23 @@ export default function App() {
                     <div className="space-y-3">
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base pointer-events-none">
-                          {serviceType === "food" ? "🍽️" : serviceType === "grocery" ? "🥬" : "📍"}
+                          {
+  serviceType === "food"
+    ? "🍽️"
+    : serviceType === "grocery"
+    ? "🥬"
+    : "🏁" // finish flag for destination
+}
                         </span>
                         <input
                           type="text"
                           placeholder={
-                            serviceType === "food"
-                              ? "Food item (e.g. Pizza)"
-                              : serviceType === "grocery"
-                              ? "Grocery item (e.g. Milk)"
-                              : "Ride location"
-                          }
+  serviceType === "food"
+    ? "Food item (e.g. Pizza)"
+    : serviceType === "grocery"
+    ? "Grocery item (e.g. Milk)"
+    : "Drop location (e.g. Airport)"
+}
                           value={item}
                           onChange={(e) => setItem(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && handleCompare()}
@@ -1132,10 +1138,14 @@ export default function App() {
 
                       <div className="flex gap-2">
                         <div className="relative flex-1">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base pointer-events-none">🌆</span>
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base pointer-events-none">{serviceType === "ride" ? "📍" : "🌆"}</span>
                           <input
                             type="text"
-                            placeholder="City (e.g. Indore)"
+                            placeholder={
+  serviceType === "ride"
+    ? "Pickup location (e.g. Indore)"
+    : "City (e.g. Indore)"
+}
                             value={city}
                             onChange={(e) => setCity(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleCompare()}
@@ -1344,6 +1354,50 @@ export default function App() {
                   </div>
                 </div>
                 {/* ── END CENTER CARD ── */}
+
+                 
+                {serviceType === "ride" && result && (
+  <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    {Object.entries(result.platforms).map(([name, data]) => {
+
+      const isWinner = result.winner === name;
+
+      return (
+        <div
+          key={name}
+          className={`p-5 rounded-2xl border transition-all ${
+            isWinner
+              ? "bg-green-500/10 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+              : dm
+              ? "bg-white/5 border-white/10"
+              : "bg-white border-slate-200"
+          }`}
+        >
+          <h2 className="font-bold text-lg capitalize mb-2 flex items-center gap-1">
+            {name === "uber" && "🚗 Uber"}
+            {name === "ola" && "🛺 Ola"}
+            {name === "rapido" && "🏍 Rapido"}
+            {name === "indrive" && "💸 InDrive"}
+
+            {isWinner && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white ml-1">
+                🏆
+              </span>
+            )}
+          </h2>
+
+          <p className="text-sm opacity-70">⏱ {data.time} mins</p>
+
+          <p className="text-2xl font-bold text-green-400 mt-1">
+            ₹{data.price}
+          </p>
+
+        </div>
+      );
+    })}
+  </div>
+)}
 
                 {/* ── RIGHT: Grocery Panel (Instamart + JioMart) ── */}
                 {serviceType === "grocery" && result && (

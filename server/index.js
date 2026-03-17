@@ -513,6 +513,7 @@ jiomart: basePrice - 1
 };
 
 };
+
 /* ==============================
    ROUTES
 ============================== */
@@ -1095,6 +1096,51 @@ if (cached && Date.now() - cached.time < 300000) { // 5 minutes
   }
 
 });
+
+
+if (serviceType === "ride") {
+
+  const { item, city } = req.body;
+
+  // item = drop location
+  // city = pickup location
+
+  const distance = Math.floor(Math.random() * 10) + 3;
+
+  const baseFare = distance * 12;
+
+  const platforms = {
+    uber: {
+      price: baseFare + Math.floor(Math.random() * 40),
+      time: Math.floor(Math.random() * 10) + 5
+    },
+    ola: {
+      price: baseFare + Math.floor(Math.random() * 35),
+      time: Math.floor(Math.random() * 12) + 6
+    },
+    rapido: {
+      price: baseFare - 10 + Math.floor(Math.random() * 25),
+      time: Math.floor(Math.random() * 8) + 4
+    },
+    indrive: {
+      price: baseFare - 5 + Math.floor(Math.random() * 30),
+      time: Math.floor(Math.random() * 15) + 6
+    }
+  };
+
+  const winner = Object.entries(platforms).reduce((a, b) =>
+    a[1].price < b[1].price ? a : b
+  )[0];
+
+  return res.json({
+    serviceType: "ride",
+    pickup: city,
+    drop: item,
+    distance,
+    platforms,
+    winner
+  });
+}
 
 /* ==============================
    DATABASE CONNECTION
