@@ -793,6 +793,57 @@ const favouriteCity =
     res.status(500).json({ message: "Server error" });
   }
 });
+
+app.get("/ride-insights", authMiddleware, async (req, res) => {
+  try {
+    
+   const user = await User.findById(req.user.id);
+    const rideHistory = (user.searchHistory || []).filter(
+      s => s.serviceType === "ride"
+    );
+
+    if (rideHistory.length === 0) {
+      return res.json({
+        totalRides: 0,
+        favouritePlatform: null,
+        avgPrice: 0,
+        totalDistance: 0
+      });
+    }
+
+    let totalPrice = 0;
+    let totalDistance = 0;
+    const platformCount = {};
+
+    rideHistory.forEach(r => {
+      totalPrice += r.bestPrice || 0;
+      totalDistance += r.distance || 0;
+
+      if (r.winner) {
+        platformCount[r.winner] =
+          (platformCount[r.winner] || 0) + 1;
+      }
+    });
+
+    const favouritePlatform =
+  Object.keys(platformCount).length > 0
+    ? Object.keys(platformCount).reduce((a, b) =>
+        platformCount[a] > platformCount[b] ? a : b
+      )
+    : null;
+
+    res.json({
+      totalRides: rideHistory.length,
+      favouritePlatform,
+      avgPrice: Math.round(totalPrice / rideHistory.length),
+      totalDistance: Math.round(totalDistance)
+    });
+
+  } catch (err) {
+    console.log("RIDE INSIGHTS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 app.delete("/clear-history", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -960,7 +1011,11 @@ app.post("/compare", authMiddleware, async (req, res) => {
   const { item, city, serviceType } = req.body;
 
   try {
+const user = await User.findById(req.user.id);
 
+if (!user) {
+  return res.status(404).json({ message: "User not found" });
+}
     let lat, lng;
 
 
@@ -1058,7 +1113,7 @@ if (cached && Date.now() - cached.time < 300000) { // 5 minutes
   
   /* ⭐ SAVE SEARCH HISTORY */
 
-  const user = await User.findById(req.user.id);
+  
 
   if (user) {
 
@@ -1068,15 +1123,15 @@ if (cached && Date.now() - cached.time < 300000) { // 5 minutes
 
     const winner = basketData.basketWinner;
     const bestPrice = basketData.totals[winner];
-
-    user.searchHistory.unshift({
-      item,
-      city,
-      serviceType: "grocery",
-      winner,
-      bestPrice,
-      totals: basketData.totals
-    });
+user.searchHistory.unshift({
+  item,
+  city,
+  serviceType: "grocery",
+  winner,
+  bestPrice,
+  totals: basketData.totals,
+  createdAt: new Date()
+});
 
     user.searchHistory = user.searchHistory.slice(0, 20);
 
@@ -1206,6 +1261,37 @@ if (serviceType === "ride") {
 const winner = Object.entries(platforms).reduce((a, b) =>
   getMinPrice(a[1]) < getMinPrice(b[1]) ? a : b
 )[0];
+
+
+// ⭐ SAVE RIDE HISTORY
+
+
+if (user) {
+  if (!Array.isArray(user.searchHistory)) {
+    user.searchHistory = [];
+  }
+
+  const bestPrice = Math.min(
+    ...Object.values(platforms).map(p =>
+      Math.min(...Object.values(p).map(r => r.price))
+    )
+  );
+
+  user.searchHistory.unshift({
+  pickup: city,
+  drop: item,
+  serviceType: "ride",
+  winner,
+  bestPrice,
+  distance: finalDistance,
+  platforms,
+  createdAt: new Date()
+});
+
+  user.searchHistory = user.searchHistory.slice(0, 20);
+
+  await user.save();
+}
 
   return res.json({
     serviceType: "ride",

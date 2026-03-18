@@ -41,6 +41,7 @@ const NAV = [
   { label: "Home",               icon: "🏠",  path: "/"                  },
   { label: "Dashboard",          icon: "📊",  path: "/dashboard"         },
   { label: "Grocery Dashboard",  icon: "🛒",  path: "/grocery-dashboard" },
+  { label: "Ride Dashboard",     icon: "🚗",  path: "/ride-dashboard"    },
   { label: "Analytics",          icon: "📈",  path: "/analytics"         },
   { label: "History",            icon: "🕓",  path: "/history"           },
   { label: "Favourites",         icon: "❤️",  path: "/favourites"        },

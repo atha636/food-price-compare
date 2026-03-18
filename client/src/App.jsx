@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Verified from "./pages/Verified";
 import Dashboard from "./pages/Dashboard";
 import GroceryDashboard from "./pages/GroceryDashboard";
+import RideDashboard from "./pages/RideDashboard";
 import Favourites from "./pages/Favourites";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -614,6 +615,7 @@ if (serviceType === "ride") {
       />
       <Route path="/analytics" element={<Analytics />} />
       <Route path="/history" element={<History />} />
+      <Route path="/ride-dashboard" element={<RideDashboard />} />
       <Route path="/favourites" element={<Favourites />} />
       <Route
         path="/settings"
