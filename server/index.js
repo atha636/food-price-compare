@@ -1173,6 +1173,14 @@ if (serviceType === "ride") {
     bike: {
       price: Math.round(baseFare - 30),
       time: Math.floor(finalDistance * 1.4 + 3)
+    },
+    car: {
+      price: Math.round(baseFare + 35),
+      time: Math.floor(finalDistance * 2.5 + 6)
+    },
+    auto: {
+      price: Math.round(baseFare + 5),
+      time: Math.floor(finalDistance * 2.3 + 5)
     }
   },
 
@@ -1180,7 +1188,15 @@ if (serviceType === "ride") {
     car: {
       price: Math.round(baseFare - 10),
       time: Math.floor(finalDistance * 2.8 + 6)
-    }
+    },
+    auto: {
+      price: Math.round(baseFare + 5),
+      time: Math.floor(finalDistance * 2.3 + 5)
+    },
+    bike: {
+      price: Math.round(baseFare - 30),
+      time: Math.floor(finalDistance * 1.4 + 3)
+    },
   }
 };
   const getMinPrice = (platform) => {

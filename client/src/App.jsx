@@ -1394,137 +1394,199 @@ if (serviceType === "ride") {
       />
     </div>
 
-    {/* 🚗 RIDE CARDS BELOW MAP */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {/* 🚗 RIDE CARDS */}
+<div className="w-full">
+  {/* Main Grid - 4 Columns on Large, 2 on Medium, 1 on Small */}
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    {Object.entries(result.platforms).map(([name, data]) => {
+      const isWinner = result.winner === name;
+      const minPrice = Math.min(...Object.values(data).map(r => r.price));
+      const minTime = Math.min(...Object.values(data).map(r => r.time));
 
-  {Object.entries(result.platforms).map(([name, data]) => {
-
-    const isWinner = result.winner === name;
-
-    // ✅ get minimum price from car/bike/auto
-    const minPrice = Math.min(
-      ...Object.values(data).map((r) => r.price)
-    );
-
-    const minTime = Math.min(
-      ...Object.values(data).map((r) => r.time)
-    );
-
-    return (
-  <div
-    key={name}
-    onClick={() =>
-      setSelectedPlatform(selectedPlatform === name ? null : name)
-    }
-    className={`cursor-pointer p-5 rounded-2xl border transition-all hover:scale-105 hover:shadow-xl ${
-      selectedPlatform === name ? "border-blue-400 scale-105" : ""
-    } ${
-      isWinner
-        ? "bg-green-500/10 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-        : dm
-        ? "bg-white/5 border-white/10"
-        : "bg-white border-slate-200"
-    }`}
-  >
-    <h2 className="font-bold text-lg capitalize mb-2 flex items-center gap-1">
-      {name === "uber" && "🚗 Uber"}
-      {name === "ola" && "🛺 Ola"}
-      {name === "rapido" && "🏍 Rapido"}
-      {name === "indrive" && "💸 InDrive"}
-
-      {isWinner && (
-        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white ml-1">
-          🏆
-        </span>
-      )}
-    </h2>
-
-    {/* ✅ MIN PRICE */}
-    <p className="text-sm opacity-70">
-      ⏱ {Math.min(...Object.values(data).map(r => r.time))} mins
-    </p>
-
-    <p className="text-2xl font-bold text-green-400 mt-1">
-      ₹{Math.min(...Object.values(data).map(r => r.price))}
-    </p>
-
-    {/* 🔥 EXPANDED OPTIONS (THIS IS NEW) */}
-    {selectedPlatform === name && (
-      <div className="mt-4 grid grid-cols-3 gap-2">
-
-        {Object.entries(data).map(([type, ride]) => (
+      return (
+        <div
+          key={name}
+          onClick={() =>
+            setSelectedPlatform(selectedPlatform === name ? null : name)
+          }
+          className={`group relative cursor-pointer overflow-hidden rounded-3xl transition-all duration-300 backdrop-blur-md
+            ${
+              selectedPlatform === name
+                ? "scale-105 shadow-2xl"
+                : "hover:scale-102 hover:shadow-xl"
+            }
+            ${
+              isWinner
+                ? "bg-gradient-to-br from-green-500/20 to-green-600/10 border-2 border-green-400 shadow-[0_0_30px_rgba(34,197,94,0.4)]"
+                : "bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/50"
+            }
+          `}
+        >
+          {/* Background glow effect */}
           <div
-            key={type}
-            className="p-2 rounded-lg bg-black/20 border border-white/10 text-center"
-          >
-            <div className="text-xs">
-              {type === "car" && "🚗"}
-              {type === "bike" && "🏍"}
-              {type === "auto" && "🛺"}
+            className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300
+              ${isWinner ? "bg-green-500" : "bg-blue-500"}`}
+          />
+
+          {/* Card Content */}
+          <div className="relative p-6 flex flex-col h-full">
+            {/* Header with Logo and Winner Badge */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">
+                  {name === "uber" && "🚗"}
+                  {name === "ola" && "🛺"}
+                  {name === "rapido" && "🏍"}
+                  {name === "indrive" && "💸"}
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg capitalize text-white leading-tight">
+                    {name}
+                  </h2>
+                </div>
+              </div>
+              {isWinner && (
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-green-400 to-green-500 shadow-lg">
+                  <span className="text-white font-bold text-xs">🏆 Best</span>
+                </div>
+              )}
             </div>
 
-            <div className="text-xs mt-1 capitalize">{type}</div>
-
-            <div className="text-[11px] opacity-70">
-              {ride.time} min
+            {/* Time and Price */}
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center gap-2 text-slate-300/80">
+                <span className="text-sm">⏱</span>
+                <span className="text-sm font-medium">{minTime} mins</span>
+              </div>
+              <div className="pt-2 border-t border-slate-700/50">
+                <p className="text-xs text-slate-400 mb-1">Price</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-green-300 to-green-400 bg-clip-text text-transparent">
+                  ₹{minPrice}
+                </p>
+              </div>
             </div>
 
-            <div className="text-sm font-bold text-green-400">
-              ₹{ride.price}
+            {/* Subtle Click Indicator */}
+            <div
+              className={`mt-4 text-xs text-slate-400 transition-all duration-300 ${
+                selectedPlatform === name
+                  ? "opacity-100 text-blue-400"
+                  : "opacity-0 group-hover:opacity-50"
+              }`}
+            >
+              Click for details
             </div>
           </div>
-        ))}
-
-      </div>
-    )}
+        </div>
+      );
+    })}
   </div>
-);
-  })}
 
+  {/* 🚀 EXPANDABLE RIDE OPTIONS SECTION */}
+  {selectedPlatform && (
+    <div
+      className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500"
+    >
+      {/* Section Header */}
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-2xl font-bold capitalize text-white">
+          {selectedPlatform}
+          <span className="text-green-400 ml-2">Ride Options</span>
+        </h3>
+        <button
+          onClick={() => setSelectedPlatform(null)}
+          className="text-slate-400 hover:text-white transition-colors text-xl"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Ride Options Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {Object.entries(result.platforms[selectedPlatform]).map(
+          ([type, ride], idx) => (
+            <div
+              key={type}
+              className="group relative overflow-hidden rounded-2xl transition-all duration-300"
+              style={{ animationDelay: `${idx * 100}ms` }}
+            >
+              {/* Gradient Background */}
+              <div
+                className="absolute inset-0 bg-gradient-to-br from-slate-700/40 to-slate-900/60 
+                border border-slate-600/50 group-hover:border-slate-500 transition-colors"
+              />
+
+              {/* Premium Background Pattern */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 20% 50%, rgb(34,197,94) 0%, transparent 50%)",
+                  }}
+                />
+              </div>
+
+              {/* Content */}
+              <div className="relative p-6 flex flex-col">
+                {/* Type Header */}
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="text-4xl">
+                    {type === "car" && "🚗"}
+                    {type === "bike" && "🏍"}
+                    {type === "auto" && "🛺"}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg capitalize text-white">
+                      {type}
+                    </h4>
+                  </div>
+                </div>
+
+                {/* Time Info */}
+                <div className="flex items-center gap-2 text-slate-300/70 mb-3">
+                  <span className="text-sm">⏱</span>
+                  <span className="text-sm font-medium">{ride.time} mins</span>
+                </div>
+
+                {/* Price */}
+                <div className="mb-6 pt-4 border-t border-slate-600/50">
+                  <p className="text-xs text-slate-400 mb-2 uppercase tracking-wider">
+                    Price
+                  </p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-green-300 to-green-400 bg-clip-text text-transparent">
+                    ₹{ride.price}
+                  </p>
+                </div>
+
+                {/* Book Button */}
+                <button
+                  className="mt-auto w-full py-3 px-4 rounded-xl font-semibold text-white
+                    bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500
+                    shadow-lg hover:shadow-green-500/50 transition-all duration-300 
+                    transform group-hover:scale-105 active:scale-95
+                    uppercase tracking-wide text-sm"
+                >
+                  Book Now
+                </button>
+              </div>
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Close Hint */}
+      <div className="text-center pt-2 text-sm text-slate-500/80">
+        Click a platform above to close
+      </div>
+    </div>
+  )}
 </div>
 
+
   </div>
 )}
 
-{selectedPlatform && (
-  <div className="mt-6 p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-lg">
-    
-    <h2 className="text-lg font-bold mb-4 capitalize">
-      {selectedPlatform} Ride Options
-    </h2>
-
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-      {Object.entries(result.platforms[selectedPlatform]).map(
-        ([type, ride]) => (
-          <div
-            key={type}
-            className="p-4 rounded-xl bg-white/5 border border-white/10 hover:scale-105 transition"
-          >
-            <h3 className="font-semibold capitalize mb-2">
-              {type === "car" && "🚗 Car"}
-              {type === "bike" && "🏍 Bike"}
-              {type === "auto" && "🛺 Auto"}
-            </h3>
-
-            <p className="text-sm opacity-70">
-              ⏱ {ride.time} mins
-            </p>
-
-            <p className="text-xl font-bold text-green-400">
-              ₹{ride.price}
-            </p>
-
-            <button className="mt-3 w-full py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-semibold">
-              Book Now
-            </button>
-          </div>
-        )
-      )}
-
-    </div>
-  </div>
-)}
                 {/* ── RIGHT: Grocery Panel (Instamart + JioMart) ── */}
                 {serviceType === "grocery" && result && (
                   <GroceryPanel
