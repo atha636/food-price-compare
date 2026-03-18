@@ -801,7 +801,9 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
     const rideHistory = (user.searchHistory || []).filter(
       s => s.serviceType === "ride"
     );
-
+ 
+    console.log("🚗 Ride History Debug:", rideHistory); // DEBUG LOG
+ 
     if (rideHistory.length === 0) {
       return res.json({
         totalRides: 0,
@@ -810,39 +812,45 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
         totalDistance: 0
       });
     }
-
+ 
     let totalPrice = 0;
     let totalDistance = 0;
     const platformCount = {};
     
     rideHistory.forEach(r => {
+      console.log("Processing ride:", r); // DEBUG LOG
+      
       totalPrice += r.bestPrice || 0;
-
-      // ✅ FIX DISTANCE SAFELY
-     if (r.distance !== null && r.distance !== undefined && !isNaN(r.distance)) {
-  totalDistance += Number(r.distance);
-}
-
+ 
+      // ✅ FIXED: Check for null/undefined, NOT truthiness
+      // This allows distance = 0 to be counted
+      if (r.distance !== null && r.distance !== undefined && !isNaN(r.distance)) {
+        console.log("✅ Adding distance:", r.distance);
+        totalDistance += Number(r.distance);
+      } else {
+        console.log("❌ Skipping distance:", r.distance);
+      }
+ 
       if (r.winner) {
         platformCount[r.winner] =
           (platformCount[r.winner] || 0) + 1;
       }
     });
-
+ 
     const favouritePlatform =
       Object.keys(platformCount).length > 0
         ? Object.keys(platformCount).reduce((a, b) =>
             platformCount[a] > platformCount[b] ? a : b
           )
         : null;
-
+ 
     res.json({
       totalRides: rideHistory.length,
       favouritePlatform,
       avgPrice: Math.round(totalPrice / rideHistory.length),
       totalDistance: Number(totalDistance.toFixed(1))
     });
-
+ 
   } catch (err) {
     console.log("RIDE INSIGHTS ERROR:", err);
     res.status(500).json({ message: "Server error" });
