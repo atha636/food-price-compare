@@ -713,6 +713,11 @@ app.post("/save-search", authMiddleware, async (req, res) => {
   try {
     const { item, city, serviceType, winner, bestPrice } = req.body;
 
+// 🔥 ADD THIS BLOCK RIGHT HERE
+if (serviceType === "ride") {
+  return res.json({ message: "Ride handled in /compare" });
+}
+
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -868,6 +873,23 @@ app.delete("/clear-history", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error("CLEAR HISTORY ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+app.delete("/fix-rides", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    user.searchHistory = user.searchHistory.filter(
+      r => !(r.serviceType === "ride" && !r.distance)
+    );
+
+    await user.save();
+
+    res.json({ message: "Bad ride data removed" });
+
+  } catch (err) {
+    console.log("FIX RIDES ERROR:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
