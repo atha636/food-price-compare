@@ -801,6 +801,7 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
     const rideHistory = (user.searchHistory || []).filter(
       s => s.serviceType === "ride"
     );
+    console.log("Saving distance:", finalDistance);
 
     if (rideHistory.length === 0) {
       return res.json({
