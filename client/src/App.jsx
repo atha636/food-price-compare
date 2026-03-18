@@ -581,6 +581,7 @@ if (serviceType === "ride") {
             )
           );
         })
+        
         .catch((err) => console.log("Save failed:", err.response?.data));
     } catch (err) {
       console.log("Compare failed:", err);
@@ -1099,10 +1100,10 @@ if (serviceType === "ride") {
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                           {[
-                            { label: "Searches", value: insights.totalSearches },
-                            { label: "Top Food", value: insights.favouriteFood },
-                            { label: "Top City", value: insights.favouriteCity },
-                          ].map((ins) => (
+  { label: "Searches", value: insights.totalSearches || 0 },
+  { label: "Top Food", value: insights.favouriteFood || "—" },
+  { label: "Top City", value: insights.favouriteCity || "—" },
+].map((ins) => (
                             <div key={ins.label} className={`text-center py-2 rounded-lg ${dm ? "bg-white/5" : "bg-white"}`}>
                               <div className="font-bold text-sm">{ins.value}</div>
                               <div className="text-xs opacity-60">{ins.label}</div>

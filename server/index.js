@@ -22,6 +22,7 @@ const crypto = require("crypto");
 const sendVerificationEmail = require("./utils/sendEmail");
 const zomatoCache = new Map();
 const groceryCache = new Map();
+const rideCache = new Map(); // ✅ ADD THIS
 
 
 const app = express();
@@ -825,16 +826,18 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
     rideHistory.forEach(r => {
       console.log("Processing ride:", r); // DEBUG LOG
       
-      totalPrice += r.bestPrice || 0;
+      totalPrice += Number(r.bestPrice) || 0;
  
       // ✅ FIXED: Check for null/undefined, NOT truthiness
       // This allows distance = 0 to be counted
-      if (r.distance !== null && r.distance !== undefined && !isNaN(r.distance)) {
-        console.log("✅ Adding distance:", r.distance);
-        totalDistance += Number(r.distance);
-      } else {
-        console.log("❌ Skipping distance:", r.distance);
-      }
+      const dist = parseFloat(r.distance);
+
+if (Number.isFinite(dist)) {
+  console.log("✅ Adding distance:", dist);
+  totalDistance += dist;
+} else {
+  console.log("❌ Skipping distance:", r.distance);
+}
  
       if (r.winner) {
         platformCount[r.winner] =
@@ -852,7 +855,9 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
     res.json({
       totalRides: rideHistory.length,
       favouritePlatform,
-      avgPrice: Math.round(totalPrice / rideHistory.length),
+      avgPrice: rideHistory.length
+  ? Math.round(totalPrice / rideHistory.length)
+  : 0,
       totalDistance: Number(totalDistance.toFixed(1))
     });
  
@@ -880,13 +885,21 @@ app.delete("/fix-rides", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
-    user.searchHistory = user.searchHistory.filter(
-      r => !(r.serviceType === "ride" && !r.distance)
-    );
+    user.searchHistory = user.searchHistory.filter(r => {
+      if (r.serviceType !== "ride") return true;
+
+      const dist = parseFloat(r.distance);
+
+      return (
+        Number.isFinite(dist) &&
+        r.item &&       // ✅ ensure exists
+        r.city          // ✅ ensure exists
+      );
+    });
 
     await user.save();
 
-    res.json({ message: "Bad ride data removed" });
+    res.json({ message: "Ride data cleaned perfectly" });
 
   } catch (err) {
     console.log("FIX RIDES ERROR:", err);
@@ -1185,6 +1198,12 @@ user.searchHistory.unshift({
 
  // ride panel
 if (serviceType === "ride") {
+  const cacheKey = `${city}-${item}`;
+
+if (rideCache.has(cacheKey)) {
+  console.log("Returning ride data from cache");
+  return res.json(rideCache.get(cacheKey));
+}
 
   const pickupGeo = await axios.get(
     "https://nominatim.openstreetmap.org/search",
@@ -1311,7 +1330,9 @@ if (user) {
     )
   );
 
-  user.searchHistory.unshift({
+ user.searchHistory.unshift({
+  item,          // ✅ ADD THIS
+  city,          // ✅ ADD THIS
   pickup: city,
   drop: item,
   serviceType: "ride",
