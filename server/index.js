@@ -801,7 +801,6 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
     const rideHistory = (user.searchHistory || []).filter(
       s => s.serviceType === "ride"
     );
-    console.log("Saving distance:", r.distance);
 
     if (rideHistory.length === 0) {
       return res.json({
@@ -815,28 +814,27 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
     let totalPrice = 0;
     let totalDistance = 0;
     const platformCount = {};
-rideHistory.forEach(r => {
+    
+    rideHistory.forEach(r => {
+      totalPrice += r.bestPrice || 0;
 
-  totalPrice += r.bestPrice || 0;
+      // ✅ FIX DISTANCE SAFELY
+      if (r.distance && !isNaN(r.distance)) {
+        totalDistance += Number(r.distance);
+      }
 
-  // ✅ FIX DISTANCE SAFELY
-  if (r.distance && !isNaN(r.distance)) {
-    totalDistance += Number(r.distance);
-  }
-
-  if (r.winner) {
-    platformCount[r.winner] =
-      (platformCount[r.winner] || 0) + 1;
-  }
-
-});
+      if (r.winner) {
+        platformCount[r.winner] =
+          (platformCount[r.winner] || 0) + 1;
+      }
+    });
 
     const favouritePlatform =
-  Object.keys(platformCount).length > 0
-    ? Object.keys(platformCount).reduce((a, b) =>
-        platformCount[a] > platformCount[b] ? a : b
-      )
-    : null;
+      Object.keys(platformCount).length > 0
+        ? Object.keys(platformCount).reduce((a, b) =>
+            platformCount[a] > platformCount[b] ? a : b
+          )
+        : null;
 
     res.json({
       totalRides: rideHistory.length,
