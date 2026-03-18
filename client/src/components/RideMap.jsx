@@ -44,52 +44,66 @@ export default function RideMap({ pickupCoords, dropCoords }) {
 
   const [carPosition, setCarPosition] = useState(pickupCoords);
   const [angle, setAngle] = useState(0);
+  const [routeCoords, setRouteCoords] = useState([]);
 
+  // 🚀 Fetch real route (OSRM)
   useEffect(() => {
-  let progress = 0;
+    const fetchRoute = async () => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${pickupCoords[1]},${pickupCoords[0]};${dropCoords[1]},${dropCoords[0]}?overview=full&geometries=geojson`;
 
-  let prevLat = pickupCoords[0];
-  let prevLng = pickupCoords[1];
+        const res = await fetch(url);
+        const data = await res.json();
 
-  const interval = setInterval(() => {
-    progress += 0.01;
+        if (!data.routes || !data.routes.length) return;
 
-    if (progress >= 1) {
-      clearInterval(interval);
-      setCarPosition(dropCoords);
-      return;
-    }
+        const coords = data.routes[0].geometry.coordinates;
 
-    const lat =
-      pickupCoords[0] +
-      (dropCoords[0] - pickupCoords[0]) * progress;
+        // convert [lng, lat] → [lat, lng]
+        const formatted = coords.map(([lng, lat]) => [lat, lng]);
 
-    const lng =
-      pickupCoords[1] +
-      (dropCoords[1] - pickupCoords[1]) * progress;
+        setRouteCoords(formatted);
+      } catch (err) {
+        console.log("Route fetch failed", err);
+      }
+    };
 
-    // ✅ USE PREVIOUS POSITION (NO JITTER)
-    const dx = lng - prevLng;
-    const dy = lat - prevLat;
+    fetchRoute();
+  }, [pickupCoords, dropCoords]);
 
-    const theta = Math.atan2(dy, dx) * (180 / Math.PI);
+  // 🚗 Move car along route
+  useEffect(() => {
+    if (!routeCoords.length) return;
 
-    setAngle(theta);
-    setCarPosition([lat, lng]);
+    let index = 0;
 
-    // update previous values
-    prevLat = lat;
-    prevLng = lng;
+    const interval = setInterval(() => {
+      if (index >= routeCoords.length - 1) {
+        clearInterval(interval);
+        return;
+      }
 
-  }, 80);
+      const [lat, lng] = routeCoords[index];
+      const [nextLat, nextLng] = routeCoords[index + 1];
 
-  return () => clearInterval(interval);
-}, [pickupCoords, dropCoords]);
+      // direction angle
+      const dx = nextLng - lng;
+      const dy = nextLat - lat;
+      const theta = Math.atan2(dy, dx) * (180 / Math.PI);
+
+      setAngle(theta);
+      setCarPosition([lat, lng]);
+
+      index++;
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [routeCoords]);
 
   // 🚗 Car icon
   const carIcon = L.divIcon({
     html: `
-      <div style="transform: rotate(${angle}deg);">
+      <div style="transform: rotate(${angle}deg); transition: transform 0.2s linear;">
         <img 
           src="https://cdn-icons-png.flaticon.com/512/744/744465.png" 
           style="width:34px;height:34px;" 
@@ -115,8 +129,14 @@ export default function RideMap({ pickupCoords, dropCoords }) {
         {/* 📍 Drop */}
         <Marker position={dropCoords} />
 
-        {/* 🔵 Route */}
-        <Polyline positions={[pickupCoords, dropCoords]} color="blue" />
+        {/* 🔥 REAL ROUTE */}
+        {routeCoords.length > 0 && (
+          <Polyline
+            positions={routeCoords}
+            color="#3b82f6"
+            weight={4}
+          />
+        )}
 
         {/* 🚗 Car */}
         <Marker position={carPosition} icon={carIcon} />

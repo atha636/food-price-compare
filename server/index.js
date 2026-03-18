@@ -1139,27 +1139,57 @@ if (serviceType === "ride") {
   const baseFare = finalDistance * 12;
 
   const platforms = {
-    uber: {
-      price: Math.round(baseFare + Math.random() * 40),
+  uber: {
+    car: {
+      price: Math.round(baseFare + 40),
       time: Math.floor(finalDistance * 2 + 5)
     },
-    ola: {
-      price: Math.round(baseFare + Math.random() * 35),
+    bike: {
+      price: Math.round(baseFare - 20),
+      time: Math.floor(finalDistance * 1.5 + 3)
+    },
+    auto: {
+      price: Math.round(baseFare + 10),
+      time: Math.floor(finalDistance * 2.2 + 4)
+    }
+  },
+
+  ola: {
+    car: {
+      price: Math.round(baseFare + 35),
       time: Math.floor(finalDistance * 2.5 + 6)
     },
-    rapido: {
-      price: Math.round(baseFare - 10 + Math.random() * 25),
-      time: Math.floor(finalDistance * 1.5 + 4)
+    bike: {
+      price: Math.round(baseFare - 25),
+      time: Math.floor(finalDistance * 1.6 + 4)
     },
-    indrive: {
-      price: Math.round(baseFare - 5 + Math.random() * 30),
+    auto: {
+      price: Math.round(baseFare + 5),
+      time: Math.floor(finalDistance * 2.3 + 5)
+    }
+  },
+
+  rapido: {
+    bike: {
+      price: Math.round(baseFare - 30),
+      time: Math.floor(finalDistance * 1.4 + 3)
+    }
+  },
+
+  indrive: {
+    car: {
+      price: Math.round(baseFare - 10),
       time: Math.floor(finalDistance * 2.8 + 6)
     }
-  };
+  }
+};
+  const getMinPrice = (platform) => {
+  return Math.min(...Object.values(platform).map(r => r.price));
+};
 
-  const winner = Object.entries(platforms).reduce((a, b) =>
-    a[1].price < b[1].price ? a : b
-  )[0];
+const winner = Object.entries(platforms).reduce((a, b) =>
+  getMinPrice(a[1]) < getMinPrice(b[1]) ? a : b
+)[0];
 
   return res.json({
     serviceType: "ride",

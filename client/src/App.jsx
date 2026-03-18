@@ -125,6 +125,7 @@ export default function App() {
   const [city, setCity] = useState("");
   const [result, setResult] = useState(null);
   const location = useLocation();
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
 
   const [serviceType, setServiceType] = useState(
     location.state?.service || "food"
@@ -1396,49 +1397,102 @@ if (serviceType === "ride") {
     {/* 🚗 RIDE CARDS BELOW MAP */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-      {Object.entries(result.platforms).map(([name, data]) => {
+  {Object.entries(result.platforms).map(([name, data]) => {
 
-        const isWinner = result.winner === name;
+    const isWinner = result.winner === name;
 
-        return (
-          <div
-            key={name}
-            className={`p-5 rounded-2xl border transition-all hover:scale-105 hover:shadow-xl ${
-              isWinner
-                ? "bg-green-500/10 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-                : dm
-                ? "bg-white/5 border-white/10"
-                : "bg-white border-slate-200"
-            }`}
-          >
-            <h2 className="font-bold text-lg capitalize mb-2 flex items-center gap-1">
-              {name === "uber" && "🚗 Uber"}
-              {name === "ola" && "🛺 Ola"}
-              {name === "rapido" && "🏍 Rapido"}
-              {name === "indrive" && "💸 InDrive"}
+    // ✅ get minimum price from car/bike/auto
+    const minPrice = Math.min(
+      ...Object.values(data).map((r) => r.price)
+    );
 
-              {isWinner && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white ml-1">
-                  🏆
-                </span>
-              )}
-            </h2>
+    const minTime = Math.min(
+      ...Object.values(data).map((r) => r.time)
+    );
 
-            <p className="text-sm opacity-70">⏱ {data.time} mins</p>
+    return (
+      <div
+        key={name}
+        onClick={() => setSelectedPlatform(name)} // 🔥 CLICK
+        className={`cursor-pointer p-5 rounded-2xl border transition-all hover:scale-105 hover:shadow-xl ${
+          selectedPlatform === name
+            ? "border-blue-400 scale-105"
+            : ""
+        } ${
+          isWinner
+            ? "bg-green-500/10 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+            : dm
+            ? "bg-white/5 border-white/10"
+            : "bg-white border-slate-200"
+        }`}
+      >
+        <h2 className="font-bold text-lg capitalize mb-2 flex items-center gap-1">
+          {name === "uber" && "🚗 Uber"}
+          {name === "ola" && "🛺 Ola"}
+          {name === "rapido" && "🏍 Rapido"}
+          {name === "indrive" && "💸 InDrive"}
 
-            <p className="text-2xl font-bold text-green-400 mt-1">
-              ₹{data.price}
-            </p>
+          {isWinner && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white ml-1">
+              🏆
+            </span>
+          )}
+        </h2>
 
-          </div>
-        );
-      })}
+        {/* ✅ UPDATED */}
+        <p className="text-sm opacity-70">⏱ {minTime} mins</p>
 
-    </div>
+        <p className="text-2xl font-bold text-green-400 mt-1">
+          ₹{minPrice}
+        </p>
+      </div>
+    );
+  })}
+
+</div>
 
   </div>
 )}
 
+{selectedPlatform && (
+  <div className="mt-6 p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-lg">
+    
+    <h2 className="text-lg font-bold mb-4 capitalize">
+      {selectedPlatform} Ride Options
+    </h2>
+
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+      {Object.entries(result.platforms[selectedPlatform]).map(
+        ([type, ride]) => (
+          <div
+            key={type}
+            className="p-4 rounded-xl bg-white/5 border border-white/10 hover:scale-105 transition"
+          >
+            <h3 className="font-semibold capitalize mb-2">
+              {type === "car" && "🚗 Car"}
+              {type === "bike" && "🏍 Bike"}
+              {type === "auto" && "🛺 Auto"}
+            </h3>
+
+            <p className="text-sm opacity-70">
+              ⏱ {ride.time} mins
+            </p>
+
+            <p className="text-xl font-bold text-green-400">
+              ₹{ride.price}
+            </p>
+
+            <button className="mt-3 w-full py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-semibold">
+              Book Now
+            </button>
+          </div>
+        )
+      )}
+
+    </div>
+  </div>
+)}
                 {/* ── RIGHT: Grocery Panel (Instamart + JioMart) ── */}
                 {serviceType === "grocery" && result && (
                   <GroceryPanel
