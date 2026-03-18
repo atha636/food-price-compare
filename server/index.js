@@ -814,16 +814,21 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
     let totalPrice = 0;
     let totalDistance = 0;
     const platformCount = {};
+rideHistory.forEach(r => {
 
-    rideHistory.forEach(r => {
-      totalPrice += r.bestPrice || 0;
-      totalDistance += r.distance || 0;
+  totalPrice += r.bestPrice || 0;
 
-      if (r.winner) {
-        platformCount[r.winner] =
-          (platformCount[r.winner] || 0) + 1;
-      }
-    });
+  // ✅ FIX DISTANCE SAFELY
+  if (r.distance && !isNaN(r.distance)) {
+    totalDistance += Number(r.distance);
+  }
+
+  if (r.winner) {
+    platformCount[r.winner] =
+      (platformCount[r.winner] || 0) + 1;
+  }
+
+});
 
     const favouritePlatform =
   Object.keys(platformCount).length > 0
@@ -836,7 +841,7 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
       totalRides: rideHistory.length,
       favouritePlatform,
       avgPrice: Math.round(totalPrice / rideHistory.length),
-      totalDistance: Math.round(totalDistance)
+      totalDistance: Number(totalDistance.toFixed(1))
     });
 
   } catch (err) {

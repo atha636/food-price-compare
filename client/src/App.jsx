@@ -615,7 +615,10 @@ if (serviceType === "ride") {
       />
       <Route path="/analytics" element={<Analytics />} />
       <Route path="/history" element={<History />} />
-      <Route path="/ride-dashboard" element={<RideDashboard />} />
+      <Route 
+  path="/ride-dashboard" 
+  element={<RideDashboard theme={theme} />} 
+/>
       <Route path="/favourites" element={<Favourites />} />
       <Route
         path="/settings"

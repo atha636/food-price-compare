@@ -13,7 +13,10 @@ import axios from "axios";
 
 const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
 
-export default function RideDashboard() {
+export default function RideDashboard({ theme }) {
+
+  const isDark = theme === "dark";
+
   const [data, setData] = useState(null);
   const [history, setHistory] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -40,7 +43,6 @@ export default function RideDashboard() {
 
         setHistory(rideHistory);
 
-        // 📊 Chart: rides per platform
         const count = {};
         rideHistory.forEach(r => {
           if (!r.winner) return;
@@ -71,99 +73,139 @@ export default function RideDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto text-white">
+    <div
+      className={`relative min-h-screen w-full transition-all duration-500 overflow-hidden ${
+        isDark
+          ? "bg-[#07091a] text-white"
+          : "bg-[#f0f4ff] text-slate-800"
+      }`}
+    >
 
-      {/* HEADER */}
-      <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
-        🚗 Ride Analytics Dashboard
-      </h1>
-
-      {/* STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-10">
-
-        {[
-          { label: "Total Rides", value: data.totalRides, icon: "🚗" },
-          { label: "Avg Price", value: `₹${data.avgPrice}`, icon: "💰" },
-          { label: "Distance", value: `${data.totalDistance} km`, icon: "📍" },
-          { label: "Best Platform", value: data.favouritePlatform || "—", icon: "🏆" }
-        ].map((card, i) => (
-          <div
-            key={i}
-            className="p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl
-            hover:scale-105 transition-all shadow-lg"
-          >
-            <p className="text-sm opacity-70 mb-2">
-              {card.icon} {card.label}
-            </p>
-            <h2 className="text-3xl font-bold capitalize">
-              {card.value}
-            </h2>
-          </div>
-        ))}
-
+      {/* 🌈 BACKGROUND GLOW EFFECT */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className={`absolute w-[500px] h-[500px] blur-[120px] opacity-20 -top-32 -left-32 ${
+          isDark ? "bg-blue-600" : "bg-blue-300"
+        }`} />
+        <div className={`absolute w-[400px] h-[400px] blur-[120px] opacity-15 bottom-0 right-0 ${
+          isDark ? "bg-purple-700" : "bg-indigo-300"
+        }`} />
       </div>
 
-      {/* CHART */}
-      <div className="bg-white/5 p-6 rounded-3xl border border-white/10 mb-10">
-        <h2 className="text-xl font-bold mb-4">📊 Platform Usage</h2>
+      <div className="relative z-10 p-6 max-w-6xl mx-auto">
 
-        {chartData.length === 0 ? (
-          <p className="text-gray-400">No data yet</p>
-        ) : (
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis dataKey="name" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" />
-                <Tooltip />
-                <Bar dataKey="rides" radius={[10, 10, 0, 0]}>
-                  {chartData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
+        {/* HEADER */}
+        <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+          🚗 Ride Analytics Dashboard
+        </h1>
 
-      {/* HISTORY */}
-      <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
-        <h2 className="text-xl font-bold mb-4">🕓 Recent Rides</h2>
+        {/* STATS */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-10">
+          {[
+            { label: "Total Rides", value: data.totalRides, icon: "🚗" },
+            { label: "Avg Price", value: `₹${data.avgPrice}`, icon: "💰" },
+            { label: "Distance", value: `${data.totalDistance} km`, icon: "📍" },
+            { label: "Best Platform", value: data.favouritePlatform || "—", icon: "🏆" }
+          ].map((card, i) => (
+            <div
+              key={i}
+              className={`p-6 rounded-3xl backdrop-blur-xl transition-all shadow-lg hover:scale-105 ${
+                isDark
+                  ? "bg-white/5 border border-white/10"
+                  : "bg-white border border-slate-200 shadow-md"
+              }`}
+            >
+              <p className="text-sm opacity-70 mb-2">
+                {card.icon} {card.label}
+              </p>
+              <h2 className="text-3xl font-bold capitalize">
+                {card.value}
+              </h2>
+            </div>
+          ))}
+        </div>
 
-        {history.length === 0 ? (
-          <p className="text-gray-400">No rides yet</p>
-        ) : (
-          <div className="space-y-4">
-            {history.slice(0, 6).map((ride, i) => (
-              <div
-                key={i}
-                className="flex justify-between items-center p-4 rounded-xl 
-                bg-black/30 border border-white/10 hover:bg-white/5 transition"
-              >
-                <div>
-                  <p className="font-semibold text-lg">
-                    {ride.pickup} → {ride.drop}
-                  </p>
-                  <p className="text-xs opacity-70">
-                    {ride.distance} km
-                  </p>
+        {/* CHART */}
+        <div
+          className={`p-6 rounded-3xl mb-10 ${
+            isDark
+              ? "bg-white/5 border border-white/10"
+              : "bg-white border border-slate-200 shadow-md"
+          }`}
+        >
+          <h2 className="text-xl font-bold mb-4">📊 Platform Usage</h2>
+
+          {chartData.length === 0 ? (
+            <p className="text-gray-400">No data yet</p>
+          ) : (
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <XAxis
+                    dataKey="name"
+                    stroke={isDark ? "#94a3b8" : "#475569"}
+                  />
+                  <YAxis
+                    stroke={isDark ? "#94a3b8" : "#475569"}
+                  />
+                  <Tooltip />
+                  <Bar dataKey="rides" radius={[10, 10, 0, 0]}>
+                    {chartData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* HISTORY */}
+        <div
+          className={`p-6 rounded-3xl ${
+            isDark
+              ? "bg-white/5 border border-white/10"
+              : "bg-white border border-slate-200 shadow-md"
+          }`}
+        >
+          <h2 className="text-xl font-bold mb-4">🕓 Recent Rides</h2>
+
+          {history.length === 0 ? (
+            <p className="text-gray-400">No rides yet</p>
+          ) : (
+            <div className="space-y-4">
+              {history.slice(0, 6).map((ride, i) => (
+                <div
+                  key={i}
+                  className={`flex justify-between items-center p-4 rounded-xl transition ${
+                    isDark
+                      ? "bg-black/30 border border-white/10 hover:bg-white/5"
+                      : "bg-slate-50 border border-slate-200 hover:bg-white"
+                  }`}
+                >
+                  <div>
+                    <p className="font-semibold text-lg">
+                      {ride.pickup} → {ride.drop}
+                    </p>
+                    <p className="text-xs opacity-70">
+                      {ride.distance} km
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-green-400 font-bold text-lg">
+                      ₹{ride.bestPrice}
+                    </p>
+                    <p className="text-xs opacity-70 capitalize">
+                      {ride.winner}
+                    </p>
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-                <div className="text-right">
-                  <p className="text-green-400 font-bold text-lg">
-                    ₹{ride.bestPrice}
-                  </p>
-                  <p className="text-xs opacity-70 capitalize">
-                    {ride.winner}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
-
     </div>
   );
 }
