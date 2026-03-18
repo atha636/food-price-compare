@@ -1411,42 +1411,74 @@ if (serviceType === "ride") {
     );
 
     return (
-      <div
-        key={name}
-        onClick={() => setSelectedPlatform(name)} // 🔥 CLICK
-        className={`cursor-pointer p-5 rounded-2xl border transition-all hover:scale-105 hover:shadow-xl ${
-          selectedPlatform === name
-            ? "border-blue-400 scale-105"
-            : ""
-        } ${
-          isWinner
-            ? "bg-green-500/10 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-            : dm
-            ? "bg-white/5 border-white/10"
-            : "bg-white border-slate-200"
-        }`}
-      >
-        <h2 className="font-bold text-lg capitalize mb-2 flex items-center gap-1">
-          {name === "uber" && "🚗 Uber"}
-          {name === "ola" && "🛺 Ola"}
-          {name === "rapido" && "🏍 Rapido"}
-          {name === "indrive" && "💸 InDrive"}
+  <div
+    key={name}
+    onClick={() =>
+      setSelectedPlatform(selectedPlatform === name ? null : name)
+    }
+    className={`cursor-pointer p-5 rounded-2xl border transition-all hover:scale-105 hover:shadow-xl ${
+      selectedPlatform === name ? "border-blue-400 scale-105" : ""
+    } ${
+      isWinner
+        ? "bg-green-500/10 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+        : dm
+        ? "bg-white/5 border-white/10"
+        : "bg-white border-slate-200"
+    }`}
+  >
+    <h2 className="font-bold text-lg capitalize mb-2 flex items-center gap-1">
+      {name === "uber" && "🚗 Uber"}
+      {name === "ola" && "🛺 Ola"}
+      {name === "rapido" && "🏍 Rapido"}
+      {name === "indrive" && "💸 InDrive"}
 
-          {isWinner && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white ml-1">
-              🏆
-            </span>
-          )}
-        </h2>
+      {isWinner && (
+        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white ml-1">
+          🏆
+        </span>
+      )}
+    </h2>
 
-        {/* ✅ UPDATED */}
-        <p className="text-sm opacity-70">⏱ {minTime} mins</p>
+    {/* ✅ MIN PRICE */}
+    <p className="text-sm opacity-70">
+      ⏱ {Math.min(...Object.values(data).map(r => r.time))} mins
+    </p>
 
-        <p className="text-2xl font-bold text-green-400 mt-1">
-          ₹{minPrice}
-        </p>
+    <p className="text-2xl font-bold text-green-400 mt-1">
+      ₹{Math.min(...Object.values(data).map(r => r.price))}
+    </p>
+
+    {/* 🔥 EXPANDED OPTIONS (THIS IS NEW) */}
+    {selectedPlatform === name && (
+      <div className="mt-4 grid grid-cols-3 gap-2">
+
+        {Object.entries(data).map(([type, ride]) => (
+          <div
+            key={type}
+            className="p-2 rounded-lg bg-black/20 border border-white/10 text-center"
+          >
+            <div className="text-xs">
+              {type === "car" && "🚗"}
+              {type === "bike" && "🏍"}
+              {type === "auto" && "🛺"}
+            </div>
+
+            <div className="text-xs mt-1 capitalize">{type}</div>
+
+            <div className="text-[11px] opacity-70">
+              {ride.time} min
+            </div>
+
+            <div className="text-sm font-bold text-green-400">
+              ₹{ride.price}
+            </div>
+          </div>
+        ))}
+
       </div>
-    );
+    )}
+  </div>
+);
   })}
 
 </div>
