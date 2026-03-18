@@ -819,9 +819,9 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
       totalPrice += r.bestPrice || 0;
 
       // ✅ FIX DISTANCE SAFELY
-      if (r.distance && !isNaN(r.distance)) {
-        totalDistance += Number(r.distance);
-      }
+     if (r.distance !== null && r.distance !== undefined && !isNaN(r.distance)) {
+  totalDistance += Number(r.distance);
+}
 
       if (r.winner) {
         platformCount[r.winner] =
