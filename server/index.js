@@ -750,7 +750,7 @@ bestPrice
     res.status(500).json({ message: err.message });
   }
 });
-app.get("/insights", async (req, res) => {
+app.get("/insights", authMiddleware, async (req, res) => {
   try {
     const user = req.user;
 
