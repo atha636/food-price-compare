@@ -752,10 +752,14 @@ bestPrice
 });
 app.get("/insights", authMiddleware, async (req, res) => {
   try {
-    const user = req.user;
+    const user = await User.findById(req.user.id);
 
     if (!user || !user.searchHistory) {
-      return res.json({});
+      return res.json({
+  food: { total: 0 },
+  grocery: { total: 0 },
+  ride: { total: 0 }
+});
     }
 
     const history = user.searchHistory;
@@ -777,10 +781,12 @@ app.get("/insights", authMiddleware, async (req, res) => {
       }
     });
 
-    const favouriteFood = Object.keys(foodCount).reduce(
-      (a, b) => (foodCount[a] > foodCount[b] ? a : b),
-      Object.keys(foodCount)[0]
-    );
+    const favouriteFood =
+  Object.keys(foodCount).length > 0
+    ? Object.keys(foodCount).reduce((a, b) =>
+        foodCount[a] > foodCount[b] ? a : b
+      )
+    : null;
 
     const foodCity = Object.keys(foodCityCount).reduce(
       (a, b) => (foodCityCount[a] > foodCityCount[b] ? a : b),
