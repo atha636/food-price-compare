@@ -77,6 +77,7 @@ const ChartTooltip = ({ active, payload, label }) => {
 /* ── Stat Card ── */
 const StatCard = ({ icon, label, value, accent, sub, delay = 0 }) => {
   const [hovered, setHovered] = useState(false);
+  
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -193,7 +194,7 @@ export default function Dashboard() {
       </div>
     </div>
   );
-
+const current = insights?.food;
   /* ── Theme tokens ── */
   const bg          = darkMode ? "#020617"                      : "#f8fafc";
   const sidebarBg   = darkMode ? "rgba(2,6,23,0.98)"            : "#ffffff";
@@ -436,12 +437,36 @@ export default function Dashboard() {
           {/* Stats row */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
             gap: "18px", marginBottom: "28px",
           }}>
-            <StatCard icon="🔍" label="Total Searches"  value={insights.totalSearches} accent="#60a5fa" delay={0.1} />
-            <StatCard icon="🍽️" label="Favourite Food"  value={insights.favouriteFood || "—"} accent="#f59e0b" delay={0.15} />
-            <StatCard icon="📍" label="Favourite City"  value={insights.favouriteCity || "—"} accent="#a78bfa" delay={0.2} />
+            <StatCard
+  icon="🔍"
+  label="Total Searches"
+  value={current?.total || 0}
+  accent="#60a5fa"
+  delay={0.1}
+/>
+
+<StatCard
+  icon="🍽️"
+  label="Favourite Food"
+  value={
+    current?.favouriteFood
+      ? `${getFoodIcon(current.favouriteFood)} ${current.favouriteFood}`
+      : "—"
+  }
+  accent="#f59e0b"
+  delay={0.15}
+/>
+
+<StatCard
+  icon="📍"
+  label="Favourite City"
+  value={current?.favouriteCity || "—"}
+  accent="#a78bfa"
+  delay={0.2}
+/>
             <StatCard icon="💰" label="Money Saved"     value={`₹${moneySaved}`} accent="#34d399" sub="Based on best price comparisons" delay={0.25} />
             <StatCard icon="🏆" label="Best Platform"   value={bestPlatform || "—"} accent="#f472b6" sub="Most frequent lowest price" delay={0.3} />
           </div>

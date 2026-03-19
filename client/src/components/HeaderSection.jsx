@@ -1,4 +1,13 @@
 export default function HeaderSection({ user, insights, serviceType }) {
+
+  // ✅ get correct data based on tab
+  const current =
+    serviceType === "food"
+      ? insights?.food
+      : serviceType === "grocery"
+      ? insights?.grocery
+      : insights?.ride;
+
   return (
     <div className="mb-6">
 
@@ -9,9 +18,10 @@ export default function HeaderSection({ user, insights, serviceType }) {
         </div>
       )}
 
-      {/* 📊 Dynamic Insights */}
+      {/* 📊 Insights */}
       {insights && (
         <div className="p-4 rounded-xl text-sm border bg-blue-500/8 border-blue-400/20 text-blue-200">
+
           <div className="font-semibold mb-2">
             📊 {serviceType === "food" && "Food Insights"}
             {serviceType === "grocery" && "Grocery Insights"}
@@ -23,27 +33,27 @@ export default function HeaderSection({ user, insights, serviceType }) {
             {/* 🍔 FOOD */}
             {serviceType === "food" && (
               <>
-                <Box label="Searches" value={insights.totalSearches || 0} />
-                <Box label="Top Food" value={insights.favouriteFood || "—"} />
-                <Box label="Top City" value={insights.favouriteCity || "—"} />
+                <Box label="Searches" value={current?.total || 0} />
+                <Box label="Top Food" value={current?.favouriteFood || "—"} />
+                <Box label="Top City" value={current?.favouriteCity || "—"} />
               </>
             )}
 
             {/* 🛒 GROCERY */}
             {serviceType === "grocery" && (
               <>
-                <Box label="Searches" value={insights.totalSearches || 0} />
-                <Box label="Top Item" value={insights.favouriteFood || "—"} />
-                <Box label="Top City" value={insights.favouriteCity || "—"} />
+                <Box label="Searches" value={current?.total || 0} />
+                <Box label="Top Item" value={current?.favouriteItem || "—"} />
+                <Box label="Top City" value={current?.favouriteCity || "—"} />
               </>
             )}
 
             {/* 🚗 RIDE */}
             {serviceType === "ride" && (
               <>
-                <Box label="Rides" value={insights.totalSearches || 0} />
-                <Box label="Fav Route" value={insights.favouriteRoute || "—"} />
-                <Box label="Top City" value={insights.favouriteCity || "—"} />
+                <Box label="Rides" value={current?.total || 0} />
+                <Box label="Best Platform" value={current?.favouritePlatform || "—"} />
+                <Box label="Avg Price" value={`₹${current?.avgRidePrice || 0}`} />
               </>
             )}
 
@@ -54,7 +64,7 @@ export default function HeaderSection({ user, insights, serviceType }) {
   );
 }
 
-/* small reusable box */
+/* ✅ THIS WAS MISSING — ADD THIS BELOW */
 function Box({ label, value }) {
   return (
     <div className="text-center py-2 rounded-lg bg-white/5">
