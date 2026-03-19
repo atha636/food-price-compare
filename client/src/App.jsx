@@ -4,6 +4,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Verified from "./pages/Verified";
 import Dashboard from "./pages/Dashboard";
+import HeaderSection from "./components/HeaderSection";
 import GroceryDashboard from "./pages/GroceryDashboard";
 import RideDashboard from "./pages/RideDashboard";
 import Favourites from "./pages/Favourites";
@@ -1086,41 +1087,11 @@ if (serviceType === "ride" && (!item || !city)) {
                     </div>
 
                     {/* ── Welcome / Insights ── */}
-                    {user && (
-                      <div className={`mb-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 ${
-                        dm
-                          ? "bg-green-500/10 text-green-300 border border-green-400/20"
-                          : "bg-green-50 text-green-700 border border-green-200"
-                      }`}>
-                        <span>👋</span>
-                        <span>Welcome back, <strong>{user.name}</strong></span>
-                      </div>
-                    )}
-
-                    {insights && (
-                      <div className={`mb-4 p-4 rounded-xl text-sm border ${
-                        dm
-                          ? "bg-blue-500/8 border-blue-400/20 text-blue-200"
-                          : "bg-blue-50 border-blue-200 text-blue-700"
-                      }`}>
-                        <div className="font-semibold mb-2 flex items-center gap-1">
-                          <span>📊</span> Your Insights
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {[
-  { label: "Searches", value: insights.totalSearches || 0 },
-  { label: "Top Food", value: insights.favouriteFood || "—" },
-  { label: "Top City", value: insights.favouriteCity || "—" },
-].map((ins) => (
-                            <div key={ins.label} className={`text-center py-2 rounded-lg ${dm ? "bg-white/5" : "bg-white"}`}>
-                              <div className="font-bold text-sm">{ins.value}</div>
-                              <div className="text-xs opacity-60">{ins.label}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
+                   <HeaderSection 
+  user={user} 
+  insights={insights} 
+  serviceType={serviceType} 
+/>
                     {/* ── Brand header ── */}
                     <div className="text-center mb-7">
                      <h1 className="brand text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500 bg-[length:200%_200%] bg-clip-text text-transparent animate-[gradientMove_4s_ease_infinite]">
@@ -1411,9 +1382,7 @@ if (serviceType === "ride" && (!item || !city)) {
     {/* 🚗 RIDE CARDS */}
 <div className="w-full">
   {/* Main Grid - 4 Columns on Large, 2 on Medium, 1 on Small */}
-  <div className="text-sm text-slate-400 mb-3">
-  📍 Distance: {result.distance} km
-</div>
+  
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
     {Object.entries(result.platforms).map(([name, data]) => {
       const isWinner = result.winner === name;

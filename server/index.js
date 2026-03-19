@@ -750,52 +750,142 @@ bestPrice
     res.status(500).json({ message: err.message });
   }
 });
-app.get("/insights", authMiddleware, async (req, res) => {
+app.get("/insights", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = req.user;
 
     if (!user || !user.searchHistory) {
-      return res.json({
-        totalSearches: 0,
-        favouriteFood: null,
-        favouriteCity: null,
-      });
+      return res.json({});
     }
 
     const history = user.searchHistory;
 
-    const totalSearches = history.length;
+    // =========================
+    // 🍔 FOOD INSIGHTS
+    // =========================
+    const foodHistory = history.filter(h => h.serviceType === "food");
 
     const foodCount = {};
-    const cityCount = {};
+    const foodCityCount = {};
 
-    history.forEach(search => {
-      foodCount[search.item] = (foodCount[search.item] || 0) + 1;
-      cityCount[search.city] = (cityCount[search.city] || 0) + 1;
+    foodHistory.forEach(h => {
+      if (h.item) {
+        foodCount[h.item] = (foodCount[h.item] || 0) + 1;
+      }
+      if (h.city) {
+        foodCityCount[h.city] = (foodCityCount[h.city] || 0) + 1;
+      }
     });
 
-    const favouriteFood =
-  Object.keys(foodCount).length > 0
-    ? Object.keys(foodCount).reduce((a, b) =>
-        foodCount[a] > foodCount[b] ? a : b
-      )
-    : null;
+    const favouriteFood = Object.keys(foodCount).reduce(
+      (a, b) => (foodCount[a] > foodCount[b] ? a : b),
+      Object.keys(foodCount)[0]
+    );
 
-const favouriteCity =
-  Object.keys(cityCount).length > 0
-    ? Object.keys(cityCount).reduce((a, b) =>
-        cityCount[a] > cityCount[b] ? a : b
-      )
-    : null;
+    const foodCity = Object.keys(foodCityCount).reduce(
+      (a, b) => (foodCityCount[a] > foodCityCount[b] ? a : b),
+      Object.keys(foodCityCount)[0]
+    );
 
-    res.json({
-      totalSearches,
-      favouriteFood,
-      favouriteCity
+    // =========================
+    // 🛒 GROCERY INSIGHTS
+    // =========================
+    const groceryHistory = history.filter(h => h.serviceType === "grocery");
+
+    const groceryItemCount = {};
+    const groceryCityCount = {};
+
+    groceryHistory.forEach(h => {
+      if (h.item) {
+        groceryItemCount[h.item] = (groceryItemCount[h.item] || 0) + 1;
+      }
+      if (h.city) {
+        groceryCityCount[h.city] = (groceryCityCount[h.city] || 0) + 1;
+      }
+    });
+
+    const favouriteGroceryItem = Object.keys(groceryItemCount).reduce(
+      (a, b) => (groceryItemCount[a] > groceryItemCount[b] ? a : b),
+      Object.keys(groceryItemCount)[0]
+    );
+
+    const groceryCity = Object.keys(groceryCityCount).reduce(
+      (a, b) => (groceryCityCount[a] > groceryCityCount[b] ? a : b),
+      Object.keys(groceryCityCount)[0]
+    );
+
+    // =========================
+    // 🚗 RIDE INSIGHTS
+    // =========================
+    const rideHistory = history.filter(h => h.serviceType === "ride");
+
+    const platformCount = {};
+    const rideCityCount = {};
+
+    let totalDistance = 0;
+    let totalPrice = 0;
+
+    rideHistory.forEach(r => {
+      if (r.winner) {
+        platformCount[r.winner] = (platformCount[r.winner] || 0) + 1;
+      }
+
+      if (r.city) {
+        rideCityCount[r.city] = (rideCityCount[r.city] || 0) + 1;
+      }
+
+      totalDistance += r.distance || 0;
+      totalPrice += r.bestPrice || 0;
+    });
+
+    const favouritePlatform = Object.keys(platformCount).reduce(
+      (a, b) => (platformCount[a] > platformCount[b] ? a : b),
+      Object.keys(platformCount)[0]
+    );
+
+    const rideCity = Object.keys(rideCityCount).reduce(
+      (a, b) => (rideCityCount[a] > rideCityCount[b] ? a : b),
+      Object.keys(rideCityCount)[0]
+    );
+
+    const avgRidePrice =
+      rideHistory.length > 0
+        ? Math.round(totalPrice / rideHistory.length)
+        : 0;
+
+    const avgDistance =
+      rideHistory.length > 0
+        ? (totalDistance / rideHistory.length).toFixed(1)
+        : 0;
+
+    // =========================
+    // FINAL RESPONSE
+    // =========================
+
+    return res.json({
+      food: {
+        total: foodHistory.length,
+        favouriteFood: favouriteFood || null,
+        favouriteCity: foodCity || null
+      },
+
+      grocery: {
+        total: groceryHistory.length,
+        favouriteItem: favouriteGroceryItem || null,
+        favouriteCity: groceryCity || null
+      },
+
+      ride: {
+        total: rideHistory.length,
+        favouritePlatform: favouritePlatform || null,
+        favouriteCity: rideCity || null,
+        avgRidePrice,
+        avgDistance
+      }
     });
 
   } catch (err) {
-    console.error("INSIGHTS ERROR:", err);
+    console.log("Insights error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

@@ -9,6 +9,7 @@ import {
 } from "recharts";
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const COLORS = ["#10b981", "#0ea5e9", "#f59e0b", "#ef4444"];
@@ -19,6 +20,7 @@ export default function RideDashboard({ theme }) {
 
   const [data, setData] = useState(null);
   const [history, setHistory] = useState([]);
+  const navigate = useNavigate();
   const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
@@ -107,6 +109,18 @@ export default function RideDashboard({ theme }) {
       </div>
 
       <div className="relative z-10 p-8 max-w-7xl mx-auto">
+
+  {/* ✅ BACK BUTTON (ADD HERE) */}
+  <div className="flex justify-end mb-6">
+    <button
+      onClick={() => navigate("/", { state: { service: "ride" } })}
+      className="px-6 py-2.5 rounded-full border border-emerald-400/30 text-emerald-300 
+hover:bg-emerald-500/10 transition-all font-semibold text-sm backdrop-blur-md
+shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
+    >
+      ← Back to Compare
+    </button>
+  </div>
 
         {/* PREMIUM HEADER */}
         <div className="mb-12 animate-fadeIn">
