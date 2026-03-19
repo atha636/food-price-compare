@@ -832,8 +832,7 @@ app.get("/ride-insights", authMiddleware, async (req, res) => {
       // This allows distance = 0 to be counted
       const dist = parseFloat(r.distance);
 
-if (Number.isFinite(dist)) {
-  console.log("✅ Adding distance:", dist);
+if (!isNaN(dist)) {
   totalDistance += dist;
 } else {
   console.log("❌ Skipping distance:", r.distance);
@@ -1196,15 +1195,21 @@ user.searchHistory.unshift({
 }
 
 
- // ride panel
+ // ==============================
+// 🚗 RIDE PANEL (FINAL FIXED)
+// ==============================
 if (serviceType === "ride") {
+
   const cacheKey = `${city}-${item}`;
 
-if (rideCache.has(cacheKey)) {
-  console.log("Returning ride data from cache");
-  return res.json(rideCache.get(cacheKey));
-}
+  // ✅ CACHE CHECK (with expiry)
+  const cached = rideCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < 300000) {
+    console.log("Returning ride data from cache");
+    return res.json(cached.data);
+  }
 
+  // 🌍 GET PICKUP LOCATION
   const pickupGeo = await axios.get(
     "https://nominatim.openstreetmap.org/search",
     {
@@ -1213,6 +1218,7 @@ if (rideCache.has(cacheKey)) {
     }
   );
 
+  // 🌍 GET DROP LOCATION
   const dropGeo = await axios.get(
     "https://nominatim.openstreetmap.org/search",
     {
@@ -1226,6 +1232,7 @@ if (rideCache.has(cacheKey)) {
   const dropLat = dropGeo.data[0]?.lat;
   const dropLng = dropGeo.data[0]?.lon;
 
+  // ❌ LOCATION ERROR
   if (!pickupLat || !pickupLng || !dropLat || !dropLng) {
     console.log("Geo failed:", { pickup: city, drop: item });
     return res.status(400).json({
@@ -1236,6 +1243,7 @@ if (rideCache.has(cacheKey)) {
   console.log("Pickup Geo:", pickupGeo.data[0]);
   console.log("Drop Geo:", dropGeo.data[0]);
 
+  // 📏 DISTANCE CALCULATION
   const distance = calculateDistance(
     parseFloat(pickupLat),
     parseFloat(pickupLng),
@@ -1244,111 +1252,114 @@ if (rideCache.has(cacheKey)) {
   );
 
   const finalDistance = Math.round(distance * 10) / 10;
+
+  // 💰 BASE FARE
   const baseFare = finalDistance * 12;
 
+  // 🚗 PLATFORM PRICING
   const platforms = {
-  uber: {
-    car: {
-      price: Math.round(baseFare + 40),
-      time: Math.floor(finalDistance * 2 + 5)
+    uber: {
+      car: {
+        price: Math.round(baseFare + 40),
+        time: Math.floor(finalDistance * 2 + 5)
+      },
+      bike: {
+        price: Math.round(baseFare - 20),
+        time: Math.floor(finalDistance * 1.5 + 3)
+      },
+      auto: {
+        price: Math.round(baseFare + 10),
+        time: Math.floor(finalDistance * 2.2 + 4)
+      }
     },
-    bike: {
-      price: Math.round(baseFare - 20),
-      time: Math.floor(finalDistance * 1.5 + 3)
-    },
-    auto: {
-      price: Math.round(baseFare + 10),
-      time: Math.floor(finalDistance * 2.2 + 4)
-    }
-  },
 
-  ola: {
-    car: {
-      price: Math.round(baseFare + 35),
-      time: Math.floor(finalDistance * 2.5 + 6)
+    ola: {
+      car: {
+        price: Math.round(baseFare + 35),
+        time: Math.floor(finalDistance * 2.5 + 6)
+      },
+      bike: {
+        price: Math.round(baseFare - 25),
+        time: Math.floor(finalDistance * 1.6 + 4)
+      },
+      auto: {
+        price: Math.round(baseFare + 5),
+        time: Math.floor(finalDistance * 2.3 + 5)
+      }
     },
-    bike: {
-      price: Math.round(baseFare - 25),
-      time: Math.floor(finalDistance * 1.6 + 4)
-    },
-    auto: {
-      price: Math.round(baseFare + 5),
-      time: Math.floor(finalDistance * 2.3 + 5)
-    }
-  },
 
-  rapido: {
-    bike: {
-      price: Math.round(baseFare - 30),
-      time: Math.floor(finalDistance * 1.4 + 3)
+    rapido: {
+      bike: {
+        price: Math.round(baseFare - 30),
+        time: Math.floor(finalDistance * 1.4 + 3)
+      },
+      car: {
+        price: Math.round(baseFare + 35),
+        time: Math.floor(finalDistance * 2.5 + 6)
+      },
+      auto: {
+        price: Math.round(baseFare + 5),
+        time: Math.floor(finalDistance * 2.3 + 5)
+      }
     },
-    car: {
-      price: Math.round(baseFare + 35),
-      time: Math.floor(finalDistance * 2.5 + 6)
-    },
-    auto: {
-      price: Math.round(baseFare + 5),
-      time: Math.floor(finalDistance * 2.3 + 5)
-    }
-  },
 
-  indrive: {
-    car: {
-      price: Math.round(baseFare - 10),
-      time: Math.floor(finalDistance * 2.8 + 6)
-    },
-    auto: {
-      price: Math.round(baseFare + 5),
-      time: Math.floor(finalDistance * 2.3 + 5)
-    },
-    bike: {
-      price: Math.round(baseFare - 30),
-      time: Math.floor(finalDistance * 1.4 + 3)
-    },
+    indrive: {
+      car: {
+        price: Math.round(baseFare - 10),
+        time: Math.floor(finalDistance * 2.8 + 6)
+      },
+      auto: {
+        price: Math.round(baseFare + 5),
+        time: Math.floor(finalDistance * 2.3 + 5)
+      },
+      bike: {
+        price: Math.round(baseFare - 30),
+        time: Math.floor(finalDistance * 1.4 + 3)
+      }
+    }
+  };
+
+  // 🏆 WINNER CALCULATION
+  const getMinPrice = (platform) =>
+    Math.min(...Object.values(platform).map(r => r.price));
+
+  const winner = Object.entries(platforms).reduce((a, b) =>
+    getMinPrice(a[1]) < getMinPrice(b[1]) ? a : b
+  )[0];
+
+  // 💾 SAVE RIDE HISTORY
+  if (user) {
+
+    if (!Array.isArray(user.searchHistory)) {
+      user.searchHistory = [];
+    }
+
+    const bestPrice = Math.min(
+      ...Object.values(platforms).map(p =>
+        Math.min(...Object.values(p).map(r => r.price))
+      )
+    );
+
+    user.searchHistory.unshift({
+      item,
+      city,
+      pickup: city,
+      drop: item,
+      serviceType: "ride",
+      winner,
+      bestPrice,
+      distance: finalDistance, // ✅ IMPORTANT
+      platforms,
+      createdAt: new Date()
+    });
+
+    user.searchHistory = user.searchHistory.slice(0, 20);
+
+    await user.save();
   }
-};
-  const getMinPrice = (platform) => {
-  return Math.min(...Object.values(platform).map(r => r.price));
-};
 
-const winner = Object.entries(platforms).reduce((a, b) =>
-  getMinPrice(a[1]) < getMinPrice(b[1]) ? a : b
-)[0];
-
-
-// ⭐ SAVE RIDE HISTORY
-
-
-if (user) {
-  if (!Array.isArray(user.searchHistory)) {
-    user.searchHistory = [];
-  }
-
-  const bestPrice = Math.min(
-    ...Object.values(platforms).map(p =>
-      Math.min(...Object.values(p).map(r => r.price))
-    )
-  );
-
- user.searchHistory.unshift({
-  item,          // ✅ ADD THIS
-  city,          // ✅ ADD THIS
-  pickup: city,
-  drop: item,
-  serviceType: "ride",
-  winner,
-  bestPrice,
-  distance: finalDistance,
-  platforms,
-  createdAt: new Date()
-});
-
-  user.searchHistory = user.searchHistory.slice(0, 20);
-
-  await user.save();
-}
-
-  return res.json({
+  // 📦 RESPONSE OBJECT
+  const responseData = {
     serviceType: "ride",
     pickup: city,
     drop: item,
@@ -1357,9 +1368,18 @@ if (user) {
     winner,
     pickupCoords: [parseFloat(pickupLat), parseFloat(pickupLng)],
     dropCoords: [parseFloat(dropLat), parseFloat(dropLng)]
+  };
+
+  // ✅ SAVE CACHE
+  rideCache.set(cacheKey, {
+    data: responseData,
+    time: Date.now()
   });
 
+  // ✅ FINAL RESPONSE
+  return res.json(responseData);
 }
+
 
 
   } catch (err) {
