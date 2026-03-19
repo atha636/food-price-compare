@@ -35,6 +35,13 @@ verificationToken: String,
       serviceType: String,
       winner: String,
       bestPrice: Number,
+
+      // ✅ ADD THESE
+      distance: Number,
+      pickup: String,
+      drop: String,
+      platforms: Object,
+
       date: {
         type: Date,
         default: Date.now

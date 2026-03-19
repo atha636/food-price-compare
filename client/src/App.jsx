@@ -515,10 +515,18 @@ if (serviceType === "ride") {
   searchItem = item;   // drop
   searchCity = city;   // pickup
 }
-    if (!searchItem || !searchCity) {
-      setError("Please enter food item and city.");
-      return;
-    }
+    if (
+  (serviceType === "food" || serviceType === "grocery") &&
+  (!searchItem || !searchCity)
+) {
+  setError("Please enter item and city.");
+  return;
+}
+
+if (serviceType === "ride" && (!item || !city)) {
+  setError("Please enter pickup and drop location.");
+  return;
+}
     const token = localStorage.getItem("token");
     if (!token) {
       setPendingCompare(true);
@@ -1403,6 +1411,9 @@ if (serviceType === "ride") {
     {/* 🚗 RIDE CARDS */}
 <div className="w-full">
   {/* Main Grid - 4 Columns on Large, 2 on Medium, 1 on Small */}
+  <div className="text-sm text-slate-400 mb-3">
+  📍 Distance: {result.distance} km
+</div>
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
     {Object.entries(result.platforms).map(([name, data]) => {
       const isWinner = result.winner === name;
