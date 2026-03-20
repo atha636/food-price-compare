@@ -125,6 +125,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [item, setItem] = useState("");
   const [city, setCity] = useState("");
+  const [pickup, setPickup] = useState("");
+const [drop, setDrop] = useState("");
   const [result, setResult] = useState(null);
   const location = useLocation();
   const [selectedPlatform, setSelectedPlatform] = useState(null);
@@ -621,6 +623,7 @@ if (serviceType === "ride" && (!item || !city)) {
       console.log("Failed to clear history");
     }
   };
+  
 
   /* ─── color helpers ─── */
   const dm = darkMode;
@@ -1340,29 +1343,43 @@ if (serviceType === "ride" && (!item || !city)) {
                             <button
                               key={index}
                               onClick={async () => {
-                                setLoading(true);
-                                setError("");
-                                setItem(search.item);
-                                setCity(search.city);
-                                const token = localStorage.getItem("token");
-                                try {
-                                  const response = await axios.post(
-                                    "https://food-price-compare-production.up.railway.app/compare",
-                                    {
-                                      item: search.item,
-                                      city: search.city,
-                                      serviceType: search.serviceType || "food",
-                                    },
-                                    { headers: { Authorization: `Bearer ${token}` } }
-                                  );
-                                  setResult(response.data);
-                                } catch (err) {
-                                  console.log("History compare failed");
-                                  setError("Failed to load saved search.");
-                                } finally {
-                                  setLoading(false);
-                                }
-                              }}
+  setLoading(true);
+  setError("");
+
+  // ✅ SWITCH PANEL FIRST
+  const type = search.serviceType || "food";
+  setServiceType(type);
+
+  // ✅ SET VALUES BASED ON TYPE
+  if (type === "ride") {
+    setPickup(search.city);  // pickup
+    setDrop(search.item);    // drop
+  } else {
+    setItem(search.item);
+    setCity(search.city);
+  }
+
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await axios.post(
+      "https://food-price-compare-production.up.railway.app/compare",
+      {
+        item: search.item,
+        city: search.city,
+        serviceType: type,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    setResult(response.data);
+  } catch (err) {
+    console.log("History compare failed");
+    setError("Failed to load saved search.");
+  } finally {
+    setLoading(false);
+  }
+}}
                               className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
                                 dm
                                   ? "bg-white/6 hover:bg-white/10 text-white/60 hover:text-white border border-white/8"
