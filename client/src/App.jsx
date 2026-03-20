@@ -137,6 +137,14 @@ export default function App() {
       setServiceType(location.state.service);
     }
   }, [location]);
+  // ✅ RESET DATA WHEN SWITCHING PANELS
+useEffect(() => {
+  setItem("");
+  setCity("");
+  setResult(null);
+  setError("");
+  setSelectedPlatform(null);
+}, [serviceType]);
 
   const isBasketMode =
     serviceType === "grocery" && result?.basket && result.basket.length > 0;
@@ -537,6 +545,7 @@ if (serviceType === "ride" && (!item || !city)) {
     setError("");
     setLoading(true);
     setResult(null);
+    setSelectedPlatform(null);
     console.log("SENDING DATA:", {
   item: searchItem,
   city: searchCity,
@@ -1068,7 +1077,10 @@ if (serviceType === "ride" && (!item || !city)) {
                       {["food", "grocery", "ride"].map((type) => (
                         <button
                           key={type}
-                          onClick={() => setServiceType(type)}
+                          onClick={() => {
+  setServiceType(type);
+  setResult(null); // instant UI clean
+}}
                           className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
                             serviceType === type
                               ? dm
