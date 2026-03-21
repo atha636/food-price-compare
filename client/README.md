@@ -1,16 +1,175 @@
-# React + Vite
+# 🚀 PriceCompare
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack web application that compares prices across **Food Delivery, Grocery, and Ride services** in real-time, helping users make smarter and more cost-effective decisions.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌟 Features
 
-## React Compiler
+### 🍔 Food Comparison
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* Compare prices between platforms like **Zomato & Swiggy**
+* Smart ranking based on:
 
-## Expanding the ESLint configuration
+  * Price
+  * Delivery time
+  * Distance
+  * Ratings
+* Shows cheapest and fastest options
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+### 🛒 Grocery Comparison
+
+* Multi-item basket support
+* Compare across:
+
+  * Zepto
+  * Blinkit
+  * Instamart
+  * JioMart
+* Calculates:
+
+  * Total basket cost
+  * Fastest delivery
+  * Maximum savings
+
+---
+
+### 🚗 Ride Comparison
+
+* Compare ride fares based on:
+
+  * Pickup & Drop location
+  * Distance calculation
+* Provides cheapest ride option
+
+---
+
+### 📊 Analytics & Insights
+
+* Tracks user behavior
+* Shows:
+
+  * Most searched items
+  * Favourite platforms
+  * Spending insights
+  * Ride statistics
+
+---
+
+### 🔐 Authentication
+
+* JWT-based authentication
+* Google OAuth login
+* Email verification system
+
+---
+
+### 🎨 UI/UX
+
+* Modern glassmorphism design
+* Dark & Light mode support
+* Smooth animations (Framer Motion)
+* Responsive design
+
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+
+* React.js
+* Tailwind CSS
+* Framer Motion
+* Recharts
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB
+* JWT Authentication
+
+### APIs & Tools
+
+* Google OAuth
+* OpenStreetMap (Geolocation)
+* Axios
+* Cheerio (Web scraping)
+
+---
+
+## ⚡ Key Concepts Used
+
+* Smart scoring algorithm for ranking
+* Caching for performance optimization
+* Multi-service architecture
+* Real-time comparison engine
+* State management with hooks
+
+---
+
+## 📦 Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/pricecompare.git
+cd pricecompare
+```
+
+### 2. Install dependencies
+
+Frontend:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Backend:
+
+```bash
+cd server
+npm install
+node index.js
+```
+
+---
+
+## 🔑 Environment Variables
+
+Create a `.env` file in backend:
+
+```
+MONGO_URI=your_mongodb_url
+JWT_SECRET=your_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+FRONTEND_URL=http://localhost:5173
+```
+
+---
+
+## 📈 Future Improvements
+
+* Real API integrations instead of scraping
+* AI-based price prediction
+* Notifications for price drops
+* Mobile app version
+* Better ride fare estimation
+
+---
+
+## 👨‍💻 Author
+
+**Atharv Patidar**
+
+* GitHub: https://github.com/atha636
+
+---
+
+## ⭐ If you like this project
+
+Give it a star ⭐ and feel free to contribute!
