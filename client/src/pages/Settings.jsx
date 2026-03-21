@@ -109,6 +109,7 @@ const ThemeBtn = ({ icon, label, active, accent, onClick }) => {
         transform: active ? "scale(1.04)" : hovered ? "scale(1.02)" : "scale(1)",
         boxShadow: active ? `0 8px 24px ${accent}20` : "none",
         position: "relative", overflow: "hidden",
+        minHeight: "80px",
       }}
     >
       {active && (
@@ -151,6 +152,8 @@ export default function Settings({ theme, setTheme }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [confirmText,     setConfirmText]     = useState("");
   const [saving,          setSaving]          = useState(false);
+  const [loading,         setLoading]         = useState(true);
+  const [isMobile,        setIsMobile]        = useState(window.innerWidth < 768);
 
   const token = localStorage.getItem("token");
 
@@ -160,12 +163,30 @@ export default function Settings({ theme, setTheme }) {
   };
 
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
     axios.get("https://food-price-compare-production.up.railway.app/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(res => { setName(res.data.name); setEmail(res.data.email); })
-      .catch(() => {});
-  }, []);
+      .then(res => {
+        setName(res?.data?.name || "");
+        setEmail(res?.data?.email || "");
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching user data:", err);
+        setLoading(false);
+      });
+  }, [token]);
 
   const updateProfile = async () => {
     setSaving(true);
@@ -175,10 +196,11 @@ export default function Settings({ theme, setTheme }) {
         { name, email },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setName(res.data.user.name);
-      setEmail(res.data.user.email);
+      setName(res?.data?.user?.name || name);
+      setEmail(res?.data?.user?.email || email);
       showToast("Profile updated successfully ✓", "success");
-    } catch {
+    } catch (err) {
+      console.error("Update error:", err);
       showToast("Update failed — please try again", "error");
     } finally {
       setSaving(false);
@@ -186,7 +208,10 @@ export default function Settings({ theme, setTheme }) {
   };
 
   const deleteAccount = async () => {
-    if (confirmText !== "DELETE") { showToast("Type DELETE to confirm", "error"); return; }
+    if (confirmText !== "DELETE") {
+      showToast("Type DELETE to confirm", "error");
+      return;
+    }
     try {
       await axios.delete("https://food-price-compare-production.up.railway.app/delete-account", {
         headers: { Authorization: `Bearer ${token}` },
@@ -194,7 +219,8 @@ export default function Settings({ theme, setTheme }) {
       localStorage.removeItem("token");
       setShowDeleteModal(false);
       window.location.href = "/";
-    } catch {
+    } catch (err) {
+      console.error("Delete error:", err);
       showToast("Delete failed", "error");
     }
   };
@@ -208,6 +234,18 @@ export default function Settings({ theme, setTheme }) {
         @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
         @keyframes pulse-glow { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)} 50%{box-shadow:0 0 0 8px rgba(239,68,68,0)} }
         input::placeholder { color:#334155; }
+
+        @media (max-width: 767px) {
+          .settings-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .settings-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+        }
       `}</style>
 
       {/* ── Toast ── */}
@@ -219,7 +257,11 @@ export default function Settings({ theme, setTheme }) {
             exit={{ opacity: 0, y: -16, x: 16 }}
             transition={{ duration: 0.28 }}
             style={{
-              position: "fixed", top: "24px", right: "24px", zIndex: 9999,
+              position: "fixed",
+              top: "24px",
+              right: isMobile ? "16px" : "24px",
+              left: isMobile ? "16px" : "auto",
+              zIndex: 9999,
               padding: "14px 20px",
               borderRadius: "14px",
               background: toast.type === "success"
@@ -232,7 +274,6 @@ export default function Settings({ theme, setTheme }) {
               boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
               backdropFilter: "blur(16px)",
               display: "flex", alignItems: "center", gap: "8px",
-              maxWidth: "320px",
             }}
           >
             {toast.type === "success" ? "✓" : "✕"} {toast.msg}
@@ -245,7 +286,7 @@ export default function Settings({ theme, setTheme }) {
         background: "linear-gradient(135deg,#020617 0%,#0f172a 60%,#020617 100%)",
         fontFamily: "'DM Sans', sans-serif",
         color: "#f1f5f9",
-        padding: "48px 36px",
+        padding: isMobile ? "24px 16px" : "48px 36px",
         position: "relative",
         overflow: "hidden",
       }}>
@@ -267,7 +308,7 @@ export default function Settings({ theme, setTheme }) {
         <div style={{ position: "relative", zIndex: 1, maxWidth: "900px", margin: "0 auto" }}>
 
           {/* ── Page Header ── */}
-          <div style={{ marginBottom: "40px", animation: "fadeIn 0.5s ease both" }}>
+          <div style={{ marginBottom: isMobile ? "28px" : "40px", animation: "fadeIn 0.5s ease both" }}>
             <p style={{
               fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase",
               color: "#60a5fa", marginBottom: "8px", fontWeight: 500,
@@ -276,38 +317,66 @@ export default function Settings({ theme, setTheme }) {
             </p>
             <h1 style={{
               fontFamily: "'Syne', sans-serif",
-              fontSize: "clamp(28px,4vw,42px)", fontWeight: 800, lineHeight: 1.1,
+              fontSize: isMobile ? "28px" : "clamp(28px,4vw,42px)",
+              fontWeight: 800,
+              lineHeight: 1.1,
               background: "linear-gradient(135deg,#f1f5f9 30%,#60a5fa 100%)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
               backgroundClip: "text",
+              margin: 0,
             }}>
               Settings
             </h1>
-            <p style={{ color: "#475569", fontSize: "14px", marginTop: "8px" }}>
+            <p style={{ color: "#475569", fontSize: isMobile ? "13px" : "14px", marginTop: "8px", margin: 0 }}>
               Manage your account preferences and profile
             </p>
           </div>
 
-          {/* ── Two-column grid ── */}
-          <div style={{
+          {/* ── Grid Layout ── */}
+          <div className="settings-grid" style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "24px",
+            gap: isMobile ? "18px" : "24px",
             alignItems: "start",
           }}>
 
             {/* LEFT COLUMN */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "18px" : "24px" }}>
 
               {/* Theme */}
               <Card style={{ animation: "slideUp 0.5s ease 0.1s both" }}>
                 <SectionHead icon={Palette} label="Appearance" color="#60a5fa" />
                 <div style={{ display: "flex", gap: "12px" }}>
-                  <ThemeBtn icon="☀️" label="Light"  active={theme === "light"}  accent="#f59e0b" onClick={() => setTheme("light")}  />
-                  <ThemeBtn icon="🌙" label="Dark"   active={theme === "dark"}   accent="#818cf8" onClick={() => setTheme("dark")}   />
-                  <ThemeBtn icon="💻" label="System" active={theme === "system"} accent="#34d399" onClick={() => setTheme("system")} />
+                  <ThemeBtn
+                    icon="☀️"
+                    label="Light"
+                    active={theme === "light"}
+                    accent="#f59e0b"
+                    onClick={() => setTheme("light")}
+                  />
+                  <ThemeBtn
+                    icon="🌙"
+                    label="Dark"
+                    active={theme === "dark"}
+                    accent="#818cf8"
+                    onClick={() => setTheme("dark")}
+                  />
+                  <ThemeBtn
+                    icon="💻"
+                    label="System"
+                    active={theme === "system"}
+                    accent="#34d399"
+                    onClick={() => setTheme("system")}
+                  />
                 </div>
-                <p style={{ marginTop: "16px", fontSize: "12px", color: "#334155", lineHeight: 1.6 }}>
+                <p style={{
+                  marginTop: "16px",
+                  fontSize: "12px",
+                  color: "#334155",
+                  lineHeight: 1.6,
+                  margin: 0,
+                  marginTop: "16px",
+                }}>
                   Choose how PriceCompare looks to you. Select a theme or sync with your system.
                 </p>
               </Card>
@@ -316,11 +385,16 @@ export default function Settings({ theme, setTheme }) {
               <Card style={{ animation: "slideUp 0.5s ease 0.15s both" }}>
                 <p style={{
                   fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase",
-                  color: "#475569", marginBottom: "18px",
+                  color: "#475569", marginBottom: "18px", margin: 0, marginBottom: "18px",
                 }}>
                   Preview
                 </p>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: isMobile ? "12px" : "16px",
+                  flexWrap: isMobile ? "wrap" : "nowrap",
+                }}>
                   <div style={{
                     width: "56px", height: "56px", flexShrink: 0,
                     background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
@@ -332,20 +406,34 @@ export default function Settings({ theme, setTheme }) {
                   }}>
                     {initial}
                   </div>
-                  <div>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "16px" }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{
+                      fontFamily: "'Syne', sans-serif",
+                      fontWeight: 700,
+                      fontSize: isMobile ? "15px" : "16px",
+                      margin: 0,
+                    }}>
                       {name || "Your Name"}
                     </p>
-                    <p style={{ color: "#475569", fontSize: "13px", marginTop: "2px" }}>
+                    <p style={{
+                      color: "#475569",
+                      fontSize: "13px",
+                      marginTop: "2px",
+                      margin: 0,
+                      marginTop: "2px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}>
                       {email || "your@email.com"}
                     </p>
                   </div>
-                  <div style={{ marginLeft: "auto" }}>
+                  <div style={{ flexShrink: 0 }}>
                     <span style={{
                       background: "rgba(52,211,153,0.1)", color: "#34d399",
                       border: "1px solid rgba(52,211,153,0.2)",
                       borderRadius: "100px", padding: "4px 12px",
                       fontSize: "11px", fontWeight: 600,
+                      whiteSpace: "nowrap",
                     }}>
                       ✓ Active
                     </span>
@@ -356,7 +444,7 @@ export default function Settings({ theme, setTheme }) {
             </div>
 
             {/* RIGHT COLUMN */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "18px" : "24px" }}>
 
               {/* Edit Profile */}
               <Card style={{ animation: "slideUp 0.5s ease 0.2s both" }}>
@@ -365,39 +453,40 @@ export default function Settings({ theme, setTheme }) {
                 <Input
                   label="Full Name"
                   type="text"
-                  value={name}
+                  value={name || ""}
                   onChange={e => setName(e.target.value)}
                   placeholder="Your full name"
                 />
                 <Input
                   label="Email Address"
                   type="email"
-                  value={email}
+                  value={email || ""}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
                 />
 
                 <button
                   onClick={updateProfile}
-                  disabled={saving}
+                  disabled={saving || loading}
                   style={{
                     width: "100%",
                     padding: "14px",
                     borderRadius: "14px",
                     border: "none",
-                    background: saving
+                    background: saving || loading
                       ? "rgba(52,211,153,0.3)"
                       : "linear-gradient(135deg,#059669,#34d399)",
                     color: "#fff",
                     fontFamily: "'Syne', sans-serif",
                     fontSize: "14px", fontWeight: 700,
-                    cursor: saving ? "not-allowed" : "pointer",
+                    cursor: saving || loading ? "not-allowed" : "pointer",
                     transition: "all 0.2s ease",
                     letterSpacing: "0.04em",
-                    boxShadow: saving ? "none" : "0 4px 16px rgba(52,211,153,0.25)",
+                    boxShadow: saving || loading ? "none" : "0 4px 16px rgba(52,211,153,0.25)",
                     marginTop: "4px",
+                    minHeight: "44px",
                   }}
-                  onMouseEnter={e => { if (!saving) e.currentTarget.style.transform = "scale(1.02)"; }}
+                  onMouseEnter={e => { if (!saving && !loading) e.currentTarget.style.transform = "scale(1.02)"; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
                 >
                   {saving ? "Saving…" : "Save Changes"}
@@ -419,7 +508,14 @@ export default function Settings({ theme, setTheme }) {
                   padding: "18px",
                   marginBottom: "16px",
                 }}>
-                  <p style={{ fontSize: "13px", color: "#fca5a5", marginBottom: "10px", fontWeight: 500 }}>
+                  <p style={{
+                    fontSize: "13px",
+                    color: "#fca5a5",
+                    marginBottom: "10px",
+                    fontWeight: 500,
+                    margin: 0,
+                    marginBottom: "10px",
+                  }}>
                     Deleting your account will permanently remove:
                   </p>
                   {["All favourites", "Search history", "Account data & preferences"].map(item => (
@@ -444,6 +540,7 @@ export default function Settings({ theme, setTheme }) {
                     cursor: "pointer",
                     transition: "all 0.2s ease",
                     letterSpacing: "0.04em",
+                    minHeight: "44px",
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = "rgba(239,68,68,0.18)";
@@ -463,8 +560,13 @@ export default function Settings({ theme, setTheme }) {
 
           {/* Footer */}
           <p style={{
-            textAlign: "center", marginTop: "48px",
-            fontSize: "11px", color: "#1e293b", letterSpacing: "0.08em",
+            textAlign: "center",
+            marginTop: isMobile ? "32px" : "48px",
+            fontSize: "11px",
+            color: "#1e293b",
+            letterSpacing: "0.08em",
+            margin: 0,
+            marginTop: isMobile ? "32px" : "48px",
           }}>
             PriceCompare · Account Settings
           </p>
@@ -484,6 +586,7 @@ export default function Settings({ theme, setTheme }) {
               backdropFilter: "blur(8px)",
               display: "flex", alignItems: "center", justifyContent: "center",
               zIndex: 9000,
+              padding: isMobile ? "16px" : "0",
             }}
             onClick={e => { if (e.target === e.currentTarget) setShowDeleteModal(false); }}
           >
@@ -496,8 +599,9 @@ export default function Settings({ theme, setTheme }) {
                 background: "linear-gradient(135deg,#0f172a,#1e293b)",
                 border: "1px solid rgba(239,68,68,0.25)",
                 borderRadius: "24px",
-                padding: "32px",
-                width: "360px",
+                padding: isMobile ? "24px" : "32px",
+                width: isMobile ? "100%" : "360px",
+                maxWidth: "100%",
                 boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(239,68,68,0.1)",
                 fontFamily: "'DM Sans', sans-serif",
               }}
@@ -518,39 +622,61 @@ export default function Settings({ theme, setTheme }) {
 
               <h3 style={{
                 fontFamily: "'Syne', sans-serif",
-                fontSize: "20px", fontWeight: 800,
-                color: "#f87171", marginBottom: "8px",
+                fontSize: isMobile ? "18px" : "20px",
+                fontWeight: 800,
+                color: "#f87171",
+                marginBottom: "8px",
+                margin: 0,
+                marginBottom: "8px",
               }}>
                 Delete Account
               </h3>
-              <p style={{ fontSize: "13px", color: "#64748b", lineHeight: 1.6, marginBottom: "24px" }}>
+              <p style={{
+                fontSize: "13px",
+                color: "#64748b",
+                lineHeight: 1.6,
+                marginBottom: "24px",
+                margin: 0,
+                marginBottom: "24px",
+              }}>
                 This action is <strong style={{ color: "#f87171" }}>permanent and irreversible</strong>.
                 Type <code style={{
-                  background: "rgba(239,68,68,0.12)", color: "#f87171",
-                  padding: "1px 6px", borderRadius: "5px", fontSize: "12px",
+                  background: "rgba(239,68,68,0.12)",
+                  color: "#f87171",
+                  padding: "1px 6px",
+                  borderRadius: "5px",
+                  fontSize: "12px",
                 }}>DELETE</code> below to confirm.
               </p>
 
               <Input
                 type="text"
                 placeholder="Type DELETE"
-                value={confirmText}
+                value={confirmText || ""}
                 onChange={e => setConfirmText(e.target.value)}
               />
 
-              <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+              <div style={{
+                display: "flex",
+                gap: "12px",
+                marginTop: "20px",
+                flexDirection: isMobile ? "column" : "row",
+              }}>
                 <button
                   onClick={() => { setShowDeleteModal(false); setConfirmText(""); }}
                   style={{
-                    flex: 1, padding: "13px",
+                    flex: 1,
+                    padding: "13px",
                     borderRadius: "14px",
                     border: "1px solid rgba(255,255,255,0.1)",
                     background: "rgba(255,255,255,0.05)",
                     color: "#94a3b8",
                     fontFamily: "'DM Sans', sans-serif",
-                    fontSize: "14px", fontWeight: 500,
+                    fontSize: "14px",
+                    fontWeight: 500,
                     cursor: "pointer",
                     transition: "background 0.2s",
+                    minHeight: "44px",
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.09)"}
                   onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
@@ -560,7 +686,8 @@ export default function Settings({ theme, setTheme }) {
                 <button
                   onClick={deleteAccount}
                   style={{
-                    flex: 1, padding: "13px",
+                    flex: 1,
+                    padding: "13px",
                     borderRadius: "14px",
                     border: "1px solid rgba(239,68,68,0.35)",
                     background: confirmText === "DELETE"
@@ -568,10 +695,12 @@ export default function Settings({ theme, setTheme }) {
                       : "rgba(239,68,68,0.1)",
                     color: confirmText === "DELETE" ? "#fff" : "#f87171",
                     fontFamily: "'Syne', sans-serif",
-                    fontSize: "14px", fontWeight: 700,
+                    fontSize: "14px",
+                    fontWeight: 700,
                     cursor: "pointer",
                     transition: "all 0.2s ease",
                     boxShadow: confirmText === "DELETE" ? "0 4px 16px rgba(239,68,68,0.3)" : "none",
+                    minHeight: "44px",
                   }}
                 >
                   Delete

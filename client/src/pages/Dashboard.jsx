@@ -110,16 +110,16 @@ const StatCard = ({ icon, label, value, accent, sub, delay = 0 }) => {
         {icon}&nbsp;&nbsp;{label}
       </p>
       <p style={{
-  fontFamily: "'Syne', sans-serif",
-  fontSize: "clamp(22px, 2.8vw, 36px)",
-  fontWeight: 800,
-  color: accent,
-  lineHeight: 1.1,
-  wordBreak: "break-word",
-  whiteSpace: "normal"
-}}>
-  {value}
-</p>
+        fontFamily: "'Syne', sans-serif",
+        fontSize: "clamp(22px, 2.8vw, 36px)",
+        fontWeight: 800,
+        color: accent,
+        lineHeight: 1.1,
+        wordBreak: "break-word",
+        whiteSpace: "normal"
+      }}>
+        {value}
+      </p>
       {sub && (
         <p style={{ fontSize: "11px", color: "#475569", marginTop: "8px" }}>{sub}</p>
       )}
@@ -142,9 +142,21 @@ export default function Dashboard() {
   const [moneySaved,  setMoneySaved]  = useState(0);
   const [bestPlatform,setBestPlatform]= useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile,    setIsMobile]    = useState(window.innerWidth < 768);
 
   useEffect(() => {
     if (localStorage.getItem("theme") === "dark") setDarkMode(true);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setSidebarOpen(false);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -194,7 +206,9 @@ export default function Dashboard() {
       </div>
     </div>
   );
-const current = insights?.food;
+
+  const current = insights?.food;
+
   /* ── Theme tokens ── */
   const bg          = darkMode ? "#020617"                      : "#f8fafc";
   const sidebarBg   = darkMode ? "rgba(2,6,23,0.98)"            : "#ffffff";
@@ -215,14 +229,45 @@ const current = insights?.food;
         @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
         @keyframes spin     { to   { transform:rotate(360deg); } }
         @keyframes glow     { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+        
         .nav-btn:hover { background: rgba(255,255,255,0.06) !important; }
         .row-tr:hover td { background: ${rowHover} !important; }
+        
         .badge-zomato   { background:rgba(239,68,68,0.12)!important;  color:#f87171!important; }
         .badge-swiggy   { background:rgba(249,115,22,0.12)!important; color:#fb923c!important; }
         .badge-default  { background:rgba(100,116,139,0.12)!important;color:#94a3b8!important; }
+        
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:#1e293b; border-radius:4px; }
+
+        /* Mobile Hamburger */
+        .mobile-menu-btn {
+          display: none;
+          background: none;
+          border: none;
+          color: #60a5fa;
+          font-size: 24px;
+          cursor: pointer;
+          padding: 8px;
+        }
+
+        @media (max-width: 767px) {
+          .mobile-menu-btn { display: block; }
+          .sidebar-overlay { display: block !important; }
+        }
+
+        @media (max-width: 767px) {
+          .stat-card-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .stat-card-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
       `}</style>
 
       <div style={{
@@ -231,31 +276,71 @@ const current = insights?.food;
         fontFamily: "'DM Sans', sans-serif",
         color: textPrimary,
         transition: "background 0.3s ease",
+        position: "relative",
       }}>
+
+        {/* Mobile Overlay */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="sidebar-overlay"
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 9,
+              display: "none",
+            }}
+          />
+        )}
 
         {/* ══ SIDEBAR ══ */}
         <aside style={{
-          width: sidebarOpen ? "240px" : "72px",
+          position: isMobile ? "fixed" : "sticky",
+          top: 0,
+          left: 0,
+          right: isMobile ? "auto" : "unset",
+          width: isMobile ? (sidebarOpen ? "240px" : "0") : sidebarOpen ? "240px" : "72px",
           minHeight: "100vh",
           background: sidebarBg,
           borderRight: `1px solid ${sidebarBord}`,
-          padding: sidebarOpen ? "32px 20px" : "32px 12px",
+          padding: isMobile ? (sidebarOpen ? "32px 20px" : "0") : sidebarOpen ? "32px 20px" : "32px 12px",
           display: "flex",
           flexDirection: "column",
           gap: "4px",
           transition: "width 0.3s ease, padding 0.3s ease",
-          position: "sticky", top: 0,
           backdropFilter: "blur(20px)",
           flexShrink: 0,
-          zIndex: 10,
+          zIndex: 20,
+          overflowY: "auto",
+          maxHeight: "100vh",
         }}>
+
+          {/* Close button for mobile */}
+          {isMobile && sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                alignSelf: "flex-end",
+                background: "none",
+                border: "none",
+                color: "#60a5fa",
+                fontSize: "24px",
+                cursor: "pointer",
+                padding: "8px",
+                marginBottom: "16px",
+              }}
+            >
+              ✕
+            </button>
+          )}
 
           {/* Logo */}
           <div style={{
             display: "flex", alignItems: "center", gap: "10px",
             marginBottom: "32px", cursor: "pointer",
             overflow: "hidden",
-          }} onClick={() => setSidebarOpen(o => !o)}>
+          }} onClick={() => isMobile ? null : setSidebarOpen(o => !o)}>
             <div style={{
               width: "36px", height: "36px", flexShrink: 0,
               background: "linear-gradient(135deg,#3b82f6,#60a5fa)",
@@ -263,7 +348,7 @@ const current = insights?.food;
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "18px", boxShadow: "0 4px 14px rgba(59,130,246,0.4)",
             }}>🚀</div>
-            {sidebarOpen && (
+            {(!isMobile && sidebarOpen) || (isMobile && sidebarOpen) ? (
               <span style={{
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 1000, fontSize: "12px",
@@ -273,7 +358,7 @@ const current = insights?.food;
               }}>
                 PriceCompare
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Nav links */}
@@ -284,10 +369,13 @@ const current = insights?.food;
               <button
                 key={path}
                 className="nav-btn"
-                onClick={() => navigate(path)}
+                onClick={() => {
+                  navigate(path);
+                  if (isMobile) setSidebarOpen(false);
+                }}
                 style={{
                   width: "100%", textAlign: "left",
-                  padding: sidebarOpen ? "11px 14px" : "11px",
+                  padding: isMobile || sidebarOpen ? "11px 14px" : "11px",
                   borderRadius: "12px",
                   border: active ? `1px solid ${ac}30` : "1px solid transparent",
                   background: active ? `${ac}15` : "transparent",
@@ -295,12 +383,13 @@ const current = insights?.food;
                   fontSize: "13px", fontWeight: active ? 600 : 400,
                   cursor: "pointer",
                   display: "flex", alignItems: "center",
-                  gap: sidebarOpen ? "10px" : "0",
-                  justifyContent: sidebarOpen ? "flex-start" : "center",
+                  gap: isMobile || sidebarOpen ? "10px" : "0",
+                  justifyContent: isMobile || sidebarOpen ? "flex-start" : "center",
                   transition: "all 0.2s ease",
                   fontFamily: "'DM Sans', sans-serif",
                   overflow: "hidden",
                   position: "relative",
+                  minHeight: "44px",
                 }}
               >
                 {active && (
@@ -312,7 +401,9 @@ const current = insights?.food;
                   }} />
                 )}
                 <span style={{ fontSize: "16px", flexShrink: 0 }}>{icon}</span>
-                {sidebarOpen && <span style={{ whiteSpace: "nowrap" }}>{label}</span>}
+                {(isMobile && sidebarOpen) || (!isMobile && sidebarOpen) ? (
+                  <span style={{ whiteSpace: "nowrap" }}>{label}</span>
+                ) : null}
               </button>
             );
           })}
@@ -323,7 +414,7 @@ const current = insights?.food;
               onClick={() => { localStorage.removeItem("token"); window.location.href = "/"; }}
               style={{
                 width: "100%", textAlign: "left",
-                padding: sidebarOpen ? "11px 14px" : "11px",
+                padding: isMobile || sidebarOpen ? "11px 14px" : "11px",
                 borderRadius: "12px",
                 border: "1px solid rgba(239,68,68,0.15)",
                 background: "rgba(239,68,68,0.06)",
@@ -331,33 +422,47 @@ const current = insights?.food;
                 fontSize: "13px", fontWeight: 500,
                 cursor: "pointer",
                 display: "flex", alignItems: "center",
-                gap: sidebarOpen ? "10px" : "0",
-                justifyContent: sidebarOpen ? "flex-start" : "center",
+                gap: isMobile || sidebarOpen ? "10px" : "0",
+                justifyContent: isMobile || sidebarOpen ? "flex-start" : "center",
                 fontFamily: "'DM Sans', sans-serif",
                 transition: "background 0.2s",
+                minHeight: "44px",
               }}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,0.12)"}
               onMouseLeave={e => e.currentTarget.style.background = "rgba(239,68,68,0.06)"}
             >
               <span style={{ fontSize: "16px", flexShrink: 0 }}>🚪</span>
-              {sidebarOpen && <span>Logout</span>}
+              {(isMobile && sidebarOpen) || (!isMobile && sidebarOpen) ? (
+                <span>Logout</span>
+              ) : null}
             </button>
           </div>
         </aside>
 
         {/* ══ MAIN ══ */}
         <main style={{
-          flex: 1, padding: "40px 36px",
+          flex: 1, 
+          padding: isMobile ? "20px 16px" : "40px 36px",
           overflowY: "auto",
           animation: "fadeIn 0.4s ease both",
         }}>
 
-          {/* Header */}
+          {/* Mobile Header with menu button */}
           <div style={{
-            display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-            marginBottom: "40px",
+            display: "flex", alignItems: "center", gap: "12px",
+            marginBottom: isMobile ? "24px" : "40px",
+            justifyContent: "space-between",
           }}>
-            <div>
+            {isMobile && (
+              <button
+                className="mobile-menu-btn"
+                onClick={() => setSidebarOpen(true)}
+              >
+                ☰
+              </button>
+            )}
+
+            <div style={{ flex: 1 }}>
               <p style={{
                 fontSize: "11px", letterSpacing: "0.14em", textTransform: "uppercase",
                 color: "#60a5fa", marginBottom: "8px", fontWeight: 500,
@@ -366,43 +471,70 @@ const current = insights?.food;
               </p>
               <h1 style={{
                 fontFamily: "'Syne', sans-serif",
-                fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 800, lineHeight: 1.1,
+                fontSize: isMobile ? "24px" : "clamp(26px,3.5vw,38px)",
+                fontWeight: 800, 
+                lineHeight: 1.1,
                 background: darkMode
                   ? "linear-gradient(135deg,#f1f5f9 30%,#60a5fa 100%)"
                   : "linear-gradient(135deg,#0f172a 30%,#2563eb 100%)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                WebkitBackgroundClip: "text", 
+                WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
+                margin: 0,
               }}>
                 Your Dashboard
               </h1>
-              <p style={{ color: textMuted, fontSize: "14px", marginTop: "6px" }}>
-                Track food price savings and activity
+              <p style={{ color: textMuted, fontSize: "13px", marginTop: "6px" }}>
+                Track food price savings
               </p>
             </div>
 
+            {!isMobile && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: "10px",
+                padding: "10px 18px",
+                borderRadius: "100px",
+                background: "rgba(96,165,250,0.1)",
+                border: "1px solid rgba(96,165,250,0.2)",
+                fontSize: "13px", fontWeight: 500, color: "#60a5fa",
+                animation: "glow 3s ease infinite",
+                whiteSpace: "nowrap",
+              }}>
+                🔥 Smart Price Tracker
+              </div>
+            )}
+          </div>
+
+          {isMobile && (
             <div style={{
               display: "flex", alignItems: "center", gap: "10px",
               padding: "10px 18px",
               borderRadius: "100px",
               background: "rgba(96,165,250,0.1)",
               border: "1px solid rgba(96,165,250,0.2)",
-              fontSize: "13px", fontWeight: 500, color: "#60a5fa",
+              fontSize: "12px", fontWeight: 500, color: "#60a5fa",
               animation: "glow 3s ease infinite",
+              marginBottom: "20px",
+              justifyContent: "center",
             }}>
               🔥 Smart Price Tracker
             </div>
-          </div>
+          )}
 
           {/* Profile card */}
           <div style={{
             background: cardBg,
             border: `1px solid ${cardBorder}`,
             borderRadius: "22px",
-            padding: "24px 28px",
-            marginBottom: "28px",
+            padding: isMobile ? "18px 20px" : "24px 28px",
+            marginBottom: isMobile ? "20px" : "28px",
             backdropFilter: "blur(16px)",
-            display: "flex", alignItems: "center", gap: "20px",
+            display: "flex", 
+            alignItems: "center", 
+            gap: isMobile ? "16px" : "20px",
             animation: "slideUp 0.5s ease 0.05s both",
+            flexDirection: isMobile ? "column" : "row",
+            textAlign: isMobile ? "center" : "left",
           }}>
             <div style={{
               width: "52px", height: "52px", flexShrink: 0,
@@ -414,15 +546,30 @@ const current = insights?.food;
             }}>
               {user.name?.[0]?.toUpperCase() ?? "👤"}
             </div>
-            <div>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "18px" }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: isMobile ? "16px" : "18px" }}>
                 {user.name}
               </p>
-              <p style={{ color: textMuted, fontSize: "13px", marginTop: "2px" }}>
+              <p style={{ color: textMuted, fontSize: "13px", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {user.email}
               </p>
             </div>
-            <div style={{ marginLeft: "auto" }}>
+            {!isMobile && (
+              <div style={{ marginLeft: "auto" }}>
+                <span style={{
+                  background: "rgba(52,211,153,0.1)", color: "#34d399",
+                  border: "1px solid rgba(52,211,153,0.2)",
+                  borderRadius: "100px", padding: "4px 12px",
+                  fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em",
+                }}>
+                  ✓ Active
+                </span>
+              </div>
+            )}
+          </div>
+
+          {isMobile && (
+            <div style={{ textAlign: "center", marginBottom: "20px" }}>
               <span style={{
                 background: "rgba(52,211,153,0.1)", color: "#34d399",
                 border: "1px solid rgba(52,211,153,0.2)",
@@ -432,41 +579,42 @@ const current = insights?.food;
                 ✓ Active
               </span>
             </div>
-          </div>
+          )}
 
           {/* Stats row */}
-          <div style={{
+          <div className="stat-card-grid" style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-            gap: "18px", marginBottom: "28px",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(220px, 1fr))",
+            gap: isMobile ? "12px" : "18px", 
+            marginBottom: isMobile ? "20px" : "28px",
           }}>
             <StatCard
-  icon="🔍"
-  label="Total Searches"
-  value={current?.total || 0}
-  accent="#60a5fa"
-  delay={0.1}
-/>
+              icon="🔍"
+              label="Total Searches"
+              value={current?.total || 0}
+              accent="#60a5fa"
+              delay={0.1}
+            />
 
-<StatCard
-  icon="🍽️"
-  label="Favourite Food"
-  value={
-    current?.favouriteFood
-      ? `${getFoodIcon(current.favouriteFood)} ${current.favouriteFood}`
-      : "—"
-  }
-  accent="#f59e0b"
-  delay={0.15}
-/>
+            <StatCard
+              icon="🍽️"
+              label="Favourite Food"
+              value={
+                current?.favouriteFood
+                  ? `${getFoodIcon(current.favouriteFood)} ${current.favouriteFood}`
+                  : "—"
+              }
+              accent="#f59e0b"
+              delay={0.15}
+            />
 
-<StatCard
-  icon="📍"
-  label="Favourite City"
-  value={current?.favouriteCity || "—"}
-  accent="#a78bfa"
-  delay={0.2}
-/>
+            <StatCard
+              icon="📍"
+              label="Favourite City"
+              value={current?.favouriteCity || "—"}
+              accent="#a78bfa"
+              delay={0.2}
+            />
             <StatCard icon="💰" label="Money Saved"     value={`₹${moneySaved}`} accent="#34d399" sub="Based on best price comparisons" delay={0.25} />
             <StatCard icon="🏆" label="Best Platform"   value={bestPlatform || "—"} accent="#f472b6" sub="Most frequent lowest price" delay={0.3} />
           </div>
@@ -476,14 +624,15 @@ const current = insights?.food;
             background: cardBg,
             border: `1px solid ${cardBorder}`,
             borderRadius: "22px",
-            padding: "28px",
-            marginBottom: "28px",
+            padding: isMobile ? "18px" : "28px",
+            marginBottom: isMobile ? "20px" : "28px",
             backdropFilter: "blur(16px)",
             animation: "slideUp 0.55s ease 0.35s both",
+            overflowX: "auto",
           }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700 }}>
-                📊 Food Search Analytics
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
+              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "16px" : "18px", fontWeight: 700, margin: 0 }}>
+                📊 Food Analytics
               </h2>
               <span style={{
                 fontSize: "11px", color: textMuted, letterSpacing: "0.08em",
@@ -498,18 +647,24 @@ const current = insights?.food;
                 No search data yet
               </div>
             ) : (
-              <div style={{ height: "260px" }}>
+              <div style={{ height: isMobile ? "220px" : "260px", minWidth: chartData.length > 3 ? "400px" : "100%" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} barCategoryGap="35%">
                     <XAxis
                       dataKey="name"
-                      tick={{ fill: "#475569", fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}
-                      axisLine={false} tickLine={false}
+                      tick={{ fill: "#475569", fontSize: isMobile ? 10 : 12, fontFamily: "'DM Sans', sans-serif" }}
+                      axisLine={false} 
+                      tickLine={false}
+                      angle={isMobile ? -45 : 0}
+                      textAnchor={isMobile ? "end" : "middle"}
+                      height={isMobile ? 60 : 30}
                     />
                     <YAxis
                       tick={{ fill: "#475569", fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}
-                      axisLine={false} tickLine={false}
+                      axisLine={false} 
+                      tickLine={false}
                       allowDecimals={false}
+                      width={isMobile ? 30 : 40}
                     />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)", radius: 6 }} />
                     <Bar dataKey="searches" radius={[10, 10, 0, 0]}>
@@ -523,97 +678,144 @@ const current = insights?.food;
             )}
           </div>
 
-          {/* Recent searches table */}
+          {/* Recent searches - Mobile Card View / Desktop Table */}
           <div style={{
             background: cardBg,
             border: `1px solid ${cardBorder}`,
             borderRadius: "22px",
-            padding: "28px",
+            padding: isMobile ? "18px" : "28px",
             backdropFilter: "blur(16px)",
             animation: "slideUp 0.55s ease 0.4s both",
           }}>
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700, marginBottom: "20px" }}>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "16px" : "18px", fontWeight: 700, marginBottom: "20px", margin: 0, marginBottom: "20px" }}>
               🕓 Recent Searches
             </h2>
 
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    {["Food", "City", "Winner"].map(col => (
-                      <th key={col} style={{
-                        textAlign: "left",
-                        padding: "10px 16px",
-                        fontSize: "11px", letterSpacing: "0.1em",
-                        textTransform: "uppercase",
-                        color: textMuted,
-                        fontWeight: 500,
-                        borderBottom: `1px solid ${tableBorder}`,
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}>
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(user.searchHistory || []).slice(0, 6).map((search, i) => {
-                    const winnerClass =
-                      search.winner === "zomato"  ? "badge-zomato"  :
-                      search.winner === "swiggy"  ? "badge-swiggy"  : "badge-default";
+            {isMobile ? (
+              /* Mobile: Card View */
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {(user.searchHistory || []).slice(0, 6).map((search, i) => {
+                  const winnerClass =
+                    search.winner === "zomato"  ? "badge-zomato"  :
+                    search.winner === "swiggy"  ? "badge-swiggy"  : "badge-default";
 
-                    return (
-                      <tr
-                        key={i}
-                        className="row-tr"
-                        style={{ animation: `slideUp 0.4s ease ${0.45 + i * 0.06}s both` }}
-                      >
-                        <td style={{
-                          padding: "14px 16px",
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        background: "rgba(255,255,255,0.02)",
+                        border: `1px solid ${cardBorder}`,
+                        borderRadius: "12px",
+                        padding: "14px",
+                        animation: `slideUp 0.4s ease ${0.45 + i * 0.06}s both`,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                        <span style={{ fontSize: "18px" }}>{getFoodIcon(search.item)}</span>
+                        <p style={{ fontSize: "14px", fontWeight: 600, margin: 0 }}>{search.item}</p>
+                      </div>
+                      <p style={{ fontSize: "12px", color: textMuted, margin: "8px 0" }}>📍 {search.city}</p>
+                      <div>
+                        {search.winner ? (
+                          <span className={winnerClass} style={{
+                            display: "inline-flex", alignItems: "center", gap: "5px",
+                            padding: "4px 10px",
+                            borderRadius: "100px",
+                            fontSize: "11px", fontWeight: 600,
+                            textTransform: "capitalize",
+                          }}>
+                            🏆 {search.winner}
+                          </span>
+                        ) : (
+                          <span style={{ color: textMuted, fontSize: "12px" }}>—</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Desktop: Table View */
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      {["Food", "City", "Winner"].map(col => (
+                        <th key={col} style={{
+                          textAlign: "left",
+                          padding: "10px 16px",
+                          fontSize: "11px", letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                          color: textMuted,
+                          fontWeight: 500,
                           borderBottom: `1px solid ${tableBorder}`,
-                          fontSize: "14px", fontWeight: 500,
+                          fontFamily: "'DM Sans', sans-serif",
                         }}>
-                          <span style={{ marginRight: "8px" }}>{getFoodIcon(search.item)}</span>
-                          {search.item}
-                        </td>
-                        <td style={{
-                          padding: "14px 16px",
-                          borderBottom: `1px solid ${tableBorder}`,
-                          fontSize: "13px", color: textMuted,
-                        }}>
-                          📍 {search.city}
-                        </td>
-                        <td style={{
-                          padding: "14px 16px",
-                          borderBottom: `1px solid ${tableBorder}`,
-                        }}>
-                          {search.winner ? (
-                            <span className={winnerClass} style={{
-                              display: "inline-flex", alignItems: "center", gap: "5px",
-                              padding: "4px 12px",
-                              borderRadius: "100px",
-                              fontSize: "12px", fontWeight: 600,
-                              textTransform: "capitalize",
-                            }}>
-                              🏆 {search.winner}
-                            </span>
-                          ) : (
-                            <span style={{ color: textMuted, fontSize: "13px" }}>—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(user.searchHistory || []).slice(0, 6).map((search, i) => {
+                      const winnerClass =
+                        search.winner === "zomato"  ? "badge-zomato"  :
+                        search.winner === "swiggy"  ? "badge-swiggy"  : "badge-default";
+
+                      return (
+                        <tr
+                          key={i}
+                          className="row-tr"
+                          style={{ animation: `slideUp 0.4s ease ${0.45 + i * 0.06}s both` }}
+                        >
+                          <td style={{
+                            padding: "14px 16px",
+                            borderBottom: `1px solid ${tableBorder}`,
+                            fontSize: "14px", fontWeight: 500,
+                          }}>
+                            <span style={{ marginRight: "8px" }}>{getFoodIcon(search.item)}</span>
+                            {search.item}
+                          </td>
+                          <td style={{
+                            padding: "14px 16px",
+                            borderBottom: `1px solid ${tableBorder}`,
+                            fontSize: "13px", color: textMuted,
+                          }}>
+                            📍 {search.city}
+                          </td>
+                          <td style={{
+                            padding: "14px 16px",
+                            borderBottom: `1px solid ${tableBorder}`,
+                          }}>
+                            {search.winner ? (
+                              <span className={winnerClass} style={{
+                                display: "inline-flex", alignItems: "center", gap: "5px",
+                                padding: "4px 12px",
+                                borderRadius: "100px",
+                                fontSize: "12px", fontWeight: 600,
+                                textTransform: "capitalize",
+                              }}>
+                                🏆 {search.winner}
+                              </span>
+                            ) : (
+                              <span style={{ color: textMuted, fontSize: "13px" }}>—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
           <p style={{
-            textAlign: "center", marginTop: "40px",
+            textAlign: "center", marginTop: isMobile ? "24px" : "40px",
             fontSize: "11px", color: "#334155",
             letterSpacing: "0.08em",
+            paddingBottom: isMobile ? "20px" : "0",
           }}>
             PriceCompare Dashboard · Real-time food price intelligence
           </p>

@@ -41,14 +41,13 @@ const CustomTooltip = ({ active, payload, label }) => {
         backdropFilter: "blur(12px)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.4)"
       }}>
-        <p style={{ color: "#34d399", fontWeight: 600, marginBottom: 4 }}>{label}</p>
-        <p>{payload[0].value} wins</p>
+        <p style={{ color: "#34d399", fontWeight: 600, marginBottom: 4, margin: 0 }}>{label}</p>
+        <p style={{ margin: 0 }}>{payload[0].value} wins</p>
       </div>
     );
   }
   return null;
 };
-
 
 
 /* ─── Stat Card ─── */
@@ -73,30 +72,45 @@ const StatCard = ({ icon, label, value, accent, delay }) => (
       e.currentTarget.style.boxShadow = "none";
     }}
   >
-
-
-
     {/* Glow orb */}
     <div style={{
-      position: "absolute", top: "-40px", right: "-40px",
-      width: "120px", height: "120px",
+      position: "absolute",
+      top: "-40px",
+      right: "-40px",
+      width: "120px",
+      height: "120px",
       background: `radial-gradient(circle, ${accent}18 0%, transparent 70%)`,
-      borderRadius: "50%", pointerEvents: "none"
+      borderRadius: "50%",
+      pointerEvents: "none"
     }} />
-    <p style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#64748b", marginBottom: "14px", fontFamily: "'DM Sans', sans-serif" }}>
+    <p style={{
+      fontSize: "11px",
+      letterSpacing: "0.12em",
+      textTransform: "uppercase",
+      color: "#64748b",
+      fontFamily: "'DM Sans', sans-serif",
+      margin: 0,
+      marginBottom: "14px",
+    }}>
       {icon} &nbsp;{label}
     </p>
-    <p style={{ fontSize: "40px", fontWeight: 800, color: accent, fontFamily: "'Syne', sans-serif", lineHeight: 1 }}>
+    <p style={{
+      fontSize: "clamp(24px, 2.5vw, 40px)",
+      fontWeight: 800,
+      color: accent,
+      fontFamily: "'Syne', sans-serif",
+      lineHeight: 1,
+      margin: 0,
+    }}>
       {value}
     </p>
   </div>
 );
 
-
-
 /* ─── Grocery Icon ─── */
 const getGroceryIcon = (item) => {
-  const n = item.toLowerCase();
+  if (!item) return "🛒";
+  const n = String(item).toLowerCase();
   if (n.includes("milk"))   return "🥛";
   if (n.includes("bread"))  return "🍞";
   if (n.includes("rice"))   return "🍚";
@@ -112,12 +126,11 @@ const getGroceryIcon = (item) => {
 const BAR_COLORS = ["#34d399", "#60a5fa", "#f59e0b", "#f472b6"];
 
 const platformColors = {
-  Zepto:    "#a78bfa",
-  Blinkit:  "#fbbf24",
+  Zepto:     "#a78bfa",
+  Blinkit:   "#fbbf24",
   Instamart: "#34d399",
-  JioMart:  "#60a5fa",
+  JioMart:   "#60a5fa",
 };
-
 
 export default function GroceryDashboard({ theme }) {
   injectFonts();
@@ -126,74 +139,105 @@ export default function GroceryDashboard({ theme }) {
   const [history,      setHistory]      = useState([]);
   const [platformData, setPlatformData] = useState([]);
   const [topItems,     setTopItems]     = useState([]);
-  const [bestPlatform, setBestPlatform] = useState(null);
+  const [bestPlatform, setBestPlatform] = useState("—");
   const [moneySaved,   setMoneySaved]   = useState(0);
   const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [isMobile,     setIsMobile]     = useState(window.innerWidth < 768);
 
   const dark = theme !== "light";
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const res = await axios.get(
           "https://food-price-compare-production.up.railway.app/me",
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        const groceryHistory = (res.data.searchHistory || [])
-          .filter(s => s.serviceType === "grocery");
+        const searchHistory = res?.data?.searchHistory || [];
+        const groceryHistory = searchHistory.filter(s => s?.serviceType === "grocery");
 
         setHistory(groceryHistory);
 
-        let zepto = 0, blinkit = 0, instamart = 0, jiomart = 0;
-        let saved = 0;
+        if (groceryHistory && groceryHistory.length > 0) {
+          let zepto = 0, blinkit = 0, instamart = 0, jiomart = 0;
+          let saved = 0;
 
-        groceryHistory.forEach(search => {
-          if (search.winner === "zepto")     zepto++;
-          if (search.winner === "blinkit")   blinkit++;
-          if (search.winner === "instamart") instamart++;
-          if (search.winner === "jiomart")   jiomart++;
-          if (search.bestPrice) {
-            saved += (search.bestPrice + 20) - search.bestPrice;
-          }
-        });
-
-        
-        setMoneySaved(Math.round(saved));
-
-        const platforms = [
-          { name: "Zepto",     wins: zepto     },
-          { name: "Blinkit",   wins: blinkit   },
-          { name: "Instamart", wins: instamart },
-          { name: "JioMart",   wins: jiomart   },
-        ];
-
-        setPlatformData(platforms.filter(p => p.wins > 0));
-
-        const best = platforms.reduce((a, b) => a.wins > b.wins ? a : b);
-        setBestPlatform(best.wins === 0 ? "No data yet" : best.name);
-
-        const itemCount = {};
-        groceryHistory.forEach(search => {
-          search.item.split(",").forEach(i => {
-            const item = i.trim().toLowerCase();
-            itemCount[item] = (itemCount[item] || 0) + 1;
+          groceryHistory.forEach(search => {
+            if (search?.winner === "zepto")     zepto++;
+            if (search?.winner === "blinkit")   blinkit++;
+            if (search?.winner === "instamart") instamart++;
+            if (search?.winner === "jiomart")   jiomart++;
+            if (search?.bestPrice) {
+              saved += (search.bestPrice + 20) - search.bestPrice;
+            }
           });
-        });
 
-        const top = Object.keys(itemCount)
-          .map(item => ({ name: item, searches: itemCount[item] }))
-          .sort((a, b) => b.searches - a.searches)
-          .slice(0, 5);
+          setMoneySaved(Math.round(saved));
 
-        setTopItems(top);
+          const platforms = [
+            { name: "Zepto",     wins: zepto     },
+            { name: "Blinkit",   wins: blinkit   },
+            { name: "Instamart", wins: instamart },
+            { name: "JioMart",   wins: jiomart   },
+          ];
+
+          const filteredPlatforms = platforms.filter(p => p.wins > 0);
+          setPlatformData(filteredPlatforms);
+
+          const best = platforms.reduce((a, b) => a.wins > b.wins ? a : b);
+          setBestPlatform(best.wins === 0 ? "No data yet" : best.name);
+
+          const itemCount = {};
+          groceryHistory.forEach(search => {
+            if (search?.item) {
+              const items = typeof search.item === 'string' ? search.item.split(",") : [search.item];
+              items.forEach(i => {
+                const item = String(i).trim().toLowerCase();
+                if (item) {
+                  itemCount[item] = (itemCount[item] || 0) + 1;
+                }
+              });
+            }
+          });
+
+          const top = Object.keys(itemCount)
+            .map(item => ({ name: item, searches: itemCount[item] }))
+            .sort((a, b) => b.searches - a.searches)
+            .slice(0, 5);
+
+          setTopItems(top);
+        }
+      } catch (err) {
+        console.error("Error fetching grocery data:", err);
+        setError(err?.message || "Failed to load grocery data");
+        setHistory([]);
+        setPlatformData([]);
+        setTopItems([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    if (token) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   /* ── Inline styles ── */
@@ -207,6 +251,33 @@ export default function GroceryDashboard({ theme }) {
   const cardBorder    = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
   const rowBg         = dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
 
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: bg,
+        fontFamily: "'DM Sans', sans-serif",
+        color: textPrimary,
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "40px",
+            height: "40px",
+            border: "3px solid #1e293b",
+            borderTop: "3px solid #34d399",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+            margin: "0 auto 16px",
+          }} />
+          <p>Loading grocery data…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Keyframes */}
@@ -219,13 +290,34 @@ export default function GroceryDashboard({ theme }) {
           from { opacity: 0; }
           to   { opacity: 1; }
         }
-        @keyframes pulse-ring {
-          0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52,211,153,0.4); }
-          70%  { transform: scale(1);    box-shadow: 0 0 0 10px rgba(52,211,153,0);  }
-          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
         .tag-pill:hover { transform: scale(1.06) !important; }
         .row-item:hover { background: rgba(52,211,153,0.06) !important; }
+
+        /* Mobile responsiveness */
+        @media (max-width: 767px) {
+          .stat-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .bottom-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .back-btn {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .stat-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .bottom-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
       `}</style>
 
       <div style={{
@@ -233,13 +325,16 @@ export default function GroceryDashboard({ theme }) {
         background: bg,
         color: textPrimary,
         fontFamily: "'DM Sans', sans-serif",
-        padding: "40px 32px",
+        padding: isMobile ? "20px 16px" : "40px 32px",
         transition: "all 0.4s ease",
       }}>
 
         {/* ── Noise texture overlay ── */}
         <div style={{
-          position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
           opacity: 0.4
         }} />
@@ -248,41 +343,64 @@ export default function GroceryDashboard({ theme }) {
 
           {/* ── Header ── */}
           <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            marginBottom: "48px", animation: "fadeIn 0.5s ease both"
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            alignItems: isMobile ? "flex-start" : "center",
+            justifyContent: "space-between",
+            gap: isMobile ? "16px" : "24px",
+            marginBottom: isMobile ? "32px" : "48px",
+            animation: "fadeIn 0.5s ease both"
           }}>
-            <div>
-              <p style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#34d399", marginBottom: "8px", fontWeight: 500 }}>
+            <div style={{ flex: 1, width: "100%" }}>
+              <p style={{
+                fontSize: "11px",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                color: "#34d399",
+                margin: 0,
+                marginBottom: "8px",
+                fontWeight: 500,
+              }}>
                 ● Live Tracking
               </p>
               <h1 style={{
                 fontFamily: "'Syne', sans-serif",
-                fontSize: "clamp(28px, 4vw, 42px)",
-                fontWeight: 800, lineHeight: 1.1,
+                fontSize: isMobile ? "24px" : "clamp(28px, 4vw, 42px)",
+                fontWeight: 800,
+                lineHeight: 1.1,
                 background: dark
                   ? "linear-gradient(135deg, #f1f5f9 30%, #34d399 100%)"
                   : "linear-gradient(135deg, #0f172a 30%, #059669 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
+                margin: 0,
               }}>
                 Grocery Dashboard
               </h1>
             </div>
 
             <button
-              onClick={() => navigate("/", { state: { service: "grocery" } })}
+              className="back-btn"
+              onClick={() => navigate("/")}
               style={{
-                display: "flex", alignItems: "center", gap: "8px",
-                padding: "12px 22px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: isMobile ? "12px 16px" : "12px 22px",
                 borderRadius: "14px",
                 border: "1px solid rgba(52,211,153,0.3)",
                 background: "rgba(52,211,153,0.08)",
                 color: "#34d399",
-                fontSize: "13px", fontWeight: 600,
+                fontSize: "13px",
+                fontWeight: 600,
                 fontFamily: "'DM Sans', sans-serif",
                 cursor: "pointer",
                 transition: "all 0.25s ease",
+                minHeight: isMobile ? "44px" : "auto",
+                width: isMobile ? "100%" : "auto",
+                flexShrink: 0,
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.background = "rgba(52,211,153,0.18)";
@@ -293,15 +411,53 @@ export default function GroceryDashboard({ theme }) {
                 e.currentTarget.style.transform = "scale(1)";
               }}
             >
-              ← Back to Compare
+              ← {isMobile ? "Back" : "Back to Compare"}
             </button>
           </div>
 
+          {error && (
+            <div style={{
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.3)",
+              borderRadius: "12px",
+              padding: "16px",
+              marginBottom: "24px",
+              color: "#fca5a5",
+              fontSize: "13px",
+              animation: "slideUp 0.4s ease both",
+            }}>
+              ⚠️ {error}
+            </div>
+          )}
+
           {/* ── Stat Cards ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "36px" }}>
-            <StatCard icon="🧺" label="Baskets Compared"       value={history.length}      accent="#60a5fa" delay={0}   />
-            <StatCard icon="💰" label="Money Saved"            value={`₹${moneySaved}`}    accent="#34d399" delay={0.1} />
-            <StatCard icon="🏆" label="Best Grocery Platform"  value={bestPlatform || "—"} accent="#f59e0b" delay={0.2} />
+          <div className="stat-grid" style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: isMobile ? "14px" : "20px",
+            marginBottom: isMobile ? "24px" : "36px"
+          }}>
+            <StatCard 
+              icon="🧺" 
+              label="Baskets Compared" 
+              value={history?.length || 0} 
+              accent="#60a5fa" 
+              delay={0}
+            />
+            <StatCard 
+              icon="💰" 
+              label="Money Saved" 
+              value={`₹${moneySaved}`} 
+              accent="#34d399" 
+              delay={0.1}
+            />
+            <StatCard 
+              icon="🏆" 
+              label="Best Grocery Platform" 
+              value={bestPlatform} 
+              accent="#f59e0b" 
+              delay={0.2}
+            />
           </div>
 
           {/* ── Top Items ── */}
@@ -309,50 +465,83 @@ export default function GroceryDashboard({ theme }) {
             background: cardBg,
             border: `1px solid ${cardBorder}`,
             borderRadius: "24px",
-            padding: "28px",
-            marginBottom: "24px",
+            padding: isMobile ? "20px 16px" : "28px",
+            marginBottom: isMobile ? "20px" : "24px",
             backdropFilter: "blur(16px)",
             animation: "slideUp 0.6s ease 0.3s both",
           }}>
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700, marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <h2 style={{
+              fontFamily: "'Syne', sans-serif",
+              fontSize: isMobile ? "16px" : "18px",
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              margin: 0,
+              marginBottom: "16px",
+            }}>
               🥦 <span>Top Searched Items</span>
             </h2>
 
-            {topItems.length === 0 ? (
-              <p style={{ color: textSecondary, fontSize: "14px" }}>No items searched yet.</p>
+            {!topItems || topItems.length === 0 ? (
+              <p style={{ color: textSecondary, fontSize: "14px", margin: 0 }}>No items searched yet.</p>
             ) : (
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div style={{
+                display: "flex",
+                gap: isMobile ? "10px" : "12px",
+                flexWrap: "wrap"
+              }}>
                 {topItems.map((item, i) => (
                   <div
                     key={i}
                     className="tag-pill"
                     style={{
-                      display: "flex", alignItems: "center", gap: "8px",
-                      padding: "10px 18px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: isMobile ? "8px 12px" : "10px 18px",
                       borderRadius: "100px",
                       background: dark ? "rgba(52,211,153,0.08)" : "rgba(5,150,105,0.08)",
                       border: "1px solid rgba(52,211,153,0.2)",
-                      fontSize: "13px", fontWeight: 500,
+                      fontSize: isMobile ? "12px" : "13px",
+                      fontWeight: 500,
                       color: dark ? "#a7f3d0" : "#065f46",
                       transition: "transform 0.2s ease",
                       cursor: "default",
                     }}
                   >
                     <span style={{
-                      fontSize: "18px", lineHeight: 1,
+                      fontSize: isMobile ? "16px" : "18px",
+                      lineHeight: 1,
                       background: "rgba(255,255,255,0.12)",
-                      borderRadius: "50%", width: "28px", height: "28px",
-                      display: "flex", alignItems: "center", justifyContent: "center"
+                      borderRadius: "50%",
+                      width: isMobile ? "24px" : "28px",
+                      height: isMobile ? "24px" : "28px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}>
-                      {getGroceryIcon(item.name)}
+                      {getGroceryIcon(item?.name)}
                     </span>
-                    <span style={{ textTransform: "capitalize" }}>{item.name}</span>
+                    <span style={{
+                      textTransform: "capitalize",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}>
+                      {item?.name}
+                    </span>
                     <span style={{
                       background: "rgba(52,211,153,0.15)",
-                      borderRadius: "20px", padding: "1px 8px",
-                      fontSize: "11px", fontWeight: 700, color: "#34d399"
+                      borderRadius: "20px",
+                      padding: "1px 6px",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: "#34d399",
+                      flexShrink: 0,
                     }}>
-                      {item.searches}
+                      {item?.searches || 0}
                     </span>
                   </div>
                 ))}
@@ -361,44 +550,84 @@ export default function GroceryDashboard({ theme }) {
           </div>
 
           {/* ── Bottom Row: Chart + Recent ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", animation: "slideUp 0.6s ease 0.4s both" }}>
+          <div className="bottom-grid" style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            gap: isMobile ? "20px" : "24px",
+            animation: "slideUp 0.6s ease 0.4s both"
+          }}>
 
             {/* Chart */}
             <div style={{
               background: cardBg,
               border: `1px solid ${cardBorder}`,
               borderRadius: "24px",
-              padding: "28px",
+              padding: isMobile ? "20px 16px" : "28px",
               backdropFilter: "blur(16px)",
+              display: "flex",
+              flexDirection: "column",
             }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700, marginBottom: "24px" }}>
+              <h2 style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: isMobile ? "16px" : "18px",
+                fontWeight: 700,
+                margin: 0,
+                marginBottom: "20px",
+              }}>
                 📊 Platform Wins
               </h2>
 
-              {platformData.length === 0 ? (
-                <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center", color: textSecondary, fontSize: "14px" }}>
+              {!platformData || platformData.length === 0 ? (
+                <div style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: textSecondary,
+                  fontSize: "14px",
+                  minHeight: "200px",
+                }}>
                   No comparison data yet
                 </div>
               ) : (
-                <div style={{ height: "220px" }}>
+                <div style={{
+                  flex: 1,
+                  width: "100%",
+                  minHeight: isMobile ? "200px" : "220px",
+                  position: "relative",
+                }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={platformData} barCategoryGap="35%">
                       <XAxis
                         dataKey="name"
-                        tick={{ fill: textSecondary, fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}
-                        axisLine={false} tickLine={false}
+                        tick={{
+                          fill: textSecondary,
+                          fontSize: isMobile ? 10 : 12,
+                          fontFamily: "'DM Sans', sans-serif"
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                        angle={isMobile ? -45 : 0}
+                        textAnchor={isMobile ? "end" : "middle"}
+                        height={isMobile ? 50 : 30}
                       />
                       <YAxis
-                        tick={{ fill: textSecondary, fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}
-                        axisLine={false} tickLine={false}
+                        tick={{
+                          fill: textSecondary,
+                          fontSize: 11,
+                          fontFamily: "'DM Sans', sans-serif"
+                        }}
+                        axisLine={false}
+                        tickLine={false}
                         allowDecimals={false}
+                        width={isMobile ? 28 : 40}
                       />
                       <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)", radius: 8 }} />
                       <Bar dataKey="wins" radius={[10, 10, 0, 0]}>
                         {platformData.map((entry, index) => (
                           <Cell
                             key={`cell-${index}`}
-                            fill={platformColors[entry.name] || BAR_COLORS[index % BAR_COLORS.length]}
+                            fill={platformColors[entry?.name] || BAR_COLORS[index % BAR_COLORS.length]}
                           />
                         ))}
                       </Bar>
@@ -413,56 +642,91 @@ export default function GroceryDashboard({ theme }) {
               background: cardBg,
               border: `1px solid ${cardBorder}`,
               borderRadius: "24px",
-              padding: "28px",
+              padding: isMobile ? "20px 16px" : "28px",
               backdropFilter: "blur(16px)",
+              display: "flex",
+              flexDirection: "column",
             }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700, marginBottom: "20px" }}>
+              <h2 style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: isMobile ? "16px" : "18px",
+                fontWeight: 700,
+                margin: 0,
+                marginBottom: "16px",
+              }}>
                 🧺 Recent Baskets
               </h2>
 
-              {history.length === 0 ? (
-                <p style={{ color: textSecondary, fontSize: "14px" }}>No recent baskets.</p>
+              {!history || history.length === 0 ? (
+                <p style={{ color: textSecondary, fontSize: "14px", margin: 0 }}>No recent baskets.</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {history.slice(0, 5).map((h, i) => (
-                    <div
-                      key={i}
-                      className="row-item"
-                      style={{
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                        padding: "12px 16px",
-                        borderRadius: "14px",
-                        background: rowBg,
-                        border: `1px solid ${cardBorder}`,
-                        transition: "background 0.2s ease",
-                        animation: `slideUp 0.4s ease ${0.45 + i * 0.07}s both`,
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span style={{ fontSize: "18px" }}>{getGroceryIcon(h.item)}</span>
-                        <span style={{
-                          fontSize: "13px", fontWeight: 500,
-                          color: textPrimary,
-                          maxWidth: "160px", overflow: "hidden",
-                          textOverflow: "ellipsis", whiteSpace: "nowrap"
+                <div style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: isMobile ? "8px" : "10px",
+                  overflowY: "auto",
+                }}>
+                  {history.slice(0, isMobile ? 8 : 5).map((h, i) => {
+                    if (!h) return null;
+                    
+                    return (
+                      <div
+                        key={i}
+                        className="row-item"
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: isMobile ? "10px 12px" : "12px 16px",
+                          borderRadius: "14px",
+                          background: rowBg,
+                          border: `1px solid ${cardBorder}`,
+                          transition: "background 0.2s ease",
+                          animation: `slideUp 0.4s ease ${0.45 + i * 0.07}s both`,
+                          minHeight: isMobile ? "40px" : "auto",
+                        }}
+                      >
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: isMobile ? "8px" : "10px",
+                          flex: 1,
+                          minWidth: 0,
                         }}>
-                          {h.item}
+                          <span style={{ fontSize: isMobile ? "16px" : "18px", flexShrink: 0 }}>
+                            {getGroceryIcon(h?.item)}
+                          </span>
+                          <span style={{
+                            fontSize: isMobile ? "12px" : "13px",
+                            fontWeight: 500,
+                            color: textPrimary,
+                            maxWidth: "120px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}>
+                            {h?.item || "Unknown item"}
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: isMobile ? "10px" : "11px",
+                          fontWeight: 600,
+                          padding: isMobile ? "3px 8px" : "4px 10px",
+                          borderRadius: "20px",
+                          background: `${platformColors[h?.winner] || "#34d399"}18`,
+                          color: platformColors[h?.winner] || "#34d399",
+                          border: `1px solid ${platformColors[h?.winner] || "#34d399"}33`,
+                          textTransform: "capitalize",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}>
+                          🏆 {isMobile ? (h?.winner?.slice(0, 4) || "—") : (h?.winner || "—")}
                         </span>
                       </div>
-                      <span style={{
-                        fontSize: "11px", fontWeight: 600,
-                        padding: "4px 10px",
-                        borderRadius: "20px",
-                        background: `${platformColors[h.winner] || "#34d399"}18`,
-                        color: platformColors[h.winner] || "#34d399",
-                        border: `1px solid ${platformColors[h.winner] || "#34d399"}33`,
-                        textTransform: "capitalize",
-                        whiteSpace: "nowrap",
-                      }}>
-                        🏆 {h.winner}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -470,9 +734,15 @@ export default function GroceryDashboard({ theme }) {
 
           {/* ── Footer ── */}
           <p style={{
-            textAlign: "center", marginTop: "48px", fontSize: "12px",
-            color: textSecondary, letterSpacing: "0.06em",
-            animation: "fadeIn 1s ease 0.8s both"
+            textAlign: "center",
+            marginTop: isMobile ? "32px" : "48px",
+            fontSize: "12px",
+            color: textSecondary,
+            letterSpacing: "0.06em",
+            animation: "fadeIn 1s ease 0.8s both",
+            paddingBottom: isMobile ? "16px" : "0",
+            margin: 0,
+            marginTop: isMobile ? "32px" : "48px",
           }}>
             Grocery Dashboard · Real-time price intelligence
           </p>

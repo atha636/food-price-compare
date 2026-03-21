@@ -22,12 +22,27 @@ export default function RideDashboard({ theme }) {
   const [history, setHistory] = useState([]);
   const navigate = useNavigate();
   const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
 
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError(null);
+
         const [insightsRes, userRes] = await Promise.all([
           axios.get("https://food-price-compare-production.up.railway.app/ride-insights", {
             headers: { Authorization: `Bearer ${token}` }
@@ -37,36 +52,43 @@ export default function RideDashboard({ theme }) {
           })
         ]);
 
-        setData(insightsRes.data);
+        setData(insightsRes?.data || {});
 
-        const rideHistory = (userRes.data.searchHistory || []).filter(
-          (s) => s.serviceType === "ride"
+        const rideHistory = (userRes?.data?.searchHistory || []).filter(
+          (s) => s?.serviceType === "ride"
         );
 
         setHistory(rideHistory);
 
         const count = {};
         rideHistory.forEach(r => {
-          if (!r.winner) return;
+          if (!r?.winner) return;
           count[r.winner] = (count[r.winner] || 0) + 1;
         });
 
-        setChartData(
-          Object.keys(count).map(p => ({
-            name: p,
-            rides: count[p]
-          }))
-        );
+        const processedChartData = Object.keys(count).map(p => ({
+          name: p,
+          rides: count[p]
+        }));
+
+        setChartData(processedChartData);
 
       } catch (err) {
-        console.log(err);
+        console.error("Error fetching ride data:", err);
+        setError(err?.message || "Failed to load ride data");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchData();
+    if (token) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  if (!data) {
+  if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center text-lg font-medium transition-all duration-500 ${
         isDark ? "bg-slate-950 text-slate-400" : "bg-slate-50 text-slate-600"
@@ -108,42 +130,50 @@ export default function RideDashboard({ theme }) {
         }`} style={{ backgroundSize: '50px 50px' }} />
       </div>
 
-      <div className="relative z-10 p-8 max-w-7xl mx-auto">
+      <div className={`relative z-10 ${isMobile ? "p-4" : "p-8"} max-w-7xl mx-auto`}>
 
-  {/* ✅ BACK BUTTON (ADD HERE) */}
-  <div className="flex justify-end mb-6">
-    <button
-      onClick={() => navigate("/", { state: { service: "ride" } })}
-      className="px-6 py-2.5 rounded-full border border-emerald-400/30 text-emerald-300 
-hover:bg-emerald-500/10 transition-all font-semibold text-sm backdrop-blur-md
-shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
-    >
-      ← Back to Compare
-    </button>
-  </div>
+        {/* BACK BUTTON */}
+        <div className={`flex justify-end ${isMobile ? "mb-4" : "mb-6"}`}>
+          <button
+            onClick={() => navigate("/")}
+            className={`px-4 md:px-6 py-2 md:py-2.5 rounded-full border border-emerald-400/30 text-emerald-300 
+hover:bg-emerald-500/10 transition-all font-semibold text-xs md:text-sm backdrop-blur-md
+shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 min-h-10 md:min-h-auto`}
+          >
+            ← {isMobile ? "Back" : "Back to Compare"}
+          </button>
+        </div>
+
+        {error && (
+          <div className={`mb-6 p-4 rounded-xl border border-red-500/30 ${isDark ? "bg-red-500/10" : "bg-red-50"}`}>
+            <p className={`text-sm font-medium ${isDark ? "text-red-400" : "text-red-600"}`}>
+              ⚠️ {error}
+            </p>
+          </div>
+        )}
 
         {/* PREMIUM HEADER */}
-        <div className="mb-12 animate-fadeIn">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-emerald-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent tracking-tight mb-2">
+        <div className={`mb-8 md:mb-12 animate-fadeIn`}>
+          <div className={`flex items-start justify-between gap-4 ${isMobile ? "flex-col" : ""}`}>
+            <div className="flex-1">
+              <h1 className={`${isMobile ? "text-3xl md:text-4xl" : "text-5xl md:text-6xl"} font-black bg-gradient-to-r from-emerald-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent tracking-tight mb-2`}>
                 Ride Analytics
               </h1>
-              <p className={`text-lg ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+              <p className={`text-base md:text-lg ${isDark ? "text-slate-400" : "text-slate-600"}`}>
                 Real-time insights into your journey patterns
               </p>
             </div>
-            <div className="text-5xl">🚗</div>
+            <div className={`text-5xl md:text-6xl flex-shrink-0`}>🚗</div>
           </div>
         </div>
 
         {/* PREMIUM STATS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"} ${isMobile ? "gap-4" : "gap-6"} mb-8 md:mb-12`}>
           {[
-            { label: "Total Rides", value: data.totalRides, icon: "🚗", color: "emerald" },
-            { label: "Avg Price", value: `₹${data.avgPrice}`, icon: "💰", color: "sky" },
-            { label: "Distance Covered", value: `${data.totalDistance} km`, icon: "📍", color: "amber" },
-            { label: "Best Platform", value: data.favouritePlatform || "—", icon: "🏆", color: "rose" }
+            { label: "Total Rides", value: data?.totalRides || 0, icon: "🚗", color: "emerald" },
+            { label: "Avg Price", value: `₹${data?.avgPrice || 0}`, icon: "💰", color: "sky" },
+            { label: "Distance Covered", value: `${data?.totalDistance || 0} km`, icon: "📍", color: "amber" },
+            { label: "Best Platform", value: data?.favouritePlatform || "—", icon: "🏆", color: "rose" }
           ].map((card, i) => (
             <div
               key={i}
@@ -164,16 +194,16 @@ shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
                 'from-rose-500 to-transparent'
               }`} />
               
-              <div className="relative p-6 z-10">
+              <div className="relative p-5 md:p-6 z-10">
                 <div className="flex items-start justify-between mb-4">
-                  <p className={`text-sm font-semibold uppercase tracking-wider ${
+                  <p className={`text-xs md:text-sm font-semibold uppercase tracking-wider ${
                     isDark ? "text-slate-400" : "text-slate-600"
                   }`}>
                     {card.label}
                   </p>
-                  <span className="text-3xl group-hover:scale-125 transition-transform duration-300">{card.icon}</span>
+                  <span className={`group-hover:scale-125 transition-transform duration-300 ${isMobile ? "text-2xl" : "text-3xl"}`}>{card.icon}</span>
                 </div>
-                <h2 className={`text-4xl font-black tracking-tight ${
+                <h2 className={`${isMobile ? "text-2xl md:text-3xl" : "text-4xl"} font-black tracking-tight ${
                   card.color === 'emerald' ? 'text-emerald-400' :
                   card.color === 'sky' ? 'text-sky-400' :
                   card.color === 'amber' ? 'text-amber-400' :
@@ -188,42 +218,58 @@ shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
 
         {/* PREMIUM CHART */}
         <div
-          className={`relative group mb-12 rounded-3xl overflow-hidden backdrop-blur-xl transition-all duration-500 hover:shadow-2xl ${
+          className={`relative group mb-8 md:mb-12 rounded-3xl overflow-hidden backdrop-blur-xl transition-all duration-500 hover:shadow-2xl ${
             isDark
               ? "bg-gradient-to-br from-white/10 to-white/5 border border-white/10 hover:border-white/20"
               : "bg-gradient-to-br from-white to-slate-50 border border-slate-200 hover:border-slate-300"
-          }` }
+          }`}
           style={{
             animation: `slideUp 0.8s ease-out 0.2s backwards`
           }}
         >
-          <div className="p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <span className="text-3xl">📊</span>
-              <h2 className="text-2xl font-bold">Platform Usage Distribution</h2>
+          <div className={`p-5 md:p-8`}>
+            <div className="flex items-center gap-3 mb-6 md:mb-8">
+              <span className={isMobile ? "text-2xl" : "text-3xl"}>📊</span>
+              <h2 className={`${isMobile ? "text-lg md:text-xl" : "text-2xl"} font-bold`}>Platform Usage Distribution</h2>
             </div>
 
-            {chartData.length === 0 ? (
-              <div className={`py-16 text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                <p className="text-lg">No ride data available yet</p>
-                <p className={`text-sm mt-2 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Start comparing rides to see analytics</p>
+            {!chartData || chartData.length === 0 ? (
+              <div className={`py-12 md:py-16 text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <p className="text-base md:text-lg">No ride data available yet</p>
+                <p className={`text-xs md:text-sm mt-2 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Start comparing rides to see analytics</p>
               </div>
             ) : (
-              <div className="h-80 rounded-xl overflow-hidden" style={{
-                background: isDark 
-                  ? "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)"
-                  : "linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.8) 100%)"
-              }}>
+              <div 
+                className="w-full rounded-xl overflow-hidden" 
+                style={{
+                  height: isMobile ? "250px" : "320px",
+                  background: isDark 
+                    ? "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)"
+                    : "linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.8) 100%)"
+                }}
+              >
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                  <BarChart 
+                    data={chartData} 
+                    margin={{ 
+                      top: isMobile ? 10 : 20, 
+                      right: isMobile ? 10 : 30, 
+                      left: isMobile ? 0 : 0, 
+                      bottom: isMobile ? 40 : 20 
+                    }}
+                  >
                     <XAxis
                       dataKey="name"
                       stroke={isDark ? "#94a3b8" : "#64748b"}
-                      style={{ fontSize: '14px', fontWeight: 600 }}
+                      style={{ fontSize: isMobile ? '11px' : '14px', fontWeight: 600 }}
+                      angle={isMobile ? -45 : 0}
+                      textAnchor={isMobile ? "end" : "middle"}
+                      height={isMobile ? 60 : 30}
                     />
                     <YAxis
                       stroke={isDark ? "#94a3b8" : "#64748b"}
-                      style={{ fontSize: '14px' }}
+                      style={{ fontSize: isMobile ? '12px' : '14px' }}
+                      width={isMobile ? 30 : 40}
                     />
                     <Tooltip 
                       contentStyle={{
@@ -231,7 +277,8 @@ shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
                         border: isDark ? "1px solid rgba(148,163,184,0.3)" : "1px solid rgba(100,116,139,0.3)",
                         borderRadius: '12px',
                         backdropFilter: 'blur(10px)',
-                        color: isDark ? "#e2e8f0" : "#1e293b"
+                        color: isDark ? "#e2e8f0" : "#1e293b",
+                        fontSize: isMobile ? '12px' : '14px'
                       }}
                       cursor={{ fill: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" }}
                     />
@@ -262,69 +309,75 @@ shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
             animation: `slideUp 1s ease-out 0.3s backwards`
           }}
         >
-          <div className="p-8">
-            <div className="flex items-center justify-between mb-8">
+          <div className={`p-5 md:p-8`}>
+            <div className="flex items-center justify-between mb-6 md:mb-8 gap-4">
               <div className="flex items-center gap-3">
-                <span className="text-3xl">🕓</span>
-                <h2 className="text-2xl font-bold">Recent Rides</h2>
+                <span className={isMobile ? "text-2xl" : "text-3xl"}>🕓</span>
+                <h2 className={`${isMobile ? "text-lg md:text-xl" : "text-2xl"} font-bold`}>Recent Rides</h2>
               </div>
-              {history.length > 0 && (
-                <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
+              {history && history.length > 0 && (
+                <span className={`text-xs md:text-sm font-semibold px-3 py-1 rounded-full flex-shrink-0 ${
                   isDark ? "bg-white/10 text-sky-400" : "bg-slate-200 text-slate-700"
                 }`}>
-                  {history.length} rides
+                  {history.length}
                 </span>
               )}
             </div>
 
-            {history.length === 0 ? (
-              <div className={`py-16 text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                <p className="text-lg">No rides recorded yet</p>
-                <p className={`text-sm mt-2 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Your ride history will appear here</p>
+            {!history || history.length === 0 ? (
+              <div className={`py-12 md:py-16 text-center ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <p className="text-base md:text-lg">No rides recorded yet</p>
+                <p className={`text-xs md:text-sm mt-2 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Your ride history will appear here</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {history.slice(0, 6).map((ride, i) => (
-                  <div
-                    key={i}
-                    className={`group relative flex items-center justify-between p-5 rounded-2xl transition-all duration-300 hover:scale-101 cursor-pointer ${
-                      isDark
-                        ? "bg-gradient-to-r from-white/5 to-transparent border border-white/10 hover:border-white/20 hover:bg-gradient-to-r hover:from-white/10 hover:to-transparent"
-                        : "bg-gradient-to-r from-white to-slate-100 border border-slate-200 hover:border-slate-300 hover:shadow-lg"
-                    }`}
-                    style={{
-                      animation: `slideRight 0.5s ease-out ${0.35 + i * 0.05}s backwards`
-                    }}
-                  >
-                    {/* Animated accent line */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-full transition-all duration-300 ${
-                      i % 4 === 0 ? 'bg-emerald-500 group-hover:w-2' :
-                      i % 4 === 1 ? 'bg-sky-500 group-hover:w-2' :
-                      i % 4 === 2 ? 'bg-amber-500 group-hover:w-2' :
-                      'bg-rose-500 group-hover:w-2'
-                    }`} />
+              <div className="space-y-2 md:space-y-3">
+                {history.slice(0, isMobile ? 8 : 6).map((ride, i) => {
+                  if (!ride) return null;
 
-                    <div className="pl-4 flex-1">
-                      <p className="font-bold text-lg leading-tight group-hover:text-emerald-400 transition-colors">
-                        {ride.pickup} <span className="text-slate-400">→</span> {ride.drop}
-                      </p>
-                      <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                        <span className="inline-block">📍 {ride.distance} km</span>
-                      </p>
-                    </div>
+                  return (
+                    <div
+                      key={i}
+                      className={`group relative flex items-center justify-between p-3 md:p-5 rounded-2xl transition-all duration-300 hover:scale-101 cursor-pointer ${
+                        isDark
+                          ? "bg-gradient-to-r from-white/5 to-transparent border border-white/10 hover:border-white/20 hover:bg-gradient-to-r hover:from-white/10 hover:to-transparent"
+                          : "bg-gradient-to-r from-white to-slate-100 border border-slate-200 hover:border-slate-300 hover:shadow-lg"
+                      }`}
+                      style={{
+                        animation: `slideRight 0.5s ease-out ${0.35 + i * 0.05}s backwards`
+                      }}
+                    >
+                      {/* Animated accent line */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-full transition-all duration-300 ${
+                        i % 4 === 0 ? 'bg-emerald-500 group-hover:w-2' :
+                        i % 4 === 1 ? 'bg-sky-500 group-hover:w-2' :
+                        i % 4 === 2 ? 'bg-amber-500 group-hover:w-2' :
+                        'bg-rose-500 group-hover:w-2'
+                      }`} />
 
-                    <div className="text-right">
-                      <p className="text-2xl font-black bg-gradient-to-r from-emerald-400 to-sky-400 bg-clip-text text-transparent">
-                        ₹{ride.bestPrice}
-                      </p>
-                      <p className={`text-xs font-semibold uppercase tracking-wider mt-1 ${
-                        isDark ? "text-slate-400" : "text-slate-600"
-                      }`}>
-                        {ride.winner}
-                      </p>
+                      <div className="pl-3 md:pl-4 flex-1 min-w-0">
+                        <p className={`font-bold leading-tight group-hover:text-emerald-400 transition-colors ${isMobile ? "text-xs md:text-sm" : "text-lg"}`}>
+                          <span className="truncate inline-block max-w-[120px] md:max-w-none">{ride?.pickup || "Unknown"}</span> 
+                          <span className="text-slate-400 mx-1">→</span> 
+                          <span className="truncate inline-block max-w-[120px] md:max-w-none">{ride?.drop || "Unknown"}</span>
+                        </p>
+                        <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                          📍 {ride?.distance || 0} km
+                        </p>
+                      </div>
+
+                      <div className="text-right flex-shrink-0 ml-3">
+                        <p className={`font-black bg-gradient-to-r from-emerald-400 to-sky-400 bg-clip-text text-transparent ${isMobile ? "text-lg md:text-xl" : "text-2xl"}`}>
+                          ₹{ride?.bestPrice || 0}
+                        </p>
+                        <p className={`text-xs font-semibold uppercase tracking-wider mt-1 ${
+                          isDark ? "text-slate-400" : "text-slate-600"
+                        }`}>
+                          {ride?.winner || "—"}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -370,6 +423,13 @@ shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
 
         .hover\:scale-101:hover {
           transform: scale(1.01);
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+          .grid {
+            gap: 1rem !important;
+          }
         }
       `}</style>
     </div>
