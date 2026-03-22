@@ -4,6 +4,8 @@ import { GoogleLogin } from "@react-oauth/google";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Verified from "./pages/Verified";
 import Dashboard from "./pages/Dashboard";
+import AIAssistant from "./components/AIAssistant";
+import FloatingAI from "./components/FloatingAI";
 import HeaderSection from "./components/HeaderSection";
 import GroceryDashboard from "./pages/GroceryDashboard";
 import RideDashboard from "./pages/RideDashboard";
@@ -1236,6 +1238,8 @@ if (serviceType === "ride" && (!item || !city)) {
                           ⚡ Fetching live prices from all platforms…
                         </p>
                       )}
+                      
+
                     </div>
 
                     {/* ── Error ── */}
@@ -1796,6 +1800,14 @@ if (serviceType === "ride" && (!item || !city)) {
                   </motion.div>
                 )}
               </AnimatePresence>
+              {/* 🚀 ADD FLOATING AI EXACTLY HERE */}
+<FloatingAI
+  setItem={setItem}
+  setCity={setCity}
+  handleCompare={handleCompare}
+  setServiceType={setServiceType}
+  isLoggedIn={isLoggedIn}
+/>
             </div>
           </>
         }

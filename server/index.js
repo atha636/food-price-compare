@@ -24,7 +24,9 @@ const zomatoCache = new Map();
 const groceryCache = new Map();
 const rideCache = new Map(); // ✅ ADD THIS
 
+import visionRoute from "./routes/vision.js";
 
+app.use("/api/ai", visionRoute);
 const app = express();
 
 /* ==============================
