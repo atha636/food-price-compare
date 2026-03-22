@@ -24,10 +24,11 @@ const zomatoCache = new Map();
 const groceryCache = new Map();
 const rideCache = new Map(); // ✅ ADD THIS
 
-import visionRoute from "./routes/vision.js";
+
+const app = express();
+const visionRoute = require("./routes/vision");
 
 app.use("/api/ai", visionRoute);
-const app = express();
 
 /* ==============================
    MIDDLEWARE (MUST BE ON TOP)
@@ -40,7 +41,7 @@ app.use(cors({
   methods: ["GET","POST","PUT","DELETE"],
   allowedHeaders: ["Content-Type","Authorization"]
 }));
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 /* ==============================
    AUTH MIDDLEWARE
 ============================== */
