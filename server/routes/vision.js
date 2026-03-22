@@ -34,7 +34,7 @@ router.post("/detect-item", upload.single("image"), async (req, res) => {
             {
               type: "image_url",
               image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
+                url: `data:${req.file.mimetype};base64,${base64Image}`,
               },
             },
           ],

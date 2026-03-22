@@ -26,9 +26,7 @@ const rideCache = new Map(); // ✅ ADD THIS
 
 
 const app = express();
-const visionRoute = require("./routes/vision");
 
-app.use("/api/ai", visionRoute);
 
 /* ==============================
    MIDDLEWARE (MUST BE ON TOP)
@@ -42,6 +40,11 @@ app.use(cors({
   allowedHeaders: ["Content-Type","Authorization"]
 }));
 app.use(express.json({ limit: "10mb" }));
+
+const visionRoute = require("./routes/vision");
+
+app.use("/api/ai", visionRoute);
+
 /* ==============================
    AUTH MIDDLEWARE
 ============================== */
