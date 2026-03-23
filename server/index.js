@@ -541,30 +541,46 @@ const fetchAmazonList = async (item) => {
 
 const fetchEcommercePrices = async (item) => {
   try {
-    const amazonList = await fetchAmazonList(item);
+    const response = await axios.get("https://serpapi.com/search", {
+      params: {
+        engine: "google_shopping",
+        q: item,
+        gl: "in",
+        api_key: process.env.SERP_API_KEY
+      }
+    });
 
-    const flipkartList = amazonList.map(p => ({
-      ...p,
-      price: p.price + Math.floor(Math.random() * 100),
-      name: p.name + " (Flipkart)",
-      url: `https://www.flipkart.com/search?q=${item}`
-    }));
+    const results = response.data.shopping_results || [];
 
-    const myntraList = amazonList.map(p => ({
-      ...p,
-      price: p.price + Math.floor(Math.random() * 150),
-      name: p.name + " (Myntra)",
-      url: `https://www.myntra.com/${item}`
-    }));
+    const amazonList = [];
+    const flipkartList = [];
+    const myntraList = [];
+
+    results.forEach(p => {
+      const product = {
+        name: p.title,
+        price: parseInt(p.price?.replace(/[^\d]/g, "")) || 0,
+        image: p.thumbnail,
+        url: p.link
+      };
+
+      if (p.source?.toLowerCase().includes("amazon")) {
+        amazonList.push(product);
+      } else if (p.source?.toLowerCase().includes("flipkart")) {
+        flipkartList.push(product);
+      } else if (p.source?.toLowerCase().includes("myntra")) {
+        myntraList.push(product);
+      }
+    });
 
     return {
-      amazonList,
-      flipkartList,
-      myntraList
+      amazonList: amazonList.slice(0, 6),
+      flipkartList: flipkartList.slice(0, 6),
+      myntraList: myntraList.slice(0, 6)
     };
 
   } catch (err) {
-    console.log("Ecommerce fetch error:", err.message);
+    console.log("SerpAPI error:", err.message);
     return {
       amazonList: [],
       flipkartList: [],
