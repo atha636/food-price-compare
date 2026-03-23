@@ -551,6 +551,7 @@ const fetchEcommercePrices = async (item) => {
     });
 
     const results = response.data.shopping_results || [];
+     console.log("SERP RESULTS:", results);
 
     const amazonList = [];
     const flipkartList = [];
@@ -600,6 +601,7 @@ const fetchEcommercePrices = async (item) => {
     };
 
   } catch (err) {
+    
     console.log("SerpAPI error:", err.message);
     return {
       amazonList: [],
