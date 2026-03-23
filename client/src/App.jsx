@@ -748,15 +748,17 @@ if (serviceType === "ride" && (!item || !city)) {
                         ? winner === "zomato"
                           ? "Zomato Wins"
                           : "Swiggy Wins"
-                        : basketWinner
-                        ? `${
-                            basketWinner.charAt(0).toUpperCase() +
-                            basketWinner.slice(1)
-                          } Basket Cheapest`
-                        : `${
-                            groceryWinner.charAt(0).toUpperCase() +
-                            groceryWinner.slice(1)
-                          } Wins`}
+                        :basketWinner
+  ? `${
+      basketWinner?.charAt(0)?.toUpperCase() +
+      basketWinner?.slice(1)
+    } Basket Cheapest`
+  : groceryWinner
+  ? `${
+      groceryWinner?.charAt(0)?.toUpperCase() +
+      groceryWinner?.slice(1)
+    } Wins`
+  : ""}
                     </div>
                   </motion.div>
                 )}
