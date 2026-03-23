@@ -10,6 +10,9 @@ import HeaderSection from "./components/HeaderSection";
 import GroceryDashboard from "./pages/GroceryDashboard";
 import RideDashboard from "./pages/RideDashboard";
 import Favourites from "./pages/Favourites";
+import amazonLogo from "./assets/logos/amazon.png";
+import flipkartLogo from "./assets/logos/flipkart.png";
+import myntraLogo from "./assets/logos/myntra.png";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1092,6 +1095,7 @@ if (serviceType === "ride" && (!item || !city)) {
     favourites={favourites}
     city={city}
     addFavourite={addFavourite}
+    
   />
 </div>
 )}
@@ -1930,9 +1934,9 @@ if (serviceType === "ride" && (!item || !city)) {
   );
 }
 
-/* ─── Platform Panel (Zomato / Swiggy) ─── */
+/* ─── Platform Panel (Food & E-commerce) ─── */
 function PlatformPanel({
-  show,
+  show = true, // ✅ Default to true for e-commerce (no mobile toggle)
   platform,
   label,
   color,
@@ -1945,8 +1949,21 @@ function PlatformPanel({
   city,
   addFavourite,
 }) {
+  const logos = {
+    amazon: amazonLogo,
+    flipkart: flipkartLogo,
+    myntra: myntraLogo,
+    zomato: "🍅",
+    swiggy: "🟠",
+  };
+
   const isWinner = winner === platform;
-  const accentColor = color === "red" ? "#EF4444" : "#FF6B35";
+  const accentColor = 
+    color === "red" ? "#EF4444" : 
+    color === "orange" ? "#FF6B35" :
+    color === "blue" ? "#2563eb" :
+    color === "pink" ? "#ec4899" :
+    "#FF6B35";
 
   return (
     <div
@@ -1957,7 +1974,7 @@ function PlatformPanel({
       } ${isWinner ? `shadow-[0_0_40px_${color === "red" ? "rgba(239,68,68,0.25)" : "rgba(255,107,53,0.25)"}]` : ""}`}
       style={isWinner ? { borderColor: `${accentColor}40` } : {}}
     >
-      {/* platform header */}
+      {/* Platform Header */}
       <div
         className={`sticky top-0 z-10 flex items-center justify-center gap-2 py-3.5 backdrop-blur-md border-b ${
           dm
@@ -1965,12 +1982,14 @@ function PlatformPanel({
             : "bg-white/90 border-slate-100"
         }`}
       >
-        <span
-          className="font-bold text-sm"
-          style={{ color: accentColor }}
-        >
-          {label}
-        </span>
+        <div className="flex items-center gap-2">
+  <img
+    src={logos[platform]}
+    alt={platform}
+    className={`h-10 object-contain ${dm ? "brightness-110" : ""}`}
+  />
+  
+</div>
         {isWinner && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-400/30 font-semibold">
             🏆 Winner
@@ -1978,6 +1997,7 @@ function PlatformPanel({
         )}
       </div>
 
+      {/* Products List */}
       <div className="p-3 space-y-3 max-h-[580px] overflow-y-auto scrollbar-hide">
         {loading ? (
           <>
@@ -1985,13 +2005,13 @@ function PlatformPanel({
             <SkeletonCard dm={dm} />
             <SkeletonCard dm={dm} />
           </>
-        ) : (
+        ) : list && list.length > 0 ? (
           [...list]
-            .sort((a, b) => a.price - b.price)
-            .map((rest, index) => (
+            .sort((a, b) => (a.price || Infinity) - (b.price || Infinity))
+            .map((product, index) => (
               <RestaurantCard
-                key={rest.name + platform}
-                rest={rest}
+                key={product.name + platform}
+                rest={product}
                 index={index}
                 platform={platform}
                 item={item}
@@ -2002,6 +2022,10 @@ function PlatformPanel({
                 accentColor={accentColor}
               />
             ))
+        ) : (
+          <div className={`text-center py-6 text-sm ${dm ? "text-white/50" : "text-slate-400"}`}>
+            No products found
+          </div>
         )}
       </div>
     </div>
@@ -2070,7 +2094,7 @@ function RestaurantCard({
         )}
 
         <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-medium">
-          ⭐ {rest.rating}
+          ⭐ {rest.rating || 4.2}
         </div>
 
         {/* fav button */}
@@ -2101,10 +2125,14 @@ function RestaurantCard({
       <div className="p-3">
         <div className="flex justify-between items-center">
           <div className={`text-xs ${dm ? "text-white/50" : "text-slate-400"}`}>
-            ⏱ {rest.time} min · 📍 {rest.distance} km
+            ⏱ {rest.time || 3} days · 📦 Online
           </div>
           <div className="text-lg font-bold" style={{ color: accentColor }}>
-            ₹<CountUp end={rest.price} duration={0.8} />
+            {rest.price ? (
+  <>₹<CountUp end={rest.price} duration={0.8} /></>
+) : (
+  <span className="text-sm text-gray-400">Price N/A</span>
+)}
           </div>
         </div>
         <a
@@ -2114,7 +2142,7 @@ function RestaurantCard({
           style={{ background: accentColor }}
           rel="noreferrer"
         >
-          Order Now →
+          Buy Now →
         </a>
       </div>
     </motion.div>

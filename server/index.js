@@ -507,51 +507,37 @@ const fetchMarketPrice = async (item) => {
 
 const fetchAmazonList = async (item) => {
   try {
-    const query = item.replace(/\s+/g, "+");
-
-    const { data } = await axios.get(
-      `https://www.amazon.in/s?k=${query}`,
+    const response = await axios.get(
+      "https://api.rainforestapi.com/request",
       {
-        headers: {
-          "User-Agent": "Mozilla/5.0"
+        params: {
+          api_key: process.env.RAINFOREST_API_KEY,
+          type: "search",
+          amazon_domain: "amazon.in",
+          search_term: item
         }
       }
     );
 
-    const $ = cheerio.load(data);
+    const products = response.data.search_results || [];
 
-    const products = [];
+    const cleanProducts = products
+      .filter(p => p.title && p.price?.value) // ✅ filter valid
+      .slice(0, 6)
+      .map(p => ({
+        name: p.title,
+        price: p.price.value,
+        image: p.image,
+        url: p.link
+      }));
 
-    $(".s-result-item").each((i, el) => {
-      if (i >= 6) return false; // ✅ LIMIT 6 PRODUCTS
+    return cleanProducts;
 
-      const name = $(el).find("h2 span").text();
-
-      const priceText = $(el)
-        .find(".a-price-whole")
-        .first()
-        .text()
-        .replace(/[^\d]/g, "");
-
-      const image = $(el).find("img").attr("src");
-
-      if (name && priceText) {
-        products.push({
-          name,
-          price: parseInt(priceText),
-          image,
-          url: `https://www.amazon.in/s?k=${query}`
-        });
-      }
-    });
-
-    return products;
   } catch (err) {
-    console.log("Amazon multi error:", err.message);
+    console.log("Rainforest API error:", err.message);
     return [];
   }
 };
-
 
 const fetchEcommercePrices = async (item) => {
   try {
