@@ -219,6 +219,7 @@ useEffect(() => {
   }, [theme]);
 
   const winner =
+  
     serviceType === "food" && result
       ? (() => {
           const zomatoBest =
@@ -241,6 +242,22 @@ useEffect(() => {
           return null;
         })()
       : null;
+
+       const ecommerceWinner =
+  serviceType === "ecommerce" && result
+    ? (() => {
+        const all = [
+          ...(result?.amazonList || []),
+          ...(result?.flipkartList || []),
+          ...(result?.myntraList || [])
+        ];
+
+        if (all.length === 0) return null;
+
+        return all.reduce((a, b) => (a.price < b.price ? a : b));
+      })()
+    : null;
+
 
   const savingsData =
     serviceType === "food" && result
@@ -529,7 +546,7 @@ if (serviceType === "ride") {
   searchCity = city;   // pickup
 }
     if (
-  (serviceType === "food" || serviceType === "grocery") &&
+  (serviceType === "food" || serviceType === "grocery" || serviceType === "ecommerce") &&
   (!searchItem || !searchCity)
 ) {
   setError("Please enter item and city.");
@@ -711,7 +728,7 @@ if (serviceType === "ride" && (!item || !city)) {
 
               {/* ── Winner badge ── */}
               <AnimatePresence>
-                {(winner || groceryWinner || basketWinner) && (
+                {(winner || groceryWinner || basketWinner || ecommerceWinner)&& (
                   <motion.div
                     initial={{ opacity: 0, y: -30, scale: 0.8 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -929,6 +946,38 @@ if (serviceType === "ride" && (!item || !city)) {
                     </div>
                   </motion.div>
                 )}
+                 
+                 {/* ecommerce insight bar */}
+
+                {serviceType === "ecommerce" && result && (
+  <div className="...">
+    {(() => {
+      const all = [
+        ...(result.amazonList || []),
+        ...(result.flipkartList || []),
+        ...(result.myntraList || [])
+      ];
+
+      if (all.length === 0) return null;
+
+      const cheapest = all.reduce((a, b) =>
+        a.price < b.price ? a : b
+      );
+
+      return (
+        <div className="flex flex-col items-center gap-1">
+          <span className="font-semibold">
+            🛍 Best Deal: ₹{cheapest.price}
+          </span>
+          <span className="text-xs opacity-70">
+            {cheapest.name}
+          </span>
+        </div>
+      );
+    })()}
+  </div>
+)}
+
 
                 {/* Savings insight */}
                 {savingsData && savingsData.perOrder > 0 && (
@@ -1026,6 +1075,49 @@ if (serviceType === "ride" && (!item || !city)) {
                     addFavourite={addFavourite}
                   />
                 )}
+               
+               {serviceType === "ecommerce" && result && (
+  <>
+    <PlatformPanel
+      platform="amazon"
+      label="Amazon"
+      color="yellow"
+      list={result.amazonList || []}
+      item={item}
+      loading={loading}
+      dm={dm}
+      favourites={favourites}
+      city={city}
+      addFavourite={addFavourite}
+    />
+
+    <PlatformPanel
+      platform="flipkart"
+      label="Flipkart"
+      color="blue"
+      list={result.flipkartList || []}
+      item={item}
+      loading={loading}
+      dm={dm}
+      favourites={favourites}
+      city={city}
+      addFavourite={addFavourite}
+    />
+
+    <PlatformPanel
+      platform="myntra"
+      label="Myntra"
+      color="pink"
+      list={result.myntraList || []}
+      item={item}
+      loading={loading}
+      dm={dm}
+      favourites={favourites}
+      city={city}
+      addFavourite={addFavourite}
+    />
+  </>
+)}
 
                 {/* ── CENTER CARD ── */}
                 <div
@@ -1079,7 +1171,7 @@ if (serviceType === "ride" && (!item || !city)) {
 
                     {/* ── Service Selector ── */}
                     <div className={`flex p-1 rounded-2xl mb-6 ${dm ? "bg-white/5" : "bg-slate-100"}`}>
-                      {["food", "grocery", "ride"].map((type) => (
+                      {["food", "grocery", "ride", "ecommerce"].map((type) => (
                         <button
                           key={type}
                           onClick={() => {
@@ -1099,6 +1191,7 @@ if (serviceType === "ride" && (!item || !city)) {
                           {type === "food" && "🍔 Food"}
                           {type === "grocery" && "🛒 Grocery"}
                           {type === "ride" && "🚗 Ride"}
+                          {type === "ecommerce" && "🛍 E-commerce"}
                         </button>
                       ))}
                     </div>
@@ -1139,20 +1232,24 @@ if (serviceType === "ride" && (!item || !city)) {
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base pointer-events-none">
                           {
   serviceType === "food"
-    ? "🍽️"
-    : serviceType === "grocery"
-    ? "🥬"
-    : "🏁" // finish flag for destination
+  ? "🍽️"
+  : serviceType === "grocery"
+  ? "🥬"
+  : serviceType === "ecommerce"
+  ? "🛍"
+  : "🏁"
 }
                         </span>
                         <input
                           type="text"
                           placeholder={
   serviceType === "food"
-    ? "Food item (e.g. Pizza)"
+    ? "Search food (e.g. pizza)"
     : serviceType === "grocery"
-    ? "Grocery item (e.g. Milk)"
-    : "Drop location (e.g. Mohali)"
+    ? "Search grocery (e.g. milk)"
+    : serviceType === "ecommerce"
+    ? "Search product (e.g. iPhone, shoes)"
+    : "Drop location"
 }
                           value={item}
                           onChange={(e) => setItem(e.target.value)}
@@ -1640,6 +1737,7 @@ if (serviceType === "ride" && (!item || !city)) {
                   />
                 )}
               </div>
+            
               {/* ── END THREE-COLUMN ── */}
 
               {/* ── Login Popup ── */}

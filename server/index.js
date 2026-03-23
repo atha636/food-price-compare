@@ -22,7 +22,8 @@ const crypto = require("crypto");
 const sendVerificationEmail = require("./utils/sendEmail");
 const zomatoCache = new Map();
 const groceryCache = new Map();
-const rideCache = new Map(); // ✅ ADD THIS
+const rideCache = new Map();
+const ecommerceCache = new Map();  // ✅ ADD THIS
 
 
 const app = express();
@@ -489,9 +490,10 @@ const fetchMarketPrice = async (item) => {
     const clean = priceText.replace(/[^\d]/g,"");
 
     return {
-      price: parseInt(clean),
-      image
-    };
+  price: parseInt(clean),
+  image,
+  name: item   // ✅ ADD THIS LINE
+};
 
   } catch(err){
 
@@ -503,6 +505,51 @@ const fetchMarketPrice = async (item) => {
 
 };
 
+const fetchEcommercePrices = async (item) => {
+  try {
+    const query = item.replace(/\s+/g, "+");
+
+    // AMAZON
+    const amazon = await fetchMarketPrice(item);
+
+    // FLIPKART (fake variation)
+    const flipkart = amazon
+      ? {
+          price: amazon.price + Math.floor(Math.random() * 100),
+          image: amazon.image,
+          name: item + " (Flipkart)"
+        }
+      : null;
+
+    // MYNTRA (fake variation)
+    const myntra = amazon
+      ? {
+          price: amazon.price + Math.floor(Math.random() * 150),
+          image: amazon.image,
+          name: item + " (Myntra)"
+        }
+      : null;
+
+    return {
+      amazonList: amazon
+        ? [{ ...amazon, name: item + " (Amazon)", url: `https://www.amazon.in/s?k=${query}` }]
+        : [],
+      flipkartList: flipkart
+        ? [{ ...flipkart, url: `https://www.flipkart.com/search?q=${query}` }]
+        : [],
+      myntraList: myntra
+        ? [{ ...myntra, url: `https://www.myntra.com/${query}` }]
+        : []
+    };
+  } catch (err) {
+    console.log("Ecommerce fetch error:", err.message);
+    return {
+      amazonList: [],
+      flipkartList: [],
+      myntraList: []
+    };
+  }
+};
 
 // ==============================
 // PLATFORM PRICE GENERATOR
@@ -1482,6 +1529,35 @@ if (serviceType === "ride") {
   return res.json(responseData);
 }
 
+
+// for ecommerce 
+// for ecommerce 
+if (serviceType === "ecommerce") {
+
+  const cacheKey = item;
+
+  // ✅ CHECK CACHE FIRST
+  const cached = ecommerceCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < 300000) {
+    console.log("Returning ecommerce data from cache");
+    return res.json(cached.data);
+  }
+
+  const data = await fetchEcommercePrices(item);
+
+  const responseData = {
+    serviceType: "ecommerce",
+    ...data
+  };
+
+  // ✅ SAVE TO CACHE
+  ecommerceCache.set(cacheKey, {
+    data: responseData,
+    time: Date.now()
+  });
+
+  return res.json(responseData);
+}
 
 
   } catch (err) {
