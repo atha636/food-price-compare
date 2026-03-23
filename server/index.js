@@ -505,42 +505,78 @@ const fetchMarketPrice = async (item) => {
 
 };
 
-const fetchEcommercePrices = async (item) => {
+const fetchAmazonList = async (item) => {
   try {
     const query = item.replace(/\s+/g, "+");
 
-    // AMAZON
-    const amazon = await fetchMarketPrice(item);
-
-    // FLIPKART (fake variation)
-    const flipkart = amazon
-      ? {
-          price: amazon.price + Math.floor(Math.random() * 100),
-          image: amazon.image,
-          name: item + " (Flipkart)"
+    const { data } = await axios.get(
+      `https://www.amazon.in/s?k=${query}`,
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0"
         }
-      : null;
+      }
+    );
 
-    // MYNTRA (fake variation)
-    const myntra = amazon
-      ? {
-          price: amazon.price + Math.floor(Math.random() * 150),
-          image: amazon.image,
-          name: item + " (Myntra)"
-        }
-      : null;
+    const $ = cheerio.load(data);
+
+    const products = [];
+
+    $(".s-result-item").each((i, el) => {
+      if (i >= 6) return false; // ✅ LIMIT 6 PRODUCTS
+
+      const name = $(el).find("h2 span").text();
+
+      const priceText = $(el)
+        .find(".a-price-whole")
+        .first()
+        .text()
+        .replace(/[^\d]/g, "");
+
+      const image = $(el).find("img").attr("src");
+
+      if (name && priceText) {
+        products.push({
+          name,
+          price: parseInt(priceText),
+          image,
+          url: `https://www.amazon.in/s?k=${query}`
+        });
+      }
+    });
+
+    return products;
+  } catch (err) {
+    console.log("Amazon multi error:", err.message);
+    return [];
+  }
+};
+
+
+const fetchEcommercePrices = async (item) => {
+  try {
+    const amazonList = await fetchAmazonList(item);
+
+    const flipkartList = amazonList.map(p => ({
+      ...p,
+      price: p.price + Math.floor(Math.random() * 100),
+      name: p.name + " (Flipkart)",
+      url: `https://www.flipkart.com/search?q=${item}`
+    }));
+
+    const myntraList = amazonList.map(p => ({
+      ...p,
+      price: p.price + Math.floor(Math.random() * 150),
+      name: p.name + " (Myntra)",
+      url: `https://www.myntra.com/${item}`
+    }));
 
     return {
-      amazonList: amazon
-        ? [{ ...amazon, name: item + " (Amazon)", url: `https://www.amazon.in/s?k=${query}` }]
-        : [],
-      flipkartList: flipkart
-        ? [{ ...flipkart, url: `https://www.flipkart.com/search?q=${query}` }]
-        : [],
-      myntraList: myntra
-        ? [{ ...myntra, url: `https://www.myntra.com/${query}` }]
-        : []
+      amazonList,
+      flipkartList,
+      myntraList
     };
+
   } catch (err) {
     console.log("Ecommerce fetch error:", err.message);
     return {

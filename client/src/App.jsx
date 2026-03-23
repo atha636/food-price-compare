@@ -1079,46 +1079,21 @@ if (serviceType === "ride" && (!item || !city)) {
                 )}
                
                {serviceType === "ecommerce" && result && (
-  <>
-    <PlatformPanel
-      platform="amazon"
-      label="Amazon"
-      color="yellow"
-      list={result.amazonList || []}
-      item={item}
-      loading={loading}
-      dm={dm}
-      favourites={favourites}
-      city={city}
-      addFavourite={addFavourite}
-    />
-
-    <PlatformPanel
-      platform="flipkart"
-      label="Flipkart"
-      color="blue"
-      list={result.flipkartList || []}
-      item={item}
-      loading={loading}
-      dm={dm}
-      favourites={favourites}
-      city={city}
-      addFavourite={addFavourite}
-    />
-
-    <PlatformPanel
-      platform="myntra"
-      label="Myntra"
-      color="pink"
-      list={result.myntraList || []}
-      item={item}
-      loading={loading}
-      dm={dm}
-      favourites={favourites}
-      city={city}
-      addFavourite={addFavourite}
-    />
-  </>
+                <div className="w-full max-w-md flex justify-start">
+                
+  <PlatformPanel
+    platform="amazon"
+    label="Amazon"
+    color="yellow"
+    list={result.amazonList || []}
+    item={item}
+    loading={loading}
+    dm={dm}
+    favourites={favourites}
+    city={city}
+    addFavourite={addFavourite}
+  />
+</div>
 )}
 
                 {/* ── CENTER CARD ── */}
@@ -1721,6 +1696,8 @@ if (serviceType === "ride" && (!item || !city)) {
                   />
                 )}
 
+
+
                 {/* ── RIGHT: Swiggy Panel ── */}
                 {serviceType === "food" && result?.swiggyList && (
                   <PlatformPanel
@@ -1738,8 +1715,41 @@ if (serviceType === "ride" && (!item || !city)) {
                     addFavourite={addFavourite}
                   />
                 )}
+                {serviceType === "ecommerce" && result && (
+  <div className="flex flex-col gap-6 w-full max-w-md">
+
+    <PlatformPanel
+      platform="flipkart"
+      label="Flipkart"
+      color="blue"
+      list={result.flipkartList || []}
+      item={item}
+      loading={loading}
+      dm={dm}
+      favourites={favourites}
+      city={city}
+      addFavourite={addFavourite}
+    />
+
+    <PlatformPanel
+      platform="myntra"
+      label="Myntra"
+      color="pink"
+      list={result.myntraList || []}
+      item={item}
+      loading={loading}
+      dm={dm}
+      favourites={favourites}
+      city={city}
+      addFavourite={addFavourite}
+    />
+
+  </div>
+)}
               </div>
             
+ 
+
               {/* ── END THREE-COLUMN ── */}
 
               {/* ── Login Popup ── */}
@@ -1968,7 +1978,7 @@ function PlatformPanel({
         )}
       </div>
 
-      <div className="p-3 space-y-3 lg:max-h-[580px] lg:overflow-y-auto scrollbar-hide">
+      <div className="p-3 space-y-3 max-h-[580px] overflow-y-auto scrollbar-hide">
         {loading ? (
           <>
             <SkeletonCard dm={dm} />
