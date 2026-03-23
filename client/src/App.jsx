@@ -12,7 +12,7 @@ import RideDashboard from "./pages/RideDashboard";
 import Favourites from "./pages/Favourites";
 import amazonLogo from "./assets/logos/amazon.png";
 import flipkartLogo from "./assets/logos/flipkart.png";
-
+import myntraLogo from "./assets/logos/myntra.png";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
