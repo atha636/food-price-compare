@@ -557,6 +557,13 @@ const fetchEcommercePrices = async (item) => {
     const myntraList = [];
 
     results.forEach(p => {
+      const sourceText = (
+        p.source ||
+        p.merchant ||
+        p.link ||
+        ""
+      ).toLowerCase();
+
       const product = {
         name: p.title,
         price: parseInt(p.price?.replace(/[^\d]/g, "")) || 0,
@@ -564,11 +571,24 @@ const fetchEcommercePrices = async (item) => {
         url: p.link
       };
 
-      if (p.source?.toLowerCase().includes("amazon")) {
+      // ✅ AMAZON
+      if (sourceText.includes("amazon")) {
         amazonList.push(product);
-      } else if (p.source?.toLowerCase().includes("flipkart")) {
+      }
+
+      // ✅ FLIPKART (improved detection)
+      if (
+        sourceText.includes("flipkart") ||
+        p.link?.includes("flipkart")
+      ) {
         flipkartList.push(product);
-      } else if (p.source?.toLowerCase().includes("myntra")) {
+      }
+
+      // ✅ MYNTRA (improved detection)
+      if (
+        sourceText.includes("myntra") ||
+        p.link?.includes("myntra")
+      ) {
         myntraList.push(product);
       }
     });
