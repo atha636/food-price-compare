@@ -543,14 +543,27 @@ const fetchEcommercePrices = async (item) => {
   try {
     const response = await axios.get("https://serpapi.com/search", {
       params: {
-        engine: "google_shopping",
-        q: item,
-        gl: "in",
-        api_key: process.env.SERP_API_KEY
-      }
+  engine: "google_shopping",
+  q: item + " buy online India",   // 🔥 STRONG QUERY
+  gl: "in",
+  hl: "en",
+  location: "India",
+  api_key: process.env.SERP_API_KEY
+}
     });
 
     const results = response.data.shopping_results || [];
+
+if (results.length === 0) {
+  console.log("⚠️ SERP empty → fallback to Amazon");
+  const amazonList = await fetchAmazonList(item);
+
+  return {
+    amazonList,
+    flipkartList: [],
+    myntraList: []
+  };
+}
      console.log("SERP RESULTS:", results);
 
     const amazonList = [];
@@ -559,15 +572,19 @@ const fetchEcommercePrices = async (item) => {
 
     results.forEach(p => {
       const sourceText = (
-        p.source ||
-        p.merchant ||
-        p.link ||
-        ""
-      ).toLowerCase();
+  p.source ||
+  p.merchant ||
+  p.link ||
+  ""
+).toLowerCase();
+
+const linkText = (p.link || "").toLowerCase();
 
       const product = {
         name: p.title,
-        price: parseInt(p.price?.replace(/[^\d]/g, "")) || 0,
+        price: p.price
+  ? parseInt(p.price.replace(/[^\d]/g, ""))
+  : 0,
         image: p.thumbnail,
         url: p.link
       };

@@ -1719,6 +1719,7 @@ if (serviceType === "ride" && (!item || !city)) {
                     addFavourite={addFavourite}
                   />
                 )}
+                
                 {serviceType === "ecommerce" && result && (
   <div className="flex flex-col gap-6 w-full max-w-md">
 
