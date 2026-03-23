@@ -23,7 +23,7 @@ import VerificationFailed from "./pages/VerificationFailed";
 import { useLocation } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import RideMap from "./components/RideMap";
-import { Heart } from "lucide-react";
+
 import Settings from "./pages/Settings";
 import {
   BarChart,
