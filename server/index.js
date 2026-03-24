@@ -32,8 +32,8 @@ app.set("trust proxy", 1);
 
 app.use(
   rateLimit({
-    windowMs: 1000,
-    max: 5
+    windowMs: 60 * 1000, // 1 min
+max: 100
   })
 );
 
