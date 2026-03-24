@@ -2,11 +2,15 @@ export default function HeaderSection({ user, insights, serviceType }) {
 
   // ✅ get correct data based on tab
   const current =
-    serviceType === "food"
-      ? insights?.food
-      : serviceType === "grocery"
-      ? insights?.grocery
-      : insights?.ride;
+  serviceType === "food"
+    ? insights?.food
+    : serviceType === "grocery"
+    ? insights?.grocery
+    : serviceType === "ride"
+    ? insights?.ride
+    : serviceType === "ecommerce"
+    ? insights?.ecommerce
+    : null;
 
   return (
     <div className="mb-6">
@@ -19,13 +23,14 @@ export default function HeaderSection({ user, insights, serviceType }) {
       )}
 
       {/* 📊 Insights */}
-      {insights && (
+      {current && (
         <div className="p-4 rounded-xl text-sm border bg-blue-500/8 border-blue-400/20 text-blue-200">
 
           <div className="font-semibold mb-2">
             📊 {serviceType === "food" && "Food Insights"}
             {serviceType === "grocery" && "Grocery Insights"}
             {serviceType === "ride" && "Ride Insights"}
+            {serviceType === "ecommerce" && "E-commerce Insights"}
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -56,6 +61,15 @@ export default function HeaderSection({ user, insights, serviceType }) {
                 <Box label="Avg Price" value={`₹${current?.avgRidePrice || 0}`} />
               </>
             )}
+
+{/* 🛍 ECOMMERCE */}
+{serviceType === "ecommerce" && (
+  <>
+    <Box label="Searches" value={current?.total || 0} />
+    <Box label="Top Product" value={current?.favouriteProduct || "—"} />
+    <Box label="Top Platform" value={current?.favouritePlatform || "—"} />
+  </>
+)}
 
           </div>
         </div>

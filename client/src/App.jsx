@@ -109,16 +109,19 @@ const FontStyle = () => (
 
     /* Light mode overrides */
     .light-mode {
-      --bg: #f0f4ff;
-      --surface: rgba(255,255,255,0.85);
-      --surface-hover: rgba(255,255,255,0.95);
-      --border: rgba(0,0,0,0.08);
+      --bg: #f8faff;
+      --surface: rgba(255,255,255,0.95);
+      --surface-hover: rgba(255,255,255,1);
+      --border: rgba(79,142,247,0.15);
       --border-glow: rgba(79,142,247,0.3);
-      --text: #1e293b;
-      --text-muted: rgba(30,41,59,0.5);
+      --text: #1a202c;
+      --text-muted: rgba(26,32,44,0.65);
     }
     .light-mode body { background: var(--bg); }
-    .light-mode input::placeholder { color: rgba(30,41,59,0.35) !important; }
+    .light-mode input::placeholder { color: rgba(26,32,44,0.4) !important; }
+    .light-mode input, .light-mode select {
+      color-scheme: light;
+    }
   `}</style>
 );
 
@@ -182,7 +185,7 @@ useEffect(() => {
   const [mobilePlatform, setMobilePlatform] = useState("zomato");
 
   const groceryImages = {
-    milk: "https://images.unsplash.com/photo-1550583724-b2692b85b150",
+    milk: "https://images.unsplash.com/photo-1550583724-b2692b85b140",
     bread: "https://images.unsplash.com/photo-1608198093002-ad4e005484ec",
     rice: "https://images.unsplash.com/photo-1586201375761-83865001e31c",
     eggs: "https://images.unsplash.com/photo-1518569656558-1f25e69d93d7",
@@ -680,7 +683,7 @@ if (serviceType === "ride" && (!item || !city)) {
               className={`relative min-h-screen w-full overflow-x-hidden transition-all duration-500 ${
                 dm
                   ? "bg-[#07091a] text-[#e2e8f0]"
-                  : "bg-[#f0f4ff] text-[#1e293b]"
+                  : "bg-gradient-to-br from-[#f8faff] via-[#f5f7ff] to-[#eef2ff] text-[#1a202c]"
               }`}
             >
               {/* ── ambient blobs ── */}
@@ -690,17 +693,17 @@ if (serviceType === "ride" && (!item || !city)) {
               >
                 <div
                   className={`absolute w-[600px] h-[600px] rounded-full blur-[120px] opacity-20 -top-32 -left-32 transition-all ${
-                    dm ? "bg-blue-600" : "bg-blue-300"
+                    dm ? "bg-blue-600" : "bg-blue-200"
                   }`}
                 />
                 <div
                   className={`absolute w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 -bottom-32 -right-32 transition-all ${
-                    dm ? "bg-purple-700" : "bg-indigo-300"
+                    dm ? "bg-purple-700" : "bg-purple-200"
                   }`}
                 />
                 <div
                   className={`absolute w-[300px] h-[300px] rounded-full blur-[100px] opacity-10 top-1/2 left-1/2 transition-all ${
-                    dm ? "bg-orange-600" : "bg-orange-300"
+                    dm ? "bg-orange-600" : "bg-orange-200"
                   }`}
                 />
               </div>
@@ -785,7 +788,7 @@ if (serviceType === "ride" && (!item || !city)) {
                         className={`w-full px-6 py-4 rounded-2xl text-sm font-medium border ${
                           dm
                             ? "bg-blue-500/10 text-blue-200 border-blue-400/20"
-                            : "bg-white text-slate-700 border-slate-200 shadow-md"
+                            : "bg-white text-slate-700 border-slate-300 shadow-md"
                         }`}
                       >
                         {(() => {
@@ -829,7 +832,7 @@ if (serviceType === "ride" && (!item || !city)) {
                                   ? `🔥 Swiggy saves you ₹${priceDifference}`
                                   : "⚖️ Both platforms have similar pricing"}
                               </span>
-                              <span className={`text-xs ${dm ? "opacity-70" : "text-slate-500"}`}>
+                              <span className={`text-xs ${dm ? "opacity-70" : "text-slate-600"}`}>
                                 {zomatoFastest.time < swiggyFastest.time
                                   ? `⚡ Zomato delivers ${timeDifference} mins faster`
                                   : swiggyFastest.time < zomatoFastest.time
@@ -853,7 +856,7 @@ if (serviceType === "ride" && (!item || !city)) {
                                           <span className="font-medium text-red-400">Zomato</span>
                                           <span className="font-bold">₹{zomatoBest.price}</span>
                                         </div>
-                                        <div className={`h-2 rounded-full overflow-hidden ${dm ? "bg-white/10" : "bg-slate-100"}`}>
+                                        <div className={`h-2 rounded-full overflow-hidden ${dm ? "bg-white/10" : "bg-slate-200"}`}>
                                           <div
                                             className="h-full bg-red-500 rounded-full transition-all duration-700"
                                             style={{ width: `${zomatoPercent}%` }}
@@ -865,7 +868,7 @@ if (serviceType === "ride" && (!item || !city)) {
                                           <span className="font-medium text-orange-400">Swiggy</span>
                                           <span className="font-bold">₹{swiggyBest.price}</span>
                                         </div>
-                                        <div className={`h-2 rounded-full overflow-hidden ${dm ? "bg-white/10" : "bg-slate-100"}`}>
+                                        <div className={`h-2 rounded-full overflow-hidden ${dm ? "bg-white/10" : "bg-slate-200"}`}>
                                           <div
                                             className="h-full bg-orange-500 rounded-full transition-all duration-700"
                                             style={{ width: `${swiggyPercent}%` }}
@@ -895,7 +898,7 @@ if (serviceType === "ride" && (!item || !city)) {
                       className={`w-full px-6 py-4 rounded-2xl text-sm font-medium border ${
                         dm
                           ? "bg-green-500/10 text-green-200 border-green-400/20"
-                          : "bg-white text-slate-700 border-slate-200 shadow-md"
+                          : "bg-white text-slate-700 border-slate-300 shadow-md"
                       }`}
                     >
                       {(() => {
@@ -927,7 +930,7 @@ if (serviceType === "ride" && (!item || !city)) {
                         };
                         return (
                           <div className="flex flex-col items-center gap-1">
-                            <span className={`text-xs ${dm ? "opacity-60" : "text-slate-400"}`}>
+                            <span className={`text-xs ${dm ? "opacity-60" : "text-slate-600"}`}>
                               🛒 Basket ({itemCount} items)
                             </span>
                             <span className="font-semibold">
@@ -937,7 +940,7 @@ if (serviceType === "ride" && (!item || !city)) {
                               </span>{" "}
                               best price ₹{cheapest.price}
                             </span>
-                            <span className={`text-xs ${dm ? "opacity-70" : "text-slate-500"}`}>
+                            <span className={`text-xs ${dm ? "opacity-70" : "text-slate-600"}`}>
                               ⚡{" "}
                               <span className={colorMap[fastest.name]}>
                                 {fastest.name}
@@ -995,7 +998,7 @@ if (serviceType === "ride" && (!item || !city)) {
                     className={`w-full max-w-2xl px-5 py-4 rounded-2xl text-sm border ${
                       dm
                         ? "bg-green-500/10 border-green-400/20 text-green-300"
-                        : "bg-green-50 border-green-200 text-green-700 shadow-sm"
+                        : "bg-white border-green-300 text-green-700 shadow-md"
                     }`}
                   >
                     <div className="font-semibold mb-2 flex items-center gap-2">
@@ -1011,7 +1014,7 @@ if (serviceType === "ride" && (!item || !city)) {
                         <div
                           key={s.label}
                           className={`px-3 py-2 rounded-xl text-center ${
-                            dm ? "bg-white/5" : "bg-green-100"
+                            dm ? "bg-white/5" : "bg-white shadow-sm"
                           }`}
                         >
                           <div className="font-bold text-base">{s.value}</div>
@@ -1036,7 +1039,7 @@ if (serviceType === "ride" && (!item || !city)) {
                               : "bg-orange-500 text-white shadow-[0_0_15px_rgba(255,107,53,0.4)]"
                             : dm
                             ? "bg-white/8 text-white/60 border border-white/10"
-                            : "bg-white text-slate-500 border border-slate-200"
+                            : "bg-white text-slate-500 border border-slate-300 shadow-sm"
                         }`}
                       >
                         {p === "zomato" ? "🍅 Zomato" : "🟠 Swiggy"}
@@ -1053,8 +1056,8 @@ if (serviceType === "ride" && (!item || !city)) {
                 {serviceType === "grocery" && result && (
                   <GroceryPanel
                     platforms={[
-                      { name: "Zepto", price: result.basket?.[0]?.zepto, time: 10, url: "https://www.zeptonow.com/", color: "purple", borderClass: dm ? "border-purple-500/40" : "border-purple-300" },
-                      { name: "Blinkit", price: result.basket?.[0]?.blinkit, time: 9, url: "https://blinkit.com/", color: "yellow", borderClass: dm ? "border-yellow-500/40" : "border-yellow-300" },
+                      { name: "Zepto", price: result.basket?.[0]?.zepto, time: 10, url: "https://www.zeptonow.com/", color: "purple", borderClass: dm ? "border-purple-500/40" : "border-purple-400" },
+                      { name: "Blinkit", price: result.basket?.[0]?.blinkit, time: 9, url: "https://blinkit.com/", color: "yellow", borderClass: dm ? "border-yellow-500/40" : "border-yellow-400" },
                     ]}
                     basket={result.basket}
                     groceryImages={groceryImages}
@@ -1107,7 +1110,7 @@ if (serviceType === "ride" && (!item || !city)) {
                   className={`relative z-10 w-full max-w-md lg:max-w-sm xl:max-w-md rounded-3xl shadow-2xl transition-all duration-500 overflow-hidden ${
                     dm
                       ? "bg-[#0d1025] border border-white/[0.07] shadow-[0_25px_60px_rgba(0,0,0,0.6)]"
-                      : "bg-white border border-slate-200/80 shadow-[0_25px_60px_rgba(0,0,0,0.1)]"
+                      : "bg-white border border-slate-300/60 shadow-[0_25px_60px_rgba(0,0,0,0.08)]"
                   }`}
                 >
                   {/* card top gradient strip */}
@@ -1122,7 +1125,7 @@ if (serviceType === "ride" && (!item || !city)) {
                           className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                             dm
                               ? "bg-blue-500/15 text-blue-300 border-blue-400/30 hover:bg-blue-500/25"
-                              : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+                              : "bg-blue-50 text-blue-600 border-blue-300 hover:bg-blue-100 shadow-sm"
                           }`}
                         >
                           📊 Dashboard
@@ -1134,7 +1137,7 @@ if (serviceType === "ride" && (!item || !city)) {
                           className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                             dm
                               ? "bg-red-500/15 text-red-300 border-red-400/30 hover:bg-red-500/25"
-                              : "bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
+                              : "bg-red-50 text-red-500 border-red-300 hover:bg-red-100 shadow-sm"
                           }`}
                         >
                           ← Logout
@@ -1145,7 +1148,7 @@ if (serviceType === "ride" && (!item || !city)) {
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                           dm
                             ? "bg-white/8 text-white/70 border-white/15 hover:bg-white/12"
-                            : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                            : "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200 shadow-sm"
                         }`}
                       >
                         {dm ? "☀ Light" : "🌙 Dark"}
@@ -1165,10 +1168,10 @@ if (serviceType === "ride" && (!item || !city)) {
                             serviceType === type
                               ? dm
                                 ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(79,142,247,0.4)]"
-                                : "bg-blue-600 text-white shadow-sm"
+                                : "bg-blue-600 text-white shadow-md"
                               : dm
                               ? "text-white/40 hover:text-white/60"
-                              : "text-slate-400 hover:text-slate-600"
+                              : "text-slate-500 hover:text-slate-700"
                           }`}
                         >
                           {type === "food" && "🍔 Food"}
@@ -1190,7 +1193,7 @@ if (serviceType === "ride" && (!item || !city)) {
                      <h1 className="brand text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500 bg-[length:200%_200%] bg-clip-text text-transparent animate-[gradientMove_4s_ease_infinite]">
   PriceCompare
 </h1>
-                      <p className={`mt-1 text-sm ${dm ? "text-white/40" : "text-slate-400"}`}>
+                      <p className={`mt-1 text-sm ${dm ? "text-white/40" : "text-slate-500"}`}>
                         {serviceType === "food" && "Find the cheapest bite in seconds"}
                         {serviceType === "grocery" && "Compare grocery prices instantly"}
                         {serviceType === "ride" && "Compare ride fares instantly"}
@@ -1201,7 +1204,7 @@ if (serviceType === "ride" && (!item || !city)) {
                             ? "rgba(79,142,247,0.12)"
                             : "rgba(79,142,247,0.1)",
                           color: dm ? "#93c5fd" : "#2563eb",
-                          border: `1px solid ${dm ? "rgba(79,142,247,0.25)" : "rgba(79,142,247,0.25)"}`,
+                          border: `1px solid ${dm ? "rgba(79,142,247,0.25)" : "rgba(79,142,247,0.3)"}`,
                         }}
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -1240,7 +1243,7 @@ if (serviceType === "ride" && (!item || !city)) {
                           className={`w-full pl-11 pr-4 py-3.5 rounded-xl outline-none text-sm font-medium transition-all duration-200 ${
                             dm
                               ? "bg-white/6 text-white border border-white/10 focus:border-blue-400/60 focus:bg-white/8 focus:shadow-[0_0_0_3px_rgba(79,142,247,0.15)]"
-                              : "bg-slate-50 text-slate-800 border border-slate-200 focus:border-blue-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(79,142,247,0.1)]"
+                              : "bg-white text-slate-800 border border-slate-300 focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(79,142,247,0.1)] placeholder-slate-400"
                           }`}
                         />
                       </div>
@@ -1261,7 +1264,7 @@ if (serviceType === "ride" && (!item || !city)) {
                             className={`w-full pl-11 pr-4 py-3.5 rounded-xl outline-none text-sm font-medium transition-all duration-200 ${
                               dm
                                 ? "bg-white/6 text-white border border-white/10 focus:border-blue-400/60 focus:bg-white/8 focus:shadow-[0_0_0_3px_rgba(79,142,247,0.15)]"
-                                : "bg-slate-50 text-slate-800 border border-slate-200 focus:border-blue-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(79,142,247,0.1)]"
+                                : "bg-white text-slate-800 border border-slate-300 focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(79,142,247,0.1)] placeholder-slate-400"
                             }`}
                           />
                         </div>
@@ -1273,7 +1276,7 @@ if (serviceType === "ride" && (!item || !city)) {
                           className={`px-4 py-3.5 rounded-xl font-semibold text-sm transition-all relative overflow-hidden ${
                             dm
                               ? "bg-blue-500/20 text-blue-300 border border-blue-400/30 hover:bg-blue-500/30"
-                              : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                              : "bg-blue-600 text-white hover:bg-blue-700 shadow-md border-0"
                           } ${detectingLocation ? "shadow-[0_0_20px_rgba(79,142,247,0.5)]" : ""}`}
                         >
                           {detectingLocation ? (
@@ -1314,7 +1317,7 @@ if (serviceType === "ride" && (!item || !city)) {
                       </motion.button>
 
                       {loading && (
-                        <p className={`text-xs text-center ${dm ? "text-blue-400/70" : "text-blue-500"}`}>
+                        <p className={`text-xs text-center ${dm ? "text-blue-400/70" : "text-blue-600"}`}>
                           ⚡ Fetching live prices from all platforms…
                         </p>
                       )}
@@ -1330,7 +1333,7 @@ if (serviceType === "ride" && (!item || !city)) {
                         className={`text-center mt-4 text-sm px-4 py-3 rounded-xl border ${
                           dm
                             ? "bg-red-500/10 text-red-300 border-red-400/20"
-                            : "bg-red-50 text-red-600 border-red-200"
+                            : "bg-red-50 text-red-600 border-red-300"
                         }`}
                       >
                         ⚠️ {error}
@@ -1345,7 +1348,7 @@ if (serviceType === "ride" && (!item || !city)) {
                         className={`mt-6 p-4 rounded-2xl border ${
                           dm
                             ? "bg-white/4 border-white/8"
-                            : "bg-slate-50 border-slate-200"
+                            : "bg-slate-50 border-slate-300"
                         }`}
                       >
                         <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
@@ -1362,7 +1365,7 @@ if (serviceType === "ride" && (!item || !city)) {
                                     : "bg-green-50 border border-green-300 text-green-700 font-bold"
                                   : dm
                                   ? "bg-white/4"
-                                  : "bg-white"
+                                  : "bg-white border border-slate-200"
                               }`}
                             >
                               <span className="capitalize flex items-center gap-1.5">
@@ -1380,7 +1383,7 @@ if (serviceType === "ride" && (!item || !city)) {
 
                     {isBasketMode && (
                       <div className="mt-4">
-                        <h4 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${dm ? "text-white/40" : "text-slate-400"}`}>
+                        <h4 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${dm ? "text-white/40" : "text-slate-500"}`}>
                           Basket Items
                         </h4>
                         <div className="space-y-1.5">
@@ -1390,7 +1393,7 @@ if (serviceType === "ride" && (!item || !city)) {
                               className={`flex justify-between items-center text-xs p-3 rounded-xl transition-all ${
                                 dm
                                   ? "bg-white/4 border border-white/6 hover:bg-white/7"
-                                  : "bg-slate-50 border border-slate-100 hover:bg-white"
+                                  : "bg-white border border-slate-200 hover:bg-slate-50"
                               }`}
                             >
                               <span className="font-semibold capitalize">{bItem.product}</span>
@@ -1408,15 +1411,15 @@ if (serviceType === "ride" && (!item || !city)) {
 
                     {/* ── Recent searches ── */}
                     {history.length > 0 && (
-                      <div className={`mt-6 pt-5 border-t ${dm ? "border-white/6" : "border-slate-100"}`}>
+                      <div className={`mt-6 pt-5 border-t ${dm ? "border-white/6" : "border-slate-200"}`}>
                         <div className="flex justify-between items-center mb-3">
-                          <p className={`text-xs font-semibold uppercase tracking-wider ${dm ? "text-white/40" : "text-slate-400"}`}>
+                          <p className={`text-xs font-semibold uppercase tracking-wider ${dm ? "text-white/40" : "text-slate-500"}`}>
                             Recent Searches
                           </p>
                           <button
                             onClick={handleClearHistory}
                             className={`text-xs font-medium transition-colors ${
-                              dm ? "text-red-400/70 hover:text-red-400" : "text-red-400 hover:text-red-500"
+                              dm ? "text-red-400/70 hover:text-red-400" : "text-red-500 hover:text-red-600"
                             }`}
                           >
                             Clear all
@@ -1467,7 +1470,7 @@ if (serviceType === "ride" && (!item || !city)) {
                               className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
                                 dm
                                   ? "bg-white/6 hover:bg-white/10 text-white/60 hover:text-white border border-white/8"
-                                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
+                                  : "bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 shadow-sm"
                               }`}
                             >
                               🕒 {search.item} · {search.city}
@@ -1690,8 +1693,8 @@ if (serviceType === "ride" && (!item || !city)) {
                 {serviceType === "grocery" && result && (
                   <GroceryPanel
                     platforms={[
-                      { name: "Instamart", price: result.basket?.[0]?.instamart, time: 14, url: "https://www.swiggy.com/instamart", color: "orange", borderClass: dm ? "border-orange-500/40" : "border-orange-300" },
-                      { name: "JioMart", price: result.basket?.[0]?.jiomart, time: 25, url: "https://www.jiomart.com/", color: "blue", borderClass: dm ? "border-blue-500/40" : "border-blue-300" },
+                      { name: "Instamart", price: result.basket?.[0]?.instamart, time: 14, url: "https://www.swiggy.com/instamart", color: "orange", borderClass: dm ? "border-orange-500/40" : "border-orange-400" },
+                      { name: "JioMart", price: result.basket?.[0]?.jiomart, time: 25, url: "https://www.jiomart.com/", color: "blue", borderClass: dm ? "border-blue-500/40" : "border-blue-400" },
                     ]}
                     basket={result.basket}
                     groceryImages={groceryImages}
@@ -1776,7 +1779,7 @@ if (serviceType === "ride" && (!item || !city)) {
                       className={`w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden ${
                         dm
                           ? "bg-[#0d1025] border border-white/10"
-                          : "bg-white border border-slate-200"
+                          : "bg-white border border-slate-300/60 shadow-xl"
                       }`}
                     >
                       <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500" />
@@ -1784,7 +1787,7 @@ if (serviceType === "ride" && (!item || !city)) {
                         <h2 className={`brand text-xl font-bold mb-1 text-center ${dm ? "text-white" : "text-slate-800"}`}>
                           {isRegisterMode ? "Create Account" : "Welcome Back"}
                         </h2>
-                        <p className={`text-xs text-center mb-6 ${dm ? "text-white/40" : "text-slate-400"}`}>
+                        <p className={`text-xs text-center mb-6 ${dm ? "text-white/40" : "text-slate-500"}`}>
                           {isRegisterMode
                             ? "Sign up to save your comparisons"
                             : "Login to compare prices"}
@@ -1800,7 +1803,7 @@ if (serviceType === "ride" && (!item || !city)) {
                               className={`w-full px-4 py-3 rounded-xl text-sm outline-none border transition-all ${
                                 dm
                                   ? "bg-white/6 text-white border-white/10 focus:border-blue-400/50 placeholder-white/30"
-                                  : "bg-slate-50 text-slate-800 border-slate-200 focus:border-blue-400"
+                                  : "bg-white text-slate-800 border-slate-300 focus:border-blue-500 placeholder-slate-400"
                               }`}
                             />
                           )}
@@ -1812,7 +1815,7 @@ if (serviceType === "ride" && (!item || !city)) {
                             className={`w-full px-4 py-3 rounded-xl text-sm outline-none border transition-all ${
                               dm
                                 ? "bg-white/6 text-white border-white/10 focus:border-blue-400/50 placeholder-white/30"
-                                : "bg-slate-50 text-slate-800 border-slate-200 focus:border-blue-400"
+                                : "bg-white text-slate-800 border-slate-300 focus:border-blue-500 placeholder-slate-400"
                             }`}
                           />
                           <input
@@ -1823,7 +1826,7 @@ if (serviceType === "ride" && (!item || !city)) {
                             className={`w-full px-4 py-3 rounded-xl text-sm outline-none border transition-all ${
                               dm
                                 ? "bg-white/6 text-white border-white/10 focus:border-blue-400/50 placeholder-white/30"
-                                : "bg-slate-50 text-slate-800 border-slate-200 focus:border-blue-400"
+                                : "bg-white text-slate-800 border-slate-300 focus:border-blue-500 placeholder-slate-400"
                             }`}
                           />
                         </div>
@@ -1832,7 +1835,7 @@ if (serviceType === "ride" && (!item || !city)) {
                           <div className={`mt-3 p-3 rounded-xl text-xs border ${
                             dm
                               ? "bg-blue-500/10 border-blue-400/20 text-blue-300"
-                              : "bg-blue-50 border-blue-200 text-blue-600"
+                              : "bg-blue-50 border-blue-300 text-blue-600"
                           }`}>
                             📧 Please verify your email first. Check your inbox or spam folder.
                           </div>
@@ -1856,9 +1859,9 @@ if (serviceType === "ride" && (!item || !city)) {
                         </button>
 
                         <div className={`flex items-center gap-3 my-4 text-xs ${dm ? "text-white/30" : "text-slate-400"}`}>
-                          <div className={`flex-1 h-px ${dm ? "bg-white/10" : "bg-slate-200"}`} />
+                          <div className={`flex-1 h-px ${dm ? "bg-white/10" : "bg-slate-300"}`} />
                           OR
-                          <div className={`flex-1 h-px ${dm ? "bg-white/10" : "bg-slate-200"}`} />
+                          <div className={`flex-1 h-px ${dm ? "bg-white/10" : "bg-slate-300"}`} />
                         </div>
 
                         <div className="flex justify-center">
@@ -1887,7 +1890,7 @@ if (serviceType === "ride" && (!item || !city)) {
                           />
                         </div>
 
-                        <p className={`text-center text-xs mt-4 ${dm ? "text-white/40" : "text-slate-400"}`}>
+                        <p className={`text-center text-xs mt-4 ${dm ? "text-white/40" : "text-slate-500"}`}>
                           {isRegisterMode
                             ? "Already have an account? "
                             : "Don't have an account? "}
@@ -1907,7 +1910,7 @@ if (serviceType === "ride" && (!item || !city)) {
                           className={`w-full mt-3 text-xs py-2 rounded-xl transition-all ${
                             dm
                               ? "text-white/30 hover:text-white/50 hover:bg-white/5"
-                              : "text-slate-400 hover:text-slate-500 hover:bg-slate-50"
+                              : "text-slate-500 hover:text-slate-600 hover:bg-slate-50"
                           }`}
                         >
                           Cancel
@@ -1939,7 +1942,7 @@ if (serviceType === "ride" && (!item || !city)) {
 
 /* ─── Platform Panel (Food & E-commerce) ─── */
 function PlatformPanel({
-  show = true, // ✅ Default to true for e-commerce (no mobile toggle)
+  show = true,
   platform,
   label,
   color,
@@ -1973,7 +1976,7 @@ function PlatformPanel({
       className={`${show ? "block" : "hidden"} lg:block w-full lg:w-80 rounded-2xl overflow-hidden transition-all duration-500 ${
         dm
           ? "bg-[#0d1025] border border-white/[0.07]"
-          : "bg-white border border-slate-200 shadow-md"
+          : "bg-white border border-slate-300/60 shadow-lg"
       } ${isWinner ? `shadow-[0_0_40px_${color === "red" ? "rgba(239,68,68,0.25)" : "rgba(255,107,53,0.25)"}]` : ""}`}
       style={isWinner ? { borderColor: `${accentColor}40` } : {}}
     >
@@ -1982,7 +1985,7 @@ function PlatformPanel({
         className={`sticky top-0 z-10 flex items-center justify-center gap-2 py-3.5 backdrop-blur-md border-b ${
           dm
             ? "bg-[#0d1025]/90 border-white/6"
-            : "bg-white/90 border-slate-100"
+            : "bg-white/95 border-slate-200"
         }`}
       >
         <div className="flex items-center gap-2">
@@ -2026,7 +2029,7 @@ function PlatformPanel({
               />
             ))
         ) : (
-          <div className={`text-center py-6 text-sm ${dm ? "text-white/50" : "text-slate-400"}`}>
+          <div className={`text-center py-6 text-sm ${dm ? "text-white/50" : "text-slate-500"}`}>
             No products found
           </div>
         )}
@@ -2060,7 +2063,7 @@ function RestaurantCard({
       className={`relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 cursor-pointer ${
         dm
           ? "bg-white/4 border border-white/7 hover:border-white/14"
-          : "bg-white border border-slate-100 shadow-sm hover:shadow-md"
+          : "bg-white border border-slate-300 shadow-md hover:shadow-lg"
       } ${isBest ? `ring-1 shadow-lg` : ""}`}
       style={
         isBest
@@ -2127,7 +2130,7 @@ function RestaurantCard({
       {/* details */}
       <div className="p-3">
         <div className="flex justify-between items-center">
-          <div className={`text-xs ${dm ? "text-white/50" : "text-slate-400"}`}>
+          <div className={`text-xs ${dm ? "text-white/50" : "text-slate-500"}`}>
             ⏱ {rest.time || 3} days · 📦 Online
           </div>
           <div className="text-lg font-bold" style={{ color: accentColor }}>
@@ -2167,12 +2170,12 @@ function GroceryPanel({
       className={`w-full lg:w-72 rounded-2xl overflow-hidden transition-all ${
         dm
           ? "bg-[#0d1025] border border-white/[0.07]"
-          : "bg-white border border-slate-200 shadow-md"
+          : "bg-white border border-slate-300/60 shadow-lg"
       }`}
     >
       <div
         className={`py-3 text-center font-bold text-sm border-b ${
-          dm ? "border-white/6" : "border-slate-100"
+          dm ? "border-white/6" : "border-slate-200"
         } ${titleColor}`}
       >
         {title}
@@ -2182,12 +2185,12 @@ function GroceryPanel({
           <div
             key={platform.name + pIndex}
             className={`rounded-xl border p-3 transition-all hover:scale-[1.01] ${
-              dm ? `bg-white/3 ${platform.borderClass}` : `bg-slate-50 ${platform.borderClass} border`
+              dm ? `bg-white/3 ${platform.borderClass}` : `bg-white ${platform.borderClass} border`
             }`}
           >
             <div className={`flex items-center justify-between mb-2.5`}>
               <span className="text-xs font-bold">{platform.name}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${dm ? "bg-white/8 text-white/50" : "bg-slate-200 text-slate-500"}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${dm ? "bg-white/8 text-white/50" : "bg-slate-100 text-slate-600"}`}>
                 ⏱ {platform.time}m
               </span>
             </div>
@@ -2207,7 +2210,7 @@ function GroceryPanel({
                     className={`${
                       basket?.length > 1 ? "min-w-[130px]" : "w-full"
                     } rounded-xl overflow-hidden flex-shrink-0 ${
-                      dm ? "bg-white/5" : "bg-white shadow-sm"
+                      dm ? "bg-white/5" : "bg-slate-50 shadow-sm"
                     }`}
                   >
                     <a
@@ -2289,9 +2292,9 @@ function SkeletonCard({ dm }) {
     >
       <div className={`h-36 ${dm ? "bg-white/6" : "bg-slate-200"}`} />
       <div className="p-3 space-y-2">
-        <div className={`h-3 w-3/4 rounded-full ${dm ? "bg-white/6" : "bg-slate-200"}`} />
-        <div className={`h-3 w-1/2 rounded-full ${dm ? "bg-white/4" : "bg-slate-100"}`} />
-        <div className={`h-8 rounded-xl mt-2 ${dm ? "bg-white/6" : "bg-slate-200"}`} />
+        <div className={`h-3 w-3/4 rounded-full ${dm ? "bg-white/6" : "bg-slate-300"}`} />
+        <div className={`h-3 w-1/2 rounded-full ${dm ? "bg-white/4" : "bg-slate-200"}`} />
+        <div className={`h-8 rounded-xl mt-2 ${dm ? "bg-white/6" : "bg-slate-300"}`} />
       </div>
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
     </div>
