@@ -42,11 +42,12 @@ const NAV = [
   { label: "Dashboard",          icon: "📊",  path: "/dashboard"         },
   { label: "Grocery Dashboard",  icon: "🛒",  path: "/grocery-dashboard" },
   { label: "Ride Dashboard",     icon: "🚗",  path: "/ride-dashboard"    },
+  { label: "E-commerce Dashboard", icon: "🛍️", path: "/ecommerce-dashboard" },
   { label: "Analytics",          icon: "📈",  path: "/analytics"         },
   { label: "History",            icon: "🕓",  path: "/history"           },
   { label: "Favourites",         icon: "❤️",  path: "/favourites"        },
   { label: "Settings",           icon: "⚙",  path: "/settings"          },
-  { label: "E-commerce Dashboard", icon: "🛍️", path: "/ecommerce-dashboard" },
+  
 ];
 
 const ACTIVE_COLOR = {
