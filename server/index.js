@@ -452,6 +452,7 @@ const fetchAmazonList = async (item) => {
   }
 };
 
+
 const fetchEcommercePrices = async (item) => {
   try {
     const response = await axios.get("https://serpapi.com/search", {
