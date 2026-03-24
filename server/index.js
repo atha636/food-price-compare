@@ -20,6 +20,7 @@ const jwt = require("jsonwebtoken");
 const User = require("./models/User");
 const crypto = require("crypto");
 const sendVerificationEmail = require("./utils/sendEmail");
+const rateLimit = require("express-rate-limit");
 const zomatoCache = new Map();
 const groceryCache = new Map();
 const rideCache = new Map();
