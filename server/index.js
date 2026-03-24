@@ -872,6 +872,44 @@ app.get("/insights", authMiddleware, async (req, res) => {
         ? (totalDistance / rideHistory.length).toFixed(1)
         : 0;
 
+     // =========================
+    // 🛍 ECOMMERCE INSIGHTS
+    // =========================
+    const ecommerceHistory = history.filter(
+      h => h.serviceType === "ecommerce"
+    );
+
+    const ecommerceItemCount = {};
+    const ecommercePlatformCount = {};
+    let ecommerceTotalSaved = 0;
+
+    ecommerceHistory.forEach(h => {
+      if (h.item) {
+        ecommerceItemCount[h.item] =
+          (ecommerceItemCount[h.item] || 0) + 1;
+      }
+
+      if (h.winner) {
+        ecommercePlatformCount[h.winner] =
+          (ecommercePlatformCount[h.winner] || 0) + 1;
+      }
+
+      ecommerceTotalSaved += h.bestPrice || 0;
+    });
+
+    const favouriteProduct = Object.keys(ecommerceItemCount).length > 0
+      ? Object.keys(ecommerceItemCount).reduce((a, b) =>
+          ecommerceItemCount[a] > ecommerceItemCount[b] ? a : b
+        )
+      : null;
+
+    const favouriteEcomPlatform = Object.keys(ecommercePlatformCount).length > 0
+      ? Object.keys(ecommercePlatformCount).reduce((a, b) =>
+          ecommercePlatformCount[a] > ecommercePlatformCount[b] ? a : b
+        )
+      : null;
+
+
     return res.json({
       food: {
         total: foodHistory.length,
@@ -889,7 +927,13 @@ app.get("/insights", authMiddleware, async (req, res) => {
         favouriteCity: rideCity || null,
         avgRidePrice,
         avgDistance
-      }
+      },
+      ecommerce: {
+  total: ecommerceHistory.length,
+  favouriteProduct,
+  favouritePlatform: favouriteEcomPlatform,
+  moneySaved: ecommerceTotalSaved
+}
     });
 
   } catch (err) {
@@ -1402,6 +1446,44 @@ app.post("/compare", authMiddleware, async (req, res) => {
         data: responseData,
         time: Date.now()
       });
+
+      if (user) {
+  if (!Array.isArray(user.searchHistory)) {
+    user.searchHistory = [];
+  }
+
+  // pick cheapest platform
+  const allPrices = [
+    ...(data.amazonList || []),
+    ...(data.flipkartList || []),
+    ...(data.myntraList || [])
+  ];
+
+  const cheapest =
+  allPrices.length > 0
+    ? allPrices.sort((a, b) => a.price - b.price)[0]
+    : null;
+
+const platform = cheapest?.link?.includes("amazon")
+  ? "amazon"
+  : cheapest?.link?.includes("flipkart")
+  ? "flipkart"
+  : cheapest?.link?.includes("myntra")
+  ? "myntra"
+  : "other";
+
+user.searchHistory.unshift({
+  item,
+  city,
+  serviceType: "ecommerce",
+  winner: platform,   // ✅ FIXED
+  bestPrice: cheapest ? cheapest.price : 0,
+  createdAt: new Date()
+});
+
+  user.searchHistory = user.searchHistory.slice(0, 20);
+  await user.save();
+}
 
       return res.json(responseData);
     }

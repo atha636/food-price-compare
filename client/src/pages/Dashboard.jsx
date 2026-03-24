@@ -46,6 +46,7 @@ const NAV = [
   { label: "History",            icon: "🕓",  path: "/history"           },
   { label: "Favourites",         icon: "❤️",  path: "/favourites"        },
   { label: "Settings",           icon: "⚙",  path: "/settings"          },
+  { label: "E-commerce Dashboard", icon: "🛍️", path: "/ecommerce-dashboard" },
 ];
 
 const ACTIVE_COLOR = {

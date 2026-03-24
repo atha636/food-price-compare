@@ -9,6 +9,7 @@ import FloatingAI from "./components/FloatingAI";
 import HeaderSection from "./components/HeaderSection";
 import GroceryDashboard from "./pages/GroceryDashboard";
 import RideDashboard from "./pages/RideDashboard";
+import EcommerceDashboard from "./pages/EcommerceDashboard";
 import Favourites from "./pages/Favourites";
 import amazonLogo from "./assets/logos/amazon.png";
 import flipkartLogo from "./assets/logos/flipkart.png";
@@ -658,6 +659,7 @@ if (serviceType === "ride" && (!item || !city)) {
         element={<GroceryDashboard theme={theme} />}
       />
       <Route path="/analytics" element={<Analytics />} />
+      <Route path="/ecommerce-dashboard" element={<EcommerceDashboard />} />
       <Route path="/history" element={<History />} />
       <Route 
   path="/ride-dashboard" 
