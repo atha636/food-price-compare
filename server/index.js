@@ -27,6 +27,7 @@ const rideCache = new Map();
 const ecommerceCache = new Map();
 
 const app = express();
+app.set("trust proxy", 1); 
 
 
 app.use(

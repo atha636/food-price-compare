@@ -2137,7 +2137,7 @@ function RestaurantCard({
           </div>
         </div>
         <a
-          href={rest.url}
+          href={rest.link}
           target="_blank"
           className="mt-2.5 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
           style={{ background: accentColor }}
