@@ -495,7 +495,7 @@ const fetchEcommercePrices = async (item) => {
           ? parseInt(p.price.replace(/[^\d]/g, ""))
           : 0,
         image: p.thumbnail,
-        url: p.link
+        link: p.link  
       };
 
       if (sourceText.includes("amazon")) {
