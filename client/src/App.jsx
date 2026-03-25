@@ -2272,9 +2272,11 @@ function RestaurantCard({ rest, index, platform, item, city, dm, favourites, add
       {/* Details */}
       <div className="p-3">
         <div className="flex justify-between items-center">
-          <div className="text-xs" style={{ color: dm ? "rgba(226,232,240,0.4)" : "rgba(30,27,75,0.45)" }}>
-            ⏱ {rest.time || 3} days · 📦 Online
-          </div>
+          <div className="flex items-center gap-2 text-xs opacity-70">
+  <span>⏱ {rest.time || 30} mins</span>
+  <span>•</span>
+  <span>📍 {rest.distance || 2} km</span>
+</div>
           <div className="text-lg font-black" style={{ color: accent.main }}>
             {rest.price ? (
               <>₹<CountUp end={rest.price} duration={0.8} /></>

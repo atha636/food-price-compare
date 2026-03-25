@@ -78,7 +78,7 @@ export default function FloatingAI(props) {
         ></div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes slideUp {
           from {
             transform: translateY(20px);
