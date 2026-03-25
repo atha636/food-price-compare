@@ -11,6 +11,8 @@ import GroceryDashboard from "./pages/GroceryDashboard";
 import RideDashboard from "./pages/RideDashboard";
 import EcommerceDashboard from "./pages/EcommerceDashboard";
 import Favourites from "./pages/Favourites";
+import zomatoLogo from "./assets/logos/Zomato.png";
+import swiggyLogo from "./assets/logos/swiggy.png";
 import amazonLogo from "./assets/logos/amazon.png";
 import flipkartLogo from "./assets/logos/flipkart.png";
 import myntraLogo from "./assets/logos/myntra.png";
@@ -1073,6 +1075,7 @@ if (serviceType === "ride" && (!item || !city)) {
                   <PlatformPanel
                     show={mobilePlatform === "zomato"}
                     platform="zomato"
+                    logo={zomatoLogo}
                     label="Zomato"
                     color="red"
                     list={result.zomatoList}
@@ -1713,6 +1716,7 @@ if (serviceType === "ride" && (!item || !city)) {
                     show={mobilePlatform === "swiggy"}
                     platform="swiggy"
                     label="Swiggy"
+                    logo={swiggyLogo}
                     color="orange"
                     list={result.swiggyList}
                     item={item}
@@ -1959,8 +1963,8 @@ function PlatformPanel({
     amazon: amazonLogo,
     flipkart: flipkartLogo,
     myntra: myntraLogo,
-    zomato: "🍅",
-    swiggy: "🟠",
+    zomato: zomatoLogo,
+  swiggy: swiggyLogo,
   };
 
   const isWinner = winner === platform;
