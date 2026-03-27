@@ -16,7 +16,7 @@ import swiggyLogo from "./assets/logos/swiggy.png";
 import amazonLogo from "./assets/logos/amazon.png";
 import flipkartLogo from "./assets/logos/flipkart.png";
 import myntraLogo from "./assets/logos/myntra.png";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import CountUp from "react-countup";
@@ -37,12 +37,24 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+/* ─── Mobile detection hook ─── */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
+}
+
 /* ─── Font injection ─── */
 const FontStyle = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Satoshi:wght@300;400;500;700;900&display=swap');
-    
-    * { font-family: 'Satoshi', sans-serif; box-sizing: border-box; }
+
+    * { font-family: 'Satoshi', sans-serif; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     h1,h2,.brand { font-family: 'Cabinet Grotesk', sans-serif; }
 
     :root {
@@ -73,32 +85,37 @@ const FontStyle = () => (
       --radius-sm: 14px;
     }
 
-    body { 
-      background: var(--bg); 
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      background: var(--bg);
       margin: 0;
+      overscroll-behavior-y: none;
     }
 
-    /* Noise texture overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.4;
+    /* Noise texture – desktop only for perf */
+    @media (min-width: 1024px) {
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.4;
+      }
     }
 
     .glass {
       background: var(--surface);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border);
     }
     .glass2 {
       background: var(--surface2);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border-mid);
     }
     .glass-hover:hover {
@@ -106,51 +123,59 @@ const FontStyle = () => (
       border-color: var(--border-glow);
     }
 
-    /* Glows */
-    .glow-indigo { box-shadow: 0 0 40px rgba(99,102,241,0.2), 0 0 80px rgba(99,102,241,0.08); }
-    .glow-orange { box-shadow: 0 0 40px rgba(249,115,22,0.2), 0 0 80px rgba(249,115,22,0.08); }
-    .glow-green { box-shadow: 0 0 40px rgba(16,185,129,0.2), 0 0 80px rgba(16,185,129,0.08); }
-    .glow-red { box-shadow: 0 0 40px rgba(244,63,94,0.2), 0 0 80px rgba(244,63,94,0.08); }
-    .glow-purple { box-shadow: 0 0 40px rgba(168,85,247,0.2); }
+    /* Glows – desktop only */
+    @media (min-width: 1024px) {
+      .glow-indigo { box-shadow: 0 0 40px rgba(99,102,241,0.2), 0 0 80px rgba(99,102,241,0.08); }
+      .glow-orange { box-shadow: 0 0 40px rgba(249,115,22,0.2), 0 0 80px rgba(249,115,22,0.08); }
+      .glow-green  { box-shadow: 0 0 40px rgba(16,185,129,0.2), 0 0 80px rgba(16,185,129,0.08); }
+      .glow-red    { box-shadow: 0 0 40px rgba(244,63,94,0.2), 0 0 80px rgba(244,63,94,0.08); }
+      .glow-purple { box-shadow: 0 0 40px rgba(168,85,247,0.2); }
+    }
 
-    /* Animated gradient text */
+    /* Gradient text – simplified on mobile */
     @keyframes gradientFlow {
       0%,100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    @keyframes gradientMove {
-      0%,100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+      50%      { background-position: 100% 50%; }
     }
     .gradient-text {
       background: linear-gradient(135deg, #818cf8 0%, #c084fc 30%, #fb923c 60%, #818cf8 100%);
       background-size: 300% 300%;
-      animation: gradientFlow 5s ease infinite;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
+    @media (min-width: 1024px) {
+      .gradient-text { animation: gradientFlow 5s ease infinite; }
+    }
 
-    /* Button shimmer */
+    /* Button shimmer – desktop only */
     @keyframes shimmer {
-      0% { transform: translateX(-100%); }
+      0%   { transform: translateX(-100%); }
       100% { transform: translateX(100%); }
     }
-    .shimmer-effect::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-      animation: shimmer 2.5s infinite;
+    @media (min-width: 1024px) {
+      .shimmer-effect::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+        animation: shimmer 2.5s infinite;
+      }
     }
 
     /* Primary button */
     .btn-primary {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6, #6366f1);
-      background-size: 200% 200%;
-      animation: gradientFlow 3s ease infinite;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
       position: relative;
       overflow: hidden;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+    @media (min-width: 1024px) {
+      .btn-primary {
+        background-size: 200% 200%;
+        animation: gradientFlow 3s ease infinite;
+      }
     }
     .btn-primary::before {
       content: '';
@@ -160,25 +185,10 @@ const FontStyle = () => (
       pointer-events: none;
     }
 
-    /* Service tab active glow */
-    .tab-active {
-      background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.2));
-      border: 1px solid rgba(99,102,241,0.5);
-      box-shadow: 0 0 20px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
-    }
-
-    /* Card hover lift */
-    .card-lift {
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
-    }
-    .card-lift:hover {
-      transform: translateY(-4px) scale(1.015);
-    }
-
     /* Scrollbar */
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    
+
     .scrollbar-thin::-webkit-scrollbar { width: 3px; }
     .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
     .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 99px; }
@@ -186,21 +196,23 @@ const FontStyle = () => (
     input, select { color-scheme: dark; }
     input::placeholder { color: rgba(226,232,240,0.25) !important; }
 
-    /* Input focus ring */
     .input-field {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       color: #e2e8f0;
-      transition: all 0.2s ease;
+      transition: border-color 0.2s ease, background 0.2s ease;
     }
     .input-field:focus {
       background: rgba(99,102,241,0.08);
       border-color: rgba(99,102,241,0.5);
-      box-shadow: 0 0 0 3px rgba(99,102,241,0.12), 0 0 20px rgba(99,102,241,0.1);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
       outline: none;
     }
 
-    /* Light mode overrides */
+    /* Touch-friendly tap targets */
+    button, a { touch-action: manipulation; }
+
+    /* Light mode */
     .light-mode {
       --bg: #f4f6ff;
       --bg2: #eef0fa;
@@ -227,72 +239,101 @@ const FontStyle = () => (
       border-color: rgba(99,102,241,0.5);
     }
 
-    /* Pulse ring animation */
+    /* Pulse ring – desktop only */
     @keyframes pulseRing {
-      0% { transform: scale(0.8); opacity: 0.8; }
+      0%   { transform: scale(0.8); opacity: 0.8; }
       100% { transform: scale(1.8); opacity: 0; }
     }
-    .pulse-ring::after {
-      content: '';
-      position: absolute;
-      inset: -4px;
-      border-radius: 50%;
-      border: 2px solid rgba(99,102,241,0.6);
-      animation: pulseRing 1.5s ease-out infinite;
+    @media (min-width: 1024px) {
+      .pulse-ring::after {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        border: 2px solid rgba(99,102,241,0.6);
+        animation: pulseRing 1.5s ease-out infinite;
+      }
     }
 
-    /* Winner badge glow */
+    /* Winner badge */
     @keyframes winnerPulse {
-      0%,100% { box-shadow: 0 0 20px rgba(16,185,129,0.3); }
-      50% { box-shadow: 0 0 40px rgba(16,185,129,0.5), 0 0 60px rgba(16,185,129,0.2); }
+      0%,100% { box-shadow: 0 0 12px rgba(16,185,129,0.3); }
+      50%      { box-shadow: 0 0 24px rgba(16,185,129,0.5); }
     }
-    .winner-badge {
-      animation: winnerPulse 2s ease-in-out infinite;
-    }
+    .winner-badge { animation: winnerPulse 2s ease-in-out infinite; }
 
-    /* Floating orbs */
+    /* Floating orbs – desktop only */
     @keyframes float1 {
       0%,100% { transform: translate(0,0) scale(1); }
-      33% { transform: translate(30px,-20px) scale(1.05); }
-      66% { transform: translate(-20px,10px) scale(0.95); }
+      33%      { transform: translate(30px,-20px) scale(1.05); }
+      66%      { transform: translate(-20px,10px) scale(0.95); }
     }
     @keyframes float2 {
       0%,100% { transform: translate(0,0) scale(1); }
-      33% { transform: translate(-25px,15px) scale(1.03); }
-      66% { transform: translate(20px,-25px) scale(0.97); }
+      33%      { transform: translate(-25px,15px) scale(1.03); }
+      66%      { transform: translate(20px,-25px) scale(0.97); }
     }
     @keyframes float3 {
       0%,100% { transform: translate(0,0); }
-      50% { transform: translate(15px,20px); }
+      50%      { transform: translate(15px,20px); }
     }
 
-    /* Grid dot pattern */
+    /* Dot pattern */
     .dot-pattern {
-      background-image: radial-gradient(circle, rgba(99,102,241,0.15) 1px, transparent 1px);
+      background-image: radial-gradient(circle, rgba(99,102,241,0.12) 1px, transparent 1px);
       background-size: 28px 28px;
     }
 
-    /* Platform panel scrollbar */
+    /* Platform scroll */
     .platform-scroll {
       max-height: 600px;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       scrollbar-width: thin;
       scrollbar-color: rgba(99,102,241,0.3) transparent;
+      overscroll-behavior: contain;
     }
     .platform-scroll::-webkit-scrollbar { width: 3px; }
     .platform-scroll::-webkit-scrollbar-track { background: transparent; }
     .platform-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 99px; }
 
-    /* Stagger animation */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
+    /* Card lift – desktop only */
+    @media (min-width: 1024px) {
+      .card-lift {
+        transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+      }
+      .card-lift:hover { transform: translateY(-4px) scale(1.015); }
     }
-    .fade-up { animation: fadeUp 0.4s ease forwards; }
 
-    /* Card image zoom */
-    .img-zoom { transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-    .img-zoom:hover { transform: scale(1.08); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.35s ease forwards; }
+
+    /* Image zoom – desktop only */
+    @media (min-width: 1024px) {
+      .img-zoom { transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94); }
+      .img-zoom:hover { transform: scale(1.08); }
+    }
+
+    /* GPU-accelerated layers */
+    .gpu { -webkit-transform: translateZ(0); transform: translateZ(0); will-change: transform; }
+
+    /* Mobile-specific improvements */
+    @media (max-width: 1023px) {
+      /* Reduce blur for performance */
+      .glass, .glass2 {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      /* Minimum tap target size */
+      button { min-height: 44px; }
+      /* Smooth momentum scrolling */
+      .platform-scroll { max-height: none; }
+      /* Prevent layout shifts */
+      img { content-visibility: auto; }
+    }
   `}</style>
 );
 
@@ -301,7 +342,19 @@ function getBestRestaurant(list) {
   return list.reduce((a, b) => (a.price < b.price ? a : b));
 }
 
+/* ─── Reduced-motion framer variants ─── */
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
+};
+const fadeMobile = {
+  hidden: { opacity: 0 },
+  show:   { opacity: 1, transition: { duration: 0.25 } },
+};
+
 export default function App() {
+  const isMobile = useIsMobile();
+
   const [user, setUser] = useState(null);
   const [item, setItem] = useState("");
   const [city, setCity] = useState("");
@@ -315,9 +368,7 @@ export default function App() {
     location.state?.service || "food"
   );
   useEffect(() => {
-    if (location.state?.service) {
-      setServiceType(location.state.service);
-    }
+    if (location.state?.service) setServiceType(location.state.service);
   }, [location]);
 
   useEffect(() => {
@@ -332,9 +383,7 @@ export default function App() {
     serviceType === "grocery" && result?.basket && result.basket.length > 0;
 
   const basketWinner = isBasketMode
-    ? Object.entries(result.totals).reduce((a, b) =>
-        a[1] < b[1] ? a : b
-      )[0]
+    ? Object.entries(result.totals).reduce((a, b) => (a[1] < b[1] ? a : b))[0]
     : null;
 
   const [loading, setLoading] = useState(false);
@@ -355,7 +404,7 @@ export default function App() {
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [mobilePlatform, setMobilePlatform] = useState("zomato");
 
-  const groceryImages = {
+  const groceryImages = useMemo(() => ({
     milk: "https://images.unsplash.com/photo-1550583724-b2692b85b140",
     bread: "https://images.unsplash.com/photo-1608198093002-ad4e005484ec",
     rice: "https://images.unsplash.com/photo-1586201375761-83865001e31c",
@@ -365,7 +414,7 @@ export default function App() {
     potato: "https://images.unsplash.com/photo-1518977676601-b53f82aba655",
     onion: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb",
     tomato: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337",
-  };
+  }), []);
 
   const categoryColors = {
     dairy: "bg-blue-500",
@@ -382,101 +431,82 @@ export default function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else if (theme === "light") {
-      root.classList.remove("dark");
-    } else {
+    if (theme === "dark") root.classList.add("dark");
+    else if (theme === "light") root.classList.remove("dark");
+    else {
       const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if (systemDark) root.classList.add("dark");
-      else root.classList.remove("dark");
+      systemDark ? root.classList.add("dark") : root.classList.remove("dark");
     }
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const winner =
-    serviceType === "food" && result
-      ? (() => {
-          const zomatoBest =
-            result.zomatoList && result.zomatoList.length > 0
-              ? result.zomatoList.reduce((a, b) => (a.score < b.score ? a : b))
-              : null;
-          const swiggyBest =
-            result.swiggyList && result.swiggyList.length > 0
-              ? result.swiggyList.reduce((a, b) => (a.score < b.score ? a : b))
-              : null;
-          if (!zomatoBest && swiggyBest) return "swiggy";
-          if (!swiggyBest && zomatoBest) return "zomato";
-          if (!zomatoBest && !swiggyBest) return null;
-          if (zomatoBest.price < swiggyBest.price) return "zomato";
-          if (swiggyBest.price < zomatoBest.price) return "swiggy";
-          return null;
-        })()
+  const winner = useMemo(() => {
+    if (serviceType !== "food" || !result) return null;
+    const zomatoBest = result.zomatoList?.length
+      ? result.zomatoList.reduce((a, b) => (a.score < b.score ? a : b))
       : null;
+    const swiggyBest = result.swiggyList?.length
+      ? result.swiggyList.reduce((a, b) => (a.score < b.score ? a : b))
+      : null;
+    if (!zomatoBest && swiggyBest) return "swiggy";
+    if (!swiggyBest && zomatoBest) return "zomato";
+    if (!zomatoBest && !swiggyBest) return null;
+    if (zomatoBest.price < swiggyBest.price) return "zomato";
+    if (swiggyBest.price < zomatoBest.price) return "swiggy";
+    return null;
+  }, [serviceType, result]);
 
-  const ecommerceWinner =
-    serviceType === "ecommerce" && result
-      ? (() => {
-          const all = [
-            ...(result?.amazonList || []),
-            ...(result?.flipkartList || []),
-            ...(result?.myntraList || []),
-          ];
-          if (all.length === 0) return null;
-          return all.reduce((a, b) => (a.price < b.price ? a : b));
-        })()
-      : null;
+  const ecommerceWinner = useMemo(() => {
+    if (serviceType !== "ecommerce" || !result) return null;
+    const all = [
+      ...(result?.amazonList || []),
+      ...(result?.flipkartList || []),
+      ...(result?.myntraList || []),
+    ];
+    return all.length ? all.reduce((a, b) => (a.price < b.price ? a : b)) : null;
+  }, [serviceType, result]);
 
-  const savingsData =
-    serviceType === "food" && result
-      ? (() => {
-          const zomatoBest = getBestRestaurant(result.zomatoList);
-          const swiggyBest = getBestRestaurant(result.swiggyList);
-          if (!zomatoBest || !swiggyBest) return null;
-          const cheaperPrice = Math.min(zomatoBest.price, swiggyBest.price);
-          const expensivePrice = Math.max(zomatoBest.price, swiggyBest.price);
-          const difference = expensivePrice - cheaperPrice;
-          return {
-            perOrder: difference,
-            monthly: difference * 8,
-            yearly: difference * 96,
-            percentage: ((difference / expensivePrice) * 100).toFixed(1),
-          };
-        })()
-      : null;
+  const savingsData = useMemo(() => {
+    if (serviceType !== "food" || !result) return null;
+    const zomatoBest = getBestRestaurant(result.zomatoList);
+    const swiggyBest = getBestRestaurant(result.swiggyList);
+    if (!zomatoBest || !swiggyBest) return null;
+    const cheaperPrice = Math.min(zomatoBest.price, swiggyBest.price);
+    const expensivePrice = Math.max(zomatoBest.price, swiggyBest.price);
+    const difference = expensivePrice - cheaperPrice;
+    return {
+      perOrder: difference,
+      monthly: difference * 8,
+      yearly: difference * 96,
+      percentage: ((difference / expensivePrice) * 100).toFixed(1),
+    };
+  }, [serviceType, result]);
 
-  const groceryWinner =
-    serviceType === "grocery" && result
-      ? (() => {
-          const platforms = [
-            { name: "zepto", data: result.zeptoList },
-            { name: "blinkit", data: result.blinkitList },
-            { name: "instamart", data: result.instamartList },
-            { name: "jiomart", data: result.jiomartList },
-          ];
-          let best = null;
-          platforms.forEach((p) => {
-            const item = p.data?.[0];
-            if (!item) return;
-            if (!best || item.price < best.price) {
-              best = { platform: p.name, price: item.price };
-            }
-          });
-          return best?.platform || null;
-        })()
-      : null;
+  const groceryWinner = useMemo(() => {
+    if (serviceType !== "grocery" || !result) return null;
+    const platforms = [
+      { name: "zepto", data: result.zeptoList },
+      { name: "blinkit", data: result.blinkitList },
+      { name: "instamart", data: result.instamartList },
+      { name: "jiomart", data: result.jiomartList },
+    ];
+    let best = null;
+    platforms.forEach((p) => {
+      const item = p.data?.[0];
+      if (!item) return;
+      if (!best || item.price < best.price) best = { platform: p.name, price: item.price };
+    });
+    return best?.platform || null;
+  }, [serviceType, result]);
 
   const [sortBy, setSortBy] = useState("price");
 
-  const particlesInit = async (engine) => {
+  const particlesInit = useCallback(async (engine) => {
     await loadSlim(engine);
-  };
+  }, []);
 
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation not supported");
-      return;
-    }
+  const handleGetLocation = useCallback(() => {
+    if (!navigator.geolocation) { alert("Geolocation not supported"); return; }
     setDetectingLocation(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -486,40 +516,29 @@ export default function App() {
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
           );
           const data = await res.json();
-          const fullAddress = [
-            data.address?.suburb,
-            data.address?.road,
-            data.address?.city,
-          ]
-            .filter(Boolean)
-            .join(", ");
-          const detectedCity =
-            data.address.city ||
-            data.address.town ||
-            data.address.state ||
-            "";
-          if (serviceType === "ride") {
-            setCity(fullAddress);
-          } else {
-            setCity(detectedCity);
-          }
+          const fullAddress = [data.address?.suburb, data.address?.road, data.address?.city]
+            .filter(Boolean).join(", ");
+          const detectedCity = data.address.city || data.address.town || data.address.state || "";
+          serviceType === "ride" ? setCity(fullAddress) : setCity(detectedCity);
         } catch (err) {
           console.error("Location fetch error", err);
         } finally {
           setDetectingLocation(false);
         }
       },
-      () => {
-        setDetectingLocation(false);
-        alert("Location permission denied");
-      }
+      () => { setDetectingLocation(false); alert("Location permission denied"); }
     );
-  };
+  }, [serviceType]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "dark") setDarkMode(true);
   }, []);
+ 
+useEffect(() => {
+  // 🔥 Auto detect city on app load
+  handleGetLocation();
+}, []);
 
   useEffect(() => {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
@@ -531,9 +550,7 @@ export default function App() {
       setItem(item);
       setCity(city);
       if (serviceType) setServiceType(serviceType);
-      setTimeout(() => {
-        handleCompare(item, city);
-      }, 200);
+      setTimeout(() => { handleCompare(item, city); }, 200);
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -550,16 +567,13 @@ export default function App() {
         setUser(userRes.data);
         setIsLoggedIn(true);
         setHistory(userRes.data.searchHistory || []);
-        setFavourites(
-          (userRes.data.favourites || []).map((f) => f.name + f.platform + f.city)
-        );
+        setFavourites((userRes.data.favourites || []).map((f) => f.name + f.platform + f.city));
         const insightsRes = await axios.get(
           "https://food-price-compare-production.up.railway.app/insights",
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setInsights(insightsRes.data);
-      } catch (err) {
-        console.log("Auto login failed");
+      } catch {
         localStorage.removeItem("token");
         setIsLoggedIn(false);
         setUser(null);
@@ -586,13 +600,8 @@ export default function App() {
       );
       setUser(userRes.data);
       setIsLoggedIn(true);
-      setFavourites(
-        (userRes.data.favourites || []).map((f) => f.name + f.platform + f.city)
-      );
-      if (pendingCompare) {
-        setPendingCompare(false);
-        handleCompare();
-      }
+      setFavourites((userRes.data.favourites || []).map((f) => f.name + f.platform + f.city));
+      if (pendingCompare) { setPendingCompare(false); handleCompare(); }
       setShowLoginPopup(false);
     } catch (err) {
       setAuthError(err.response?.data?.message || "Login failed");
@@ -624,16 +633,14 @@ export default function App() {
       setHistory(userRes.data.searchHistory || []);
       setShowLoginPopup(false);
       setIsRegisterMode(false);
-      setFavourites(
-        (userRes.data.favourites || []).map((f) => f.name + f.platform + f.city)
-      );
+      setFavourites((userRes.data.favourites || []).map((f) => f.name + f.platform + f.city));
     } catch (err) {
       setAuthError(err.response?.data?.message || "Signup failed");
     }
     setLoginLoading(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
     setUser(null);
@@ -642,58 +649,41 @@ export default function App() {
     setResult(null);
     setItem("");
     setCity("");
-  };
+  }, []);
 
-  const addFavourite = async (name, platform, city, price, image) => {
+  const addFavourite = useCallback(async (name, platform, city, price, image) => {
     const token = localStorage.getItem("token");
     const key = name + platform + city;
     const isAlreadyFav = favourites.includes(key);
-    setFavourites((prev) =>
-      isAlreadyFav ? prev.filter((f) => f !== key) : [...prev, key]
-    );
+    setFavourites((prev) => isAlreadyFav ? prev.filter((f) => f !== key) : [...prev, key]);
     try {
       await axios.post(
         "https://food-price-compare-production.up.railway.app/add-favourite",
         { name, platform, city, price, image },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-    } catch (err) {
-      setFavourites((prev) =>
-        isAlreadyFav ? [...prev, key] : prev.filter((f) => f !== key)
-      );
-      console.log("Favourite toggle failed");
+    } catch {
+      setFavourites((prev) => isAlreadyFav ? [...prev, key] : prev.filter((f) => f !== key));
     }
-  };
+  }, [favourites]);
 
-  const handleCompare = async (customItem, customCity) => {
+  const handleCompare = useCallback(async (customItem, customCity) => {
     let searchItem = customItem || item;
     let searchCity = customCity || city;
-    if (serviceType === "ride") {
-      searchItem = item;
-      searchCity = city;
-    }
+    if (serviceType === "ride") { searchItem = item; searchCity = city; }
     if (
       (serviceType === "food" || serviceType === "grocery" || serviceType === "ecommerce") &&
       (!searchItem || !searchCity)
-    ) {
-      setError("Please enter item and city.");
-      return;
-    }
+    ) { setError("Please enter item and city."); return; }
     if (serviceType === "ride" && (!item || !city)) {
-      setError("Please enter pickup and drop location.");
-      return;
+      setError("Please enter pickup and drop location."); return;
     }
     const token = localStorage.getItem("token");
-    if (!token) {
-      setPendingCompare(true);
-      setShowLoginPopup(true);
-      return;
-    }
+    if (!token) { setPendingCompare(true); setShowLoginPopup(true); return; }
     setError("");
     setLoading(true);
     setResult(null);
     setSelectedPlatform(null);
-    console.log("SENDING DATA:", { item: searchItem, city: searchCity, serviceType });
     try {
       const response = await axios.post(
         "https://food-price-compare-production.up.railway.app/compare",
@@ -701,53 +691,37 @@ export default function App() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setResult(response.data);
-      console.log("API RESPONSE:", response.data);
-      let winner = null;
+      let winnerVal = null;
       let bestPrice = null;
       if (response.data.serviceType === "food") {
         const zomatoBest = getBestRestaurant(response.data.zomatoList);
         const swiggyBest = getBestRestaurant(response.data.swiggyList);
-        if (!zomatoBest && swiggyBest) {
-          winner = "swiggy";
-          bestPrice = swiggyBest.price;
-        } else if (!swiggyBest && zomatoBest) {
-          winner = "zomato";
-          bestPrice = zomatoBest.price;
-        } else if (zomatoBest && swiggyBest) {
-          if (zomatoBest.price < swiggyBest.price) {
-            winner = "zomato";
-            bestPrice = zomatoBest.price;
-          } else {
-            winner = "swiggy";
-            bestPrice = swiggyBest.price;
-          }
+        if (!zomatoBest && swiggyBest) { winnerVal = "swiggy"; bestPrice = swiggyBest.price; }
+        else if (!swiggyBest && zomatoBest) { winnerVal = "zomato"; bestPrice = zomatoBest.price; }
+        else if (zomatoBest && swiggyBest) {
+          if (zomatoBest.price < swiggyBest.price) { winnerVal = "zomato"; bestPrice = zomatoBest.price; }
+          else { winnerVal = "swiggy"; bestPrice = swiggyBest.price; }
         }
       }
-      await axios
-        .post(
-          "https://food-price-compare-production.up.railway.app/save-search",
-          { item: searchItem, city: searchCity, serviceType, winner, bestPrice },
+      await axios.post(
+        "https://food-price-compare-production.up.railway.app/save-search",
+        { item: searchItem, city: searchCity, serviceType, winner: winnerVal, bestPrice },
+        { headers: { Authorization: `Bearer ${token}` } }
+      ).then(async () => {
+        const res = await axios.get(
+          "https://food-price-compare-production.up.railway.app/me",
           { headers: { Authorization: `Bearer ${token}` } }
-        )
-        .then(async () => {
-          const res = await axios.get(
-            "https://food-price-compare-production.up.railway.app/me",
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          setUser(res.data);
-          setHistory(res.data.searchHistory || []);
-          setFavourites(
-            (res.data.favourites || []).map((f) => f.name + f.platform + f.city)
-          );
-        })
-        .catch((err) => console.log("Save failed:", err.response?.data));
-    } catch (err) {
-      console.log("Compare failed:", err);
+        );
+        setUser(res.data);
+        setHistory(res.data.searchHistory || []);
+        setFavourites((res.data.favourites || []).map((f) => f.name + f.platform + f.city));
+      }).catch((err) => console.log("Save failed:", err.response?.data));
+    } catch {
       setError("Unable to fetch prices. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [item, city, serviceType]);
 
   const handleClearHistory = async () => {
     const token = localStorage.getItem("token");
@@ -757,20 +731,32 @@ export default function App() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setHistory([]);
-    } catch (err) {
-      console.log("Failed to clear history");
-    }
+    } catch { console.log("Failed to clear history"); }
   };
 
   const dm = darkMode;
 
-  /* ─── Service tab config ─── */
   const serviceTabs = [
     { id: "food", icon: "🍔", label: "Food" },
     { id: "grocery", icon: "🛒", label: "Grocery" },
     { id: "ride", icon: "🚗", label: "Ride" },
     { id: "ecommerce", icon: "🛍", label: "Shop" },
   ];
+
+  /* ─── Shared card styles (memoised) ─── */
+  const cardStyle = useMemo(() => ({
+    background: dm
+      ? "linear-gradient(145deg, rgba(13,17,40,0.97) 0%, rgba(10,12,28,0.99) 100%)"
+      : "rgba(255,255,255,0.95)",
+    border: `1px solid ${dm ? "rgba(255,255,255,0.07)" : "rgba(99,102,241,0.12)"}`,
+    boxShadow: isMobile
+  ? "none"
+  : dm
+    ? "0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)"
+    : "0 20px 60px rgba(99,102,241,0.08)",
+    backdropFilter: isMobile ? "blur(8px)" : "blur(40px)",
+    WebkitBackdropFilter: isMobile ? "blur(8px)" : "blur(40px)",
+  }), [dm, isMobile]);
 
   return (
     <Routes>
@@ -789,54 +775,51 @@ export default function App() {
           <>
             <FontStyle />
             <div
-              className={`relative min-h-screen w-full overflow-x-hidden transition-all duration-500 ${
-                dm ? "text-[#e2e8f0]" : "light-mode text-[#1e1b4b]"
-              }`}
+              className={`relative min-h-screen w-full overflow-x-hidden transition-colors duration-300 ${dm ? "text-[#e2e8f0]" : "light-mode text-[#1e1b4b]"}`}
               style={{
                 background: dm
                   ? "linear-gradient(135deg, #060818 0%, #0a0f24 50%, #06091a 100%)"
                   : "linear-gradient(135deg, #f0f2ff 0%, #f8f6ff 50%, #edf2ff 100%)",
               }}
             >
-              {/* ── Dot grid pattern ── */}
+              {/* Dot grid – always visible but lighter on mobile */}
               <div
-                className="pointer-events-none fixed inset-0 dot-pattern opacity-30"
-                style={{ zIndex: 0 }}
+                className="pointer-events-none fixed inset-0 dot-pattern"
+                style={{ zIndex: 0, opacity: isMobile ? 0.15 : 0.3 }}
               />
 
-              {/* ── Floating ambient orbs ── */}
-              <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
-                <div
-                  className="absolute w-[700px] h-[700px] rounded-full -top-48 -left-48"
-                  style={{
-                    background: dm
-                      ? "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)"
-                      : "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)",
-                    animation: "float1 12s ease-in-out infinite",
-                  }}
-                />
-                <div
-                  className="absolute w-[600px] h-[600px] rounded-full -bottom-36 -right-36"
-                  style={{
-                    background: dm
-                      ? "radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)"
-                      : "radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)",
-                    animation: "float2 15s ease-in-out infinite",
-                  }}
-                />
-                <div
-                  className="absolute w-[400px] h-[400px] rounded-full top-1/2 left-1/3"
-                  style={{
-                    background: dm
-                      ? "radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)"
-                      : "radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)",
-                    animation: "float3 18s ease-in-out infinite",
-                  }}
-                />
-              </div>
+              {/* Floating orbs – desktop only */}
+              {!isMobile && (
+                <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+                  <div className="absolute w-[700px] h-[700px] rounded-full -top-48 -left-48 gpu"
+                    style={{
+                      background: dm
+                        ? "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)"
+                        : "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)",
+                      animation: "float1 12s ease-in-out infinite",
+                    }}
+                  />
+                  <div className="absolute w-[600px] h-[600px] rounded-full -bottom-36 -right-36 gpu"
+                    style={{
+                      background: dm
+                        ? "radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)"
+                        : "radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)",
+                      animation: "float2 15s ease-in-out infinite",
+                    }}
+                  />
+                  <div className="absolute w-[400px] h-[400px] rounded-full top-1/2 left-1/3 gpu"
+                    style={{
+                      background: dm
+                        ? "radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)"
+                        : "radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)",
+                      animation: "float3 18s ease-in-out infinite",
+                    }}
+                  />
+                </div>
+              )}
 
-              {/* ── Particles (dark only) ── */}
-              {dm && (
+              {/* Particles – desktop only */}
+              {!isMobile && dm && (
                 <Particles
                   id="tsparticles"
                   init={particlesInit}
@@ -844,109 +827,88 @@ export default function App() {
                     fullScreen: { enable: false },
                     background: { color: "transparent" },
                     particles: {
-                      number: { value: 35 },
+                      number: { value: 30 },
                       color: { value: ["#6366f1", "#a855f7", "#10b981", "#f97316"] },
-                      size: { value: { min: 1, max: 2.5 } },
-                      opacity: { value: { min: 0.05, max: 0.4 } },
-                      move: { enable: true, speed: 0.4 },
-                      links: {
-                        enable: true,
-                        color: "#6366f1",
-                        opacity: 0.08,
-                        distance: 130,
-                        width: 1,
-                      },
+                      size: { value: { min: 1, max: 2 } },
+                      opacity: { value: { min: 0.05, max: 0.35 } },
+                      move: { enable: true, speed: 0.35 },
+                      links: { enable: true, color: "#6366f1", opacity: 0.07, distance: 120, width: 1 },
                     },
                   }}
                   className="absolute inset-0 z-0"
                 />
               )}
 
-              {/* ── Winner Badge ── */}
+              {/* Winner Badge */}
               <AnimatePresence>
                 {(winner || groceryWinner || basketWinner || ecommerceWinner) && (
                   <motion.div
-                    initial={{ opacity: 0, y: -40, scale: 0.7 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -40, scale: 0.7 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 22 }}
-                    className="fixed top-5 right-5 z-50"
+                    variants={isMobile ? fadeMobile : fadeUp}
+                    initial="hidden" animate="show" exit="hidden"
+                    className="fixed top-4 right-4 z-50"
                   >
-                    <div className="winner-badge flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-bold border"
+                    <div className="winner-badge flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border"
                       style={{
                         background: "rgba(16,185,129,0.12)",
                         borderColor: "rgba(16,185,129,0.35)",
                         color: "#34d399",
-                        backdropFilter: "blur(16px)",
+                        backdropFilter: isMobile ? "blur(6px)" : "blur(16px)",
+                        WebkitBackdropFilter: isMobile ? "blur(6px)" : "blur(16px)",
                       }}
                     >
-                      <span className="text-base">🏆</span>
+                      <span>🏆</span>
                       {winner
                         ? winner === "zomato" ? "Zomato Wins" : "Swiggy Wins"
                         : basketWinner
-                        ? `${basketWinner?.charAt(0)?.toUpperCase() + basketWinner?.slice(1)} Cheapest`
+                        ? `${basketWinner.charAt(0).toUpperCase() + basketWinner.slice(1)} Cheapest`
                         : groceryWinner
-                        ? `${groceryWinner?.charAt(0)?.toUpperCase() + groceryWinner?.slice(1)} Wins`
+                        ? `${groceryWinner.charAt(0).toUpperCase() + groceryWinner.slice(1)} Wins`
                         : ""}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* ── Insight Bars ── */}
-              <div className="relative z-10 flex flex-col items-center pt-6 px-4 gap-4">
-                {/* Food insight */}
+              {/* Insight bars */}
+              <div className="relative z-10 flex flex-col items-center pt-4 px-3 sm:px-4 gap-3">
+
                 {serviceType === "food" && result?.zomatoList && result?.swiggyList && (
                   <motion.div
-                    initial={{ opacity: 0, y: -16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45 }}
+                    variants={isMobile ? fadeMobile : fadeUp}
+                    initial="hidden" animate="show"
                     className="hidden lg:flex justify-center w-full max-w-2xl"
                   >
-                    <div
-                      className="w-full px-6 py-5 rounded-2xl text-sm font-medium border"
+                    <div className="w-full px-6 py-5 rounded-2xl text-sm font-medium border"
                       style={{
-                        background: dm
-                          ? "rgba(99,102,241,0.07)"
-                          : "rgba(255,255,255,0.85)",
+                        background: dm ? "rgba(99,102,241,0.07)" : "rgba(255,255,255,0.85)",
                         borderColor: dm ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.15)",
                         backdropFilter: "blur(20px)",
-                        boxShadow: dm
-                          ? "0 4px 24px rgba(99,102,241,0.1)"
-                          : "0 4px 24px rgba(0,0,0,0.06)",
+                        WebkitBackdropFilter: "blur(20px)",
+                        boxShadow: dm ? "0 4px 24px rgba(99,102,241,0.1)" : "0 4px 24px rgba(0,0,0,0.06)",
                       }}
                     >
                       {(() => {
                         const zomatoBest = getBestRestaurant(result.zomatoList);
                         const swiggyBest = getBestRestaurant(result.swiggyList);
                         const zomatoFastest = result.zomatoList.length > 0
-                          ? result.zomatoList.reduce((a, b) => (a.time < b.time ? a : b))
-                          : null;
+                          ? result.zomatoList.reduce((a, b) => (a.time < b.time ? a : b)) : null;
                         const swiggyFastest = result.swiggyList.length > 0
-                          ? result.swiggyList.reduce((a, b) => (a.time < b.time ? a : b))
-                          : null;
+                          ? result.swiggyList.reduce((a, b) => (a.time < b.time ? a : b)) : null;
                         if (!zomatoBest || !swiggyBest || !zomatoFastest || !swiggyFastest) return null;
                         const priceDifference = Math.abs(zomatoBest.price - swiggyBest.price);
                         const timeDifference = Math.abs(zomatoFastest.time - swiggyFastest.time);
                         return (
                           <div className="flex flex-col items-center gap-3">
                             <div className="flex items-center gap-3">
-                              <span className="font-bold text-base"
-                                style={{ color: dm ? "#a5b4fc" : "#4f46e5" }}
-                              >
+                              <span className="font-bold text-base" style={{ color: dm ? "#a5b4fc" : "#4f46e5" }}>
                                 {zomatoBest.price < swiggyBest.price
                                   ? `🔥 Zomato saves you ₹${priceDifference}`
                                   : swiggyBest.price < zomatoBest.price
                                   ? `🔥 Swiggy saves you ₹${priceDifference}`
                                   : "⚖️ Both platforms are priced similarly"}
                               </span>
-                              <span
-                                className="text-xs px-3 py-1 rounded-full font-medium"
-                                style={{
-                                  background: dm ? "rgba(16,185,129,0.1)" : "rgba(16,185,129,0.1)",
-                                  color: "#10b981",
-                                  border: "1px solid rgba(16,185,129,0.25)",
-                                }}
+                              <span className="text-xs px-3 py-1 rounded-full font-medium"
+                                style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }}
                               >
                                 {zomatoFastest.time < swiggyFastest.time
                                   ? `⚡ Zomato ${timeDifference}m faster`
@@ -955,37 +917,31 @@ export default function App() {
                                   : "⏱ Similar delivery time"}
                               </span>
                             </div>
-                            <div className="w-full space-y-2.5">
+                            <div className="w-full space-y-2">
                               {(() => {
                                 const maxPrice = Math.max(zomatoBest.price, swiggyBest.price);
-                                return (
-                                  <>
-                                    {[
-                                      { label: "Zomato", price: zomatoBest.price, color: "#f43f5e" },
-                                      { label: "Swiggy", price: swiggyBest.price, color: "#f97316" },
-                                    ].map((p) => (
-                                      <div key={p.label}>
-                                        <div className="flex justify-between text-xs mb-1.5">
-                                          <span className="font-semibold" style={{ color: p.color }}>{p.label}</span>
-                                          <span className="font-bold" style={{ color: dm ? "#e2e8f0" : "#1e1b4b" }}>
-                                            ₹{p.price}
-                                          </span>
-                                        </div>
-                                        <div className="h-1.5 rounded-full overflow-hidden"
-                                          style={{ background: dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}
-                                        >
-                                          <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${(p.price / maxPrice) * 100}%` }}
-                                            transition={{ duration: 0.8, ease: "easeOut" }}
-                                            className="h-full rounded-full"
-                                            style={{ background: p.color }}
-                                          />
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </>
-                                );
+                                return [
+                                  { label: "Zomato", price: zomatoBest.price, color: "#f43f5e" },
+                                  { label: "Swiggy", price: swiggyBest.price, color: "#f97316" },
+                                ].map((p) => (
+                                  <div key={p.label}>
+                                    <div className="flex justify-between text-xs mb-1">
+                                      <span className="font-semibold" style={{ color: p.color }}>{p.label}</span>
+                                      <span className="font-bold" style={{ color: dm ? "#e2e8f0" : "#1e1b4b" }}>₹{p.price}</span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full overflow-hidden"
+                                      style={{ background: dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}
+                                    >
+                                      <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${(p.price / maxPrice) * 100}%` }}
+                                        transition={{ duration: 0.7, ease: "easeOut" }}
+                                        className="h-full rounded-full"
+                                        style={{ background: p.color }}
+                                      />
+                                    </div>
+                                  </div>
+                                ));
                               })()}
                             </div>
                           </div>
@@ -995,27 +951,62 @@ export default function App() {
                   </motion.div>
                 )}
 
-                {/* Grocery insight */}
-                {serviceType === "grocery" && result && (
+                {/* Mobile food insight strip */}
+                {isMobile && serviceType === "food" && result?.zomatoList && result?.swiggyList && (
                   <motion.div
-                    initial={{ opacity: 0, y: -16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45 }}
-                    className="hidden lg:flex justify-center w-full max-w-2xl"
+                    variants={fadeMobile} initial="hidden" animate="show"
+                    className="w-full max-w-md"
                   >
-                    <div
-                      className="w-full px-6 py-5 rounded-2xl text-sm font-medium border"
+                    <div className="flex justify-around px-4 py-3 rounded-2xl border text-xs font-semibold"
                       style={{
-                        background: dm ? "rgba(16,185,129,0.07)" : "rgba(255,255,255,0.85)",
-                        borderColor: dm ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.2)",
-                        backdropFilter: "blur(20px)",
-                        boxShadow: dm
-                          ? "0 4px 24px rgba(16,185,129,0.08)"
-                          : "0 4px 24px rgba(0,0,0,0.06)",
+                        background: dm ? "rgba(99,102,241,0.07)" : "rgba(255,255,255,0.9)",
+                        borderColor: dm ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.12)",
                       }}
                     >
                       {(() => {
-                        const itemCount = result.basket?.length || 0;
+                        const zB = getBestRestaurant(result.zomatoList);
+                        const sB = getBestRestaurant(result.swiggyList);
+                        if (!zB || !sB) return null;
+                        const diff = Math.abs(zB.price - sB.price);
+                        const cheaper = zB.price < sB.price ? "Zomato" : "Swiggy";
+                        return (
+                          <>
+                            <div className="text-center">
+                              <div className="font-black" style={{ color: "#f43f5e" }}>₹{zB.price}</div>
+                              <div style={{ color: dm ? "rgba(226,232,240,0.45)" : "rgba(30,27,75,0.5)" }}>Zomato</div>
+                            </div>
+                            <div className="text-center" style={{ color: "#10b981" }}>
+                              <div className="font-black">₹{diff} off</div>
+                              <div style={{ color: dm ? "rgba(226,232,240,0.45)" : "rgba(30,27,75,0.5)" }}>{cheaper} cheaper</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-black" style={{ color: "#f97316" }}>₹{sB.price}</div>
+                              <div style={{ color: dm ? "rgba(226,232,240,0.45)" : "rgba(30,27,75,0.5)" }}>Swiggy</div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Grocery insight */}
+                {serviceType === "grocery" && result && (
+                  <motion.div
+                    variants={isMobile ? fadeMobile : fadeUp}
+                    initial="hidden" animate="show"
+                    className="w-full max-w-2xl"
+                  >
+                    <div className="px-4 sm:px-6 py-4 rounded-2xl text-sm font-medium border"
+                      style={{
+                        background: dm ? "rgba(16,185,129,0.07)" : "rgba(255,255,255,0.85)",
+                        borderColor: dm ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.2)",
+                        backdropFilter: isMobile ? "blur(8px)" : "blur(20px)",
+                        WebkitBackdropFilter: isMobile ? "blur(8px)" : "blur(20px)",
+                        boxShadow: dm ? "0 4px 24px rgba(16,185,129,0.08)" : "0 4px 24px rgba(0,0,0,0.06)",
+                      }}
+                    >
+                      {(() => {
                         const totals = result.totals;
                         if (!totals) return null;
                         const platforms = [
@@ -1024,33 +1015,23 @@ export default function App() {
                           { name: "Instamart", price: totals.instamart, time: 14 },
                           { name: "JioMart", price: totals.jiomart, time: 25 },
                         ];
-                        if (platforms.length < 2) return null;
                         const cheapest = platforms.reduce((a, b) => (a.price < b.price ? a : b));
                         const fastest = platforms.reduce((a, b) => (a.time < b.time ? a : b));
                         const mostExpensive = platforms.reduce((a, b) => (a.price > b.price ? a : b));
                         const savings = mostExpensive.price - cheapest.price;
-                        const colorMap = {
-                          Zepto: "#a855f7",
-                          Blinkit: "#fbbf24",
-                          Instamart: "#f97316",
-                          JioMart: "#6366f1",
-                        };
+                        const colorMap = { Zepto: "#a855f7", Blinkit: "#fbbf24", Instamart: "#f97316", JioMart: "#6366f1" };
                         return (
-                          <div className="flex items-center justify-around gap-4">
+                          <div className="flex items-center justify-around gap-2">
                             {[
-                              { icon: "🛒", label: "Basket", value: `${itemCount} items` },
+                              { icon: "🛒", label: "Basket", value: `${result.basket?.length || 0} items` },
                               { icon: "💰", label: "Best Price", value: cheapest.name, color: colorMap[cheapest.name] },
                               { icon: "⚡", label: "Fastest", value: fastest.name, color: colorMap[fastest.name] },
                               { icon: "✂️", label: "You Save", value: `₹${savings}`, color: "#10b981" },
                             ].map((s) => (
                               <div key={s.label} className="text-center">
-                                <div className="text-xl mb-1">{s.icon}</div>
-                                <div className="font-bold text-base" style={{ color: s.color || (dm ? "#e2e8f0" : "#1e1b4b") }}>
-                                  {s.value}
-                                </div>
-                                <div className="text-xs" style={{ color: dm ? "rgba(226,232,240,0.4)" : "rgba(30,27,75,0.5)" }}>
-                                  {s.label}
-                                </div>
+                                <div className="text-lg sm:text-xl mb-0.5">{s.icon}</div>
+                                <div className="font-bold text-sm sm:text-base" style={{ color: s.color || (dm ? "#e2e8f0" : "#1e1b4b") }}>{s.value}</div>
+                                <div className="text-[10px]" style={{ color: dm ? "rgba(226,232,240,0.4)" : "rgba(30,27,75,0.5)" }}>{s.label}</div>
                               </div>
                             ))}
                           </div>
@@ -1063,32 +1044,27 @@ export default function App() {
                 {/* Ecommerce insight */}
                 {serviceType === "ecommerce" && result && (
                   <motion.div
-                    initial={{ opacity: 0, y: -16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="hidden lg:flex justify-center w-full max-w-2xl"
+                    variants={isMobile ? fadeMobile : fadeUp}
+                    initial="hidden" animate="show"
+                    className="w-full max-w-2xl"
                   >
-                    <div className="px-6 py-4 rounded-2xl border text-sm"
+                    <div className="px-4 py-3 rounded-2xl border text-sm inline-flex"
                       style={{
                         background: dm ? "rgba(99,102,241,0.07)" : "rgba(255,255,255,0.85)",
                         borderColor: dm ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.15)",
-                        backdropFilter: "blur(20px)",
+                        backdropFilter: isMobile ? "blur(8px)" : "blur(20px)",
+                        WebkitBackdropFilter: isMobile ? "blur(8px)" : "blur(20px)",
                       }}
                     >
                       {(() => {
-                        const all = [
-                          ...(result.amazonList || []),
-                          ...(result.flipkartList || []),
-                          ...(result.myntraList || []),
-                        ];
+                        const all = [...(result.amazonList || []), ...(result.flipkartList || []), ...(result.myntraList || [])];
                         if (all.length === 0) return null;
                         const cheapest = all.reduce((a, b) => (a.price < b.price ? a : b));
                         return (
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-3">
                             <span className="text-2xl">🛍</span>
                             <div>
-                              <div className="font-bold" style={{ color: dm ? "#a5b4fc" : "#4f46e5" }}>
-                                Best Deal: ₹{cheapest.price}
-                              </div>
+                              <div className="font-bold" style={{ color: dm ? "#a5b4fc" : "#4f46e5" }}>Best Deal: ₹{cheapest.price}</div>
                               <div className="text-xs opacity-60">{cheapest.name}</div>
                             </div>
                           </div>
@@ -1101,43 +1077,38 @@ export default function App() {
                 {/* Savings insight */}
                 {savingsData && savingsData.perOrder > 0 && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="w-full max-w-2xl px-5 py-4 rounded-2xl text-sm border"
+                    variants={isMobile ? fadeMobile : fadeUp}
+                    initial="hidden" animate="show"
+                    className="w-full max-w-2xl px-4 sm:px-5 py-3 sm:py-4 rounded-2xl text-sm border"
                     style={{
                       background: dm ? "rgba(16,185,129,0.07)" : "rgba(255,255,255,0.85)",
                       borderColor: dm ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.2)",
-                      backdropFilter: "blur(20px)",
+                      backdropFilter: isMobile ? "blur(6px)" : "blur(20px)",
+                      WebkitBackdropFilter: isMobile ? "blur(6px)" : "blur(20px)",
                       boxShadow: dm ? "0 4px 24px rgba(16,185,129,0.08)" : "0 4px 20px rgba(0,0,0,0.05)",
                     }}
                   >
-                    <div className="font-bold mb-3 flex items-center gap-2"
+                    <div className="font-bold mb-2.5 flex items-center gap-2 text-xs sm:text-sm"
                       style={{ color: dm ? "#34d399" : "#059669" }}
                     >
                       <span>💰</span> Smart Savings Insight
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         { label: "This Order", value: `₹${savingsData.perOrder}` },
                         { label: "Monthly (8×)", value: `₹${savingsData.monthly}` },
                         { label: "Yearly", value: `₹${savingsData.yearly}` },
                         { label: "Cheaper by", value: `${savingsData.percentage}%` },
                       ].map((s) => (
-                        <div
-                          key={s.label}
-                          className="px-3 py-2.5 rounded-xl text-center"
+                        <div key={s.label}
+                          className="px-2.5 py-2 rounded-xl text-center"
                           style={{
                             background: dm ? "rgba(255,255,255,0.04)" : "rgba(16,185,129,0.06)",
                             border: dm ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(16,185,129,0.15)",
                           }}
                         >
-                          <div className="font-bold text-base" style={{ color: dm ? "#34d399" : "#059669" }}>
-                            {s.value}
-                          </div>
-                          <div className="text-xs mt-0.5" style={{ color: dm ? "rgba(226,232,240,0.4)" : "rgba(30,27,75,0.5)" }}>
-                            {s.label}
-                          </div>
+                          <div className="font-bold text-sm sm:text-base" style={{ color: dm ? "#34d399" : "#059669" }}>{s.value}</div>
+                          <div className="text-[10px] sm:text-xs mt-0.5" style={{ color: dm ? "rgba(226,232,240,0.4)" : "rgba(30,27,75,0.5)" }}>{s.label}</div>
                         </div>
                       ))}
                     </div>
@@ -1146,7 +1117,7 @@ export default function App() {
 
                 {/* Mobile platform toggle */}
                 {serviceType === "food" && result && (
-                  <div className="flex lg:hidden justify-center gap-3 mt-1">
+                  <div className="flex lg:hidden justify-center gap-2 mt-1">
                     {[
                       { id: "zomato", icon: "🍅", label: "Zomato", color: "#f43f5e" },
                       { id: "swiggy", icon: "🟠", label: "Swiggy", color: "#f97316" },
@@ -1154,18 +1125,14 @@ export default function App() {
                       <button
                         key={p.id}
                         onClick={() => setMobilePlatform(p.id)}
-                        className="px-5 py-2 rounded-full text-sm font-bold transition-all duration-200"
+                        className="px-5 py-2.5 rounded-full text-sm font-bold transition-colors duration-150"
                         style={
                           mobilePlatform === p.id
-                            ? {
-                                background: p.color,
-                                color: "#fff",
-                                boxShadow: `0 0 20px ${p.color}50`,
-                              }
+                            ? { background: p.color, color: "#fff" }
                             : {
-                                background: dm ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.8)",
+                                background: dm ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.85)",
                                 color: dm ? "rgba(226,232,240,0.5)" : "rgba(30,27,75,0.6)",
-                                border: `1px solid ${dm ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+                                border: `1px solid ${dm ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"}`,
                               }
                         }
                       >
@@ -1177,14 +1144,14 @@ export default function App() {
               </div>
 
               {/* ── THREE-COLUMN LAYOUT ── */}
-              <div className="relative z-10 flex flex-col lg:flex-row items-start justify-center gap-6 px-4 lg:px-8 py-6">
+              <div className="relative z-10 flex flex-col lg:flex-row items-start justify-center gap-4 sm:gap-6 px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
 
-                {/* ── LEFT: Grocery Panel ── */}
+                {/* LEFT: Grocery panel */}
                 {serviceType === "grocery" && result && (
                   <GroceryPanel
                     platforms={[
-                      { name: "Zepto", price: result.basket?.[0]?.zepto, time: 10, url: "https://www.zeptonow.com/", color: "purple", borderClass: dm ? "border-purple-500/40" : "border-purple-400" },
-                      { name: "Blinkit", price: result.basket?.[0]?.blinkit, time: 9, url: "https://blinkit.com/", color: "yellow", borderClass: dm ? "border-yellow-500/40" : "border-yellow-400" },
+                      { name: "Zepto", price: result.basket?.[0]?.zepto, time: 10, url: "https://www.zeptonow.com/", color: "purple" },
+                      { name: "Blinkit", price: result.basket?.[0]?.blinkit, time: 9, url: "https://blinkit.com/", color: "yellow" },
                     ]}
                     basket={result.basket}
                     groceryImages={groceryImages}
@@ -1192,10 +1159,11 @@ export default function App() {
                     dm={dm}
                     title="Quick Commerce"
                     titleColor="text-purple-400"
+                    isMobile={isMobile}
                   />
                 )}
 
-                {/* ── LEFT: Zomato Panel ── */}
+                {/* LEFT: Zomato */}
                 {serviceType === "food" && result?.zomatoList && (
                   <PlatformPanel
                     show={mobilePlatform === "zomato"}
@@ -1211,76 +1179,55 @@ export default function App() {
                     favourites={favourites}
                     city={city}
                     addFavourite={addFavourite}
+                    isMobile={isMobile}
                   />
                 )}
 
                 {serviceType === "ecommerce" && result && (
-                  <div className="w-full max-w-md flex justify-start">
+                  <div className="w-full max-w-md">
                     <PlatformPanel
-                      platform="amazon"
-                      label="Amazon"
-                      color="yellow"
-                      list={result.amazonList || []}
-                      item={item}
-                      loading={loading}
-                      dm={dm}
-                      favourites={favourites}
-                      city={city}
-                      addFavourite={addFavourite}
+                      platform="amazon" label="Amazon" color="yellow"
+                      list={result.amazonList || []} item={item} loading={loading}
+                      dm={dm} favourites={favourites} city={city} addFavourite={addFavourite}
+                      isMobile={isMobile}
                     />
                   </div>
                 )}
 
                 {/* ── CENTER CARD ── */}
                 <motion.div
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  variants={isMobile ? fadeMobile : fadeUp}
+                  initial="hidden" animate="show"
                   className="relative z-10 w-full max-w-md lg:max-w-sm xl:max-w-md rounded-3xl overflow-hidden"
-                  style={{
-                    background: dm
-                      ? "linear-gradient(145deg, rgba(13,17,40,0.95) 0%, rgba(10,12,28,0.98) 100%)"
-                      : "rgba(255,255,255,0.92)",
-                    border: `1px solid ${dm ? "rgba(255,255,255,0.07)" : "rgba(99,102,241,0.12)"}`,
-                    boxShadow: dm
-                      ? "0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.1), inset 0 1px 0 rgba(255,255,255,0.05)"
-                      : "0 32px 80px rgba(99,102,241,0.08), 0 0 0 1px rgba(99,102,241,0.08)",
-                    backdropFilter: "blur(40px)",
-                  }}
+                  style={cardStyle}
                 >
-                  {/* Card gradient top strip */}
-                  <div className="h-[2px] w-full" style={{
-                    background: "linear-gradient(90deg, #6366f1, #a855f7, #f97316, #6366f1)",
-                    backgroundSize: "200% 100%",
-                    animation: "gradientFlow 4s ease infinite",
-                  }} />
-
-                  {/* Inner glow */}
-                  <div className="absolute inset-0 pointer-events-none rounded-3xl"
-                    style={{
-                      background: dm
-                        ? "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 60%)"
-                        : "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.05) 0%, transparent 60%)",
-                    }}
+                  {/* Gradient top strip */}
+                  <div className="h-[2px] w-full"
+                    style={{ background: "linear-gradient(90deg, #6366f1, #a855f7, #f97316, #6366f1)" }}
                   />
 
-                  <div className="relative p-7">
-                    {/* ── Top action bar ── */}
-                    <div className="flex justify-end mb-5 gap-2 flex-wrap">
+                  {/* Inner glow – desktop only */}
+                  {!isMobile && (
+                    <div className="absolute inset-0 pointer-events-none rounded-3xl"
+                      style={{
+                        background: dm
+                          ? "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 60%)"
+                          : "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.05) 0%, transparent 60%)",
+                      }}
+                    />
+                  )}
+
+                  <div className="relative p-5 sm:p-7">
+                    {/* Top actions */}
+                    <div className="flex justify-end mb-4 gap-2 flex-wrap">
                       {isLoggedIn && (
                         <button
                           onClick={() => (window.location.href = "/dashboard")}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
+                          className="px-3 py-2 rounded-full text-xs font-semibold transition-colors duration-150"
                           style={{
                             background: dm ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.08)",
                             color: dm ? "#a5b4fc" : "#4f46e5",
                             border: `1px solid ${dm ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.2)"}`,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = dm ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.15)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = dm ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.08)";
                           }}
                         >
                           📊 Dashboard
@@ -1289,7 +1236,7 @@ export default function App() {
                       {isLoggedIn && (
                         <button
                           onClick={handleLogout}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
+                          className="px-3 py-2 rounded-full text-xs font-semibold transition-colors duration-150"
                           style={{
                             background: dm ? "rgba(244,63,94,0.1)" : "rgba(244,63,94,0.07)",
                             color: dm ? "#fb7185" : "#e11d48",
@@ -1301,7 +1248,7 @@ export default function App() {
                       )}
                       <button
                         onClick={() => setDarkMode(!dm)}
-                        className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
+                        className="px-3 py-2 rounded-full text-xs font-semibold transition-colors duration-150"
                         style={{
                           background: dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
                           color: dm ? "rgba(226,232,240,0.6)" : "rgba(30,27,75,0.6)",
@@ -1312,9 +1259,9 @@ export default function App() {
                       </button>
                     </div>
 
-                    {/* ── Service Selector ── */}
+                    {/* Service tabs */}
                     <div
-                      className="flex p-1 rounded-2xl mb-6 gap-1"
+                      className="flex p-1 rounded-2xl mb-5 gap-1"
                       style={{
                         background: dm ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
                         border: `1px solid ${dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
@@ -1323,18 +1270,15 @@ export default function App() {
                       {serviceTabs.map((tab) => (
                         <button
                           key={tab.id}
-                          onClick={() => {
-                            setServiceType(tab.id);
-                            setResult(null);
-                          }}
-                          className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center gap-0.5"
+                          onClick={() => { setServiceType(tab.id); setResult(null); }}
+                          className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors duration-150 flex flex-col items-center gap-0.5"
                           style={
                             serviceType === tab.id
                               ? {
                                   background: "linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2))",
                                   color: dm ? "#a5b4fc" : "#4f46e5",
                                   border: "1px solid rgba(99,102,241,0.4)",
-                                  boxShadow: "0 0 20px rgba(99,102,241,0.15), inset 0 1px 0 rgba(255,255,255,0.08)",
+                                  boxShadow: "0 0 16px rgba(99,102,241,0.12)",
                                 }
                               : {
                                   color: dm ? "rgba(226,232,240,0.35)" : "rgba(30,27,75,0.4)",
@@ -1348,45 +1292,39 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* ── HeaderSection ── */}
                     <HeaderSection user={user} insights={insights} serviceType={serviceType} />
 
-                    {/* ── Brand ── */}
-                    <div className="text-center mb-7">
-                      <h1 className="brand text-4xl font-black tracking-tight gradient-text">
+                    {/* Brand */}
+                    <div className="text-center mb-6">
+                      <h1 className="brand text-3xl sm:text-4xl font-black tracking-tight gradient-text">
                         PriceCompare
                       </h1>
-                      <p className="mt-1.5 text-sm" style={{ color: dm ? "rgba(226,232,240,0.35)" : "rgba(30,27,75,0.45)" }}>
+                      <p className="mt-1 text-xs sm:text-sm" style={{ color: dm ? "rgba(226,232,240,0.35)" : "rgba(30,27,75,0.45)" }}>
                         {serviceType === "food" && "Find the cheapest bite in seconds"}
                         {serviceType === "grocery" && "Compare grocery prices instantly"}
                         {serviceType === "ride" && "Compare ride fares instantly"}
                         {serviceType === "ecommerce" && "Best deals across all stores"}
                       </p>
                       <div
-                        className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold"
+                        className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
                         style={{
                           background: dm ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.07)",
                           color: dm ? "#a5b4fc" : "#4f46e5",
                           border: `1px solid ${dm ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.2)"}`,
                         }}
                       >
-                        <span
-                          className="w-1.5 h-1.5 rounded-full bg-green-400"
-                          style={{ boxShadow: "0 0 6px rgba(74,222,128,0.6)", animation: "pulse 2s infinite" }}
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400"
+                          style={{ boxShadow: "0 0 5px rgba(74,222,128,0.6)", animation: "pulse 2s infinite" }}
                         />
                         Live Price Comparison Engine
                       </div>
                     </div>
 
-                    {/* ── Inputs ── */}
+                    {/* Inputs */}
                     <div className="space-y-3">
-                      {/* Item input */}
-                      <div className="relative group">
+                      <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base pointer-events-none z-10">
-                          {serviceType === "food" ? "🍽️"
-                            : serviceType === "grocery" ? "🥬"
-                            : serviceType === "ecommerce" ? "🛍"
-                            : "🏁"}
+                          {serviceType === "food" ? "🍽️" : serviceType === "grocery" ? "🥬" : serviceType === "ecommerce" ? "🛍" : "🏁"}
                         </span>
                         <input
                           type="text"
@@ -1404,27 +1342,19 @@ export default function App() {
                             background: dm ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.85)",
                             border: `1px solid ${dm ? "rgba(255,255,255,0.08)" : "rgba(99,102,241,0.12)"}`,
                             color: dm ? "#e2e8f0" : "#1e1b4b",
+                            fontSize: "16px", /* prevents iOS zoom */
                           }}
-                        />
-                        {/* Hover glow */}
-                        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                          style={{ boxShadow: "inset 0 0 0 1px rgba(99,102,241,0.2)" }}
                         />
                       </div>
 
-                      {/* City + Location button */}
                       <div className="flex gap-2">
-                        <div className="relative flex-1 group">
+                        <div className="relative flex-1">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base pointer-events-none z-10">
                             {serviceType === "ride" ? "📍" : "🌆"}
                           </span>
                           <input
                             type="text"
-                            placeholder={
-                              serviceType === "ride"
-                                ? "Pickup location (e.g. Sector 15A)"
-                                : "City (e.g. Mumbai)"
-                            }
+                            placeholder={serviceType === "ride" ? "Pickup location" : "City (e.g. Mumbai)"}
                             value={city}
                             onChange={(e) => setCity(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleCompare()}
@@ -1433,55 +1363,39 @@ export default function App() {
                               background: dm ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.85)",
                               border: `1px solid ${dm ? "rgba(255,255,255,0.08)" : "rgba(99,102,241,0.12)"}`,
                               color: dm ? "#e2e8f0" : "#1e1b4b",
+                              fontSize: "16px", /* prevents iOS zoom */
                             }}
                           />
                         </div>
 
-                        {/* Location button */}
-                        <motion.button
+                        <button
                           type="button"
                           onClick={handleGetLocation}
-                          whileTap={{ scale: 0.9 }}
-                          whileHover={{ scale: 1.05 }}
-                          className="relative px-4 py-3.5 rounded-xl font-semibold text-sm transition-all overflow-hidden"
+                          className="px-4 rounded-xl font-semibold text-sm transition-colors duration-150 relative"
                           style={{
-                            background: dm
-                              ? "rgba(99,102,241,0.15)"
-                              : "rgba(99,102,241,0.1)",
+                            background: dm ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.1)",
                             color: dm ? "#a5b4fc" : "#4f46e5",
                             border: `1px solid ${dm ? "rgba(99,102,241,0.3)" : "rgba(99,102,241,0.25)"}`,
+                            minWidth: 48,
+                            minHeight: 48,
                           }}
                         >
                           {detectingLocation ? (
-                            <motion.span
-                              animate={{ rotate: 360 }}
-                              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                              className="block"
-                            >
-                              📡
-                            </motion.span>
-                          ) : (
-                            "📍"
-                          )}
-                          {detectingLocation && (
-                            <span className="absolute inset-0 rounded-xl border-2 animate-ping opacity-30"
-                              style={{ borderColor: "#6366f1" }}
-                            />
-                          )}
-                        </motion.button>
+  <span className="block animate-spin">📡</span>
+) : (
+  <span className="flex items-center gap-1">
+    📍 <span className="hidden sm:inline">Use</span>
+  </span>
+)}
+                        </button>
                       </div>
 
-                      {/* Compare button */}
-                      <motion.button
-                        onClick={() => handleCompare()}
+                      <button
+                        onClick={() => handleCompare(item, city)}
                         disabled={loading}
-                        whileTap={{ scale: 0.97 }}
-                        whileHover={{ scale: 1.01 }}
-                        className="w-full flex items-center justify-center gap-2.5 font-bold py-4 rounded-xl text-white text-sm transition-all duration-300 relative overflow-hidden disabled:opacity-60 btn-primary shimmer-effect"
+                        className="w-full flex items-center justify-center gap-2.5 font-bold py-4 rounded-xl text-white text-sm btn-primary shimmer-effect disabled:opacity-60"
                         style={{
-                          boxShadow: loading
-                            ? "none"
-                            : "0 6px 30px rgba(99,102,241,0.4), 0 2px 8px rgba(99,102,241,0.3)",
+                          boxShadow: loading ? "none" : "0 4px 20px rgba(99,102,241,0.35)",
                         }}
                       >
                         {loading ? (
@@ -1490,32 +1404,23 @@ export default function App() {
                             Comparing prices...
                           </>
                         ) : (
-                          <>
-                            <span>🔍</span> Compare Prices
-                          </>
+                          <><span>🔍</span> Compare Prices</>
                         )}
-                      </motion.button>
+                      </button>
 
                       {loading && (
-                        <motion.p
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-xs text-center"
-                          style={{ color: dm ? "rgba(165,180,252,0.6)" : "#6366f1" }}
-                        >
+                        <p className="text-xs text-center" style={{ color: dm ? "rgba(165,180,252,0.6)" : "#6366f1" }}>
                           ⚡ Fetching live prices from all platforms…
-                        </motion.p>
+                        </p>
                       )}
                     </div>
 
-                    {/* ── Error ── */}
+                    {/* Error */}
                     <AnimatePresence>
                       {error && (
                         <motion.p
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -6 }}
-                          className="text-center mt-4 text-sm px-4 py-3 rounded-xl"
+                          variants={fadeMobile} initial="hidden" animate="show" exit="hidden"
+                          className="text-center mt-3 text-sm px-4 py-3 rounded-xl"
                           style={{
                             background: dm ? "rgba(244,63,94,0.08)" : "rgba(244,63,94,0.06)",
                             color: dm ? "#fb7185" : "#e11d48",
@@ -1527,85 +1432,74 @@ export default function App() {
                       )}
                     </AnimatePresence>
 
-                    {/* ── Basket Mode ── */}
+                    {/* Basket mode */}
                     {isBasketMode && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-6 p-4 rounded-2xl"
-                        style={{
-                          background: dm ? "rgba(255,255,255,0.03)" : "rgba(99,102,241,0.04)",
-                          border: `1px solid ${dm ? "rgba(255,255,255,0.07)" : "rgba(99,102,241,0.1)"}`,
-                        }}
-                      >
-                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2"
-                          style={{ color: dm ? "#a5b4fc" : "#4f46e5" }}
+                      <div className="mt-5">
+                        <div className="p-4 rounded-2xl"
+                          style={{
+                            background: dm ? "rgba(255,255,255,0.03)" : "rgba(99,102,241,0.04)",
+                            border: `1px solid ${dm ? "rgba(255,255,255,0.07)" : "rgba(99,102,241,0.1)"}`,
+                          }}
                         >
-                          <span>🛒</span> Basket Comparison
-                        </h3>
-                        <div className="space-y-2">
-                          {Object.entries(result.totals).map(([platform, price]) => (
-                            <div
-                              key={platform}
-                              className="flex justify-between items-center px-4 py-2.5 rounded-xl text-sm transition-all"
-                              style={
-                                basketWinner === platform
-                                  ? {
-                                      background: "rgba(16,185,129,0.1)",
-                                      border: "1px solid rgba(16,185,129,0.25)",
-                                      color: "#10b981",
-                                    }
-                                  : {
-                                      background: dm ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
-                                      border: `1px solid ${dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-                                    }
-                              }
-                            >
-                              <span className="capitalize flex items-center gap-1.5 font-medium">
-                                {basketWinner === platform && <span>🏆</span>}
-                                {platform}
-                              </span>
-                              <span className="font-bold">₹{price}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {isBasketMode && (
-                      <div className="mt-4">
-                        <h4 className="text-xs font-bold mb-2 uppercase tracking-widest"
-                          style={{ color: dm ? "rgba(226,232,240,0.3)" : "rgba(30,27,75,0.4)" }}
-                        >
-                          Basket Items
-                        </h4>
-                        <div className="space-y-1.5">
-                          {result.basket.map((bItem, index) => (
-                            <div
-                              key={index}
-                              className="flex justify-between items-center text-xs p-3 rounded-xl transition-all"
-                              style={{
-                                background: dm ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)",
-                                border: `1px solid ${dm ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}`,
-                              }}
-                            >
-                              <span className="font-semibold capitalize">{bItem.product}</span>
-                              <div className="flex gap-3 font-semibold">
-                                <span style={{ color: "#a855f7" }}>Z ₹{bItem.zepto}</span>
-                                <span style={{ color: "#fbbf24" }}>B ₹{bItem.blinkit}</span>
-                                <span style={{ color: "#f97316" }}>I ₹{bItem.instamart}</span>
-                                <span style={{ color: "#6366f1" }}>J ₹{bItem.jiomart}</span>
+                          <h3 className="text-sm font-bold mb-3 flex items-center gap-2"
+                            style={{ color: dm ? "#a5b4fc" : "#4f46e5" }}
+                          >
+                            <span>🛒</span> Basket Comparison
+                          </h3>
+                          <div className="space-y-2">
+                            {Object.entries(result.totals).map(([platform, price]) => (
+                              <div key={platform}
+                                className="flex justify-between items-center px-4 py-2.5 rounded-xl text-sm"
+                                style={
+                                  basketWinner === platform
+                                    ? { background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: "#10b981" }
+                                    : {
+                                        background: dm ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
+                                        border: `1px solid ${dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+                                      }
+                                }
+                              >
+                                <span className="capitalize flex items-center gap-1.5 font-medium">
+                                  {basketWinner === platform && <span>🏆</span>}{platform}
+                                </span>
+                                <span className="font-bold">₹{price}</span>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <h4 className="text-xs font-bold mb-2 uppercase tracking-widest"
+                            style={{ color: dm ? "rgba(226,232,240,0.3)" : "rgba(30,27,75,0.4)" }}
+                          >
+                            Basket Items
+                          </h4>
+                          <div className="space-y-1.5">
+                            {result.basket.map((bItem, index) => (
+                              <div key={index}
+                                className="flex justify-between items-center text-xs p-3 rounded-xl"
+                                style={{
+                                  background: dm ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)",
+                                  border: `1px solid ${dm ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}`,
+                                }}
+                              >
+                                <span className="font-semibold capitalize">{bItem.product}</span>
+                                <div className="flex gap-2 font-semibold">
+                                  <span style={{ color: "#a855f7" }}>Z ₹{bItem.zepto}</span>
+                                  <span style={{ color: "#fbbf24" }}>B ₹{bItem.blinkit}</span>
+                                  <span style={{ color: "#f97316" }}>I ₹{bItem.instamart}</span>
+                                  <span style={{ color: "#6366f1" }}>J ₹{bItem.jiomart}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     )}
 
-                    {/* ── Recent searches ── */}
+                    {/* Recent searches */}
                     {history.length > 0 && (
-                      <div
-                        className="mt-6 pt-5"
+                      <div className="mt-5 pt-4"
                         style={{ borderTop: `1px solid ${dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}
                       >
                         <div className="flex justify-between items-center mb-3">
@@ -1616,10 +1510,8 @@ export default function App() {
                           </p>
                           <button
                             onClick={handleClearHistory}
-                            className="text-xs font-semibold transition-colors"
+                            className="text-xs font-semibold"
                             style={{ color: dm ? "rgba(251,113,133,0.7)" : "#e11d48" }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = "#f43f5e"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = dm ? "rgba(251,113,133,0.7)" : "#e11d48"; }}
                           >
                             Clear all
                           </button>
@@ -1633,13 +1525,8 @@ export default function App() {
                                 setError("");
                                 const type = search.serviceType || "food";
                                 setServiceType(type);
-                                if (type === "ride") {
-                                  setPickup(search.city);
-                                  setDrop(search.item);
-                                } else {
-                                  setItem(search.item);
-                                  setCity(search.city);
-                                }
+                                setItem(search.item);
+                                setCity(search.city);
                                 const token = localStorage.getItem("token");
                                 try {
                                   const response = await axios.post(
@@ -1648,26 +1535,17 @@ export default function App() {
                                     { headers: { Authorization: `Bearer ${token}` } }
                                   );
                                   setResult(response.data);
-                                } catch (err) {
-                                  console.log("History compare failed");
+                                } catch {
                                   setError("Failed to load saved search.");
                                 } finally {
                                   setLoading(false);
                                 }
                               }}
-                              className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+                              className="text-xs px-3 py-2 rounded-full font-medium transition-colors duration-150"
                               style={{
                                 background: dm ? "rgba(255,255,255,0.05)" : "rgba(99,102,241,0.06)",
                                 color: dm ? "rgba(226,232,240,0.55)" : "rgba(30,27,75,0.65)",
                                 border: `1px solid ${dm ? "rgba(255,255,255,0.07)" : "rgba(99,102,241,0.12)"}`,
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = dm ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.1)";
-                                e.currentTarget.style.color = dm ? "#a5b4fc" : "#4f46e5";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = dm ? "rgba(255,255,255,0.05)" : "rgba(99,102,241,0.06)";
-                                e.currentTarget.style.color = dm ? "rgba(226,232,240,0.55)" : "rgba(30,27,75,0.65)";
                               }}
                             >
                               🕒 {search.item} · {search.city}
@@ -1678,79 +1556,65 @@ export default function App() {
                     )}
                   </div>
                 </motion.div>
-                {/* ── END CENTER CARD ── */}
+                {/* END CENTER CARD */}
 
-                {/* ── Ride Results ── */}
+                {/* Ride results */}
                 {serviceType === "ride" && result && (
-                  <div className="flex flex-col gap-6 w-full max-w-5xl">
-                    {/* Map */}
-                    <div className="w-full h-[320px] rounded-2xl overflow-hidden shadow-lg"
+                  <div className="flex flex-col gap-4 sm:gap-6 w-full max-w-5xl">
+                    <div className="w-full h-[260px] sm:h-[320px] rounded-2xl overflow-hidden shadow-lg"
                       style={{ border: `1px solid ${dm ? "rgba(255,255,255,0.08)" : "rgba(99,102,241,0.12)"}` }}
                     >
                       <RideMap pickupCoords={result.pickupCoords} dropCoords={result.dropCoords} />
                     </div>
-
-                    {/* Ride platform cards */}
                     <div className="w-full">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+                      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 sm:mb-8">
                         {Object.entries(result.platforms).map(([name, data]) => {
                           const isWinner = result.winner === name;
                           const minPrice = Math.min(...Object.values(data).map((r) => r.price));
                           const minTime = Math.min(...Object.values(data).map((r) => r.time));
                           const platformIcons = { uber: "🚗", ola: "🛺", rapido: "🏍", indrive: "💸" };
-
                           return (
                             <motion.div
                               key={name}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              whileHover={{ scale: 1.03, y: -4 }}
-                              whileTap={{ scale: 0.98 }}
+                              variants={fadeMobile} initial="hidden" animate="show"
+                              whileTap={{ scale: 0.97 }}
                               onClick={() => setSelectedPlatform(selectedPlatform === name ? null : name)}
-                              className="relative cursor-pointer overflow-hidden rounded-3xl transition-all duration-300"
+                              className="relative cursor-pointer overflow-hidden rounded-2xl sm:rounded-3xl"
                               style={
                                 isWinner
                                   ? {
                                       background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.1))",
                                       border: "2px solid rgba(16,185,129,0.5)",
-                                      boxShadow: "0 0 40px rgba(16,185,129,0.25), 0 8px 32px rgba(0,0,0,0.3)",
+                                      boxShadow: "0 0 24px rgba(16,185,129,0.2)",
                                     }
                                   : {
                                       background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(30,27,75,0.3))",
                                       border: `1px solid ${dm ? "rgba(255,255,255,0.08)" : "rgba(99,102,241,0.12)"}`,
-                                      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
                                     }
                               }
                             >
-                              <div className="relative p-6 flex flex-col h-full">
-                                <div className="flex items-start justify-between mb-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className="text-3xl">{platformIcons[name] || "🚗"}</div>
-                                    <h2 className="font-black text-lg capitalize text-white leading-tight">
-                                      {name}
-                                    </h2>
+                              <div className="relative p-4 sm:p-6 flex flex-col h-full">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-2xl sm:text-3xl">{platformIcons[name] || "🚗"}</div>
+                                    <h2 className="font-black text-base sm:text-lg capitalize text-white">{name}</h2>
                                   </div>
                                   {isWinner && (
-                                    <div className="px-3 py-1 rounded-full text-xs font-black text-white"
+                                    <div className="px-2 py-0.5 rounded-full text-xs font-black text-white"
                                       style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
                                     >
                                       🏆 Best
                                     </div>
                                   )}
                                 </div>
-                                <div className="space-y-3 flex-1">
-                                  <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(226,232,240,0.6)" }}>
-                                    <span>⏱</span>
-                                    <span>{minTime} mins</span>
-                                  </div>
-                                  <div className="pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                                    <p className="text-xs mb-1" style={{ color: "rgba(226,232,240,0.4)" }}>Price</p>
-                                    <p className="text-3xl font-black"
-                                      style={{ background: "linear-gradient(135deg, #34d399, #10b981)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                    >
-                                      ₹{minPrice}
-                                    </p>
-                                  </div>
+                                <div className="text-xs sm:text-sm" style={{ color: "rgba(226,232,240,0.6)" }}>⏱ {minTime} mins</div>
+                                <div className="pt-2 mt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                                  <p className="text-[10px] sm:text-xs mb-1" style={{ color: "rgba(226,232,240,0.4)" }}>Price</p>
+                                  <p className="text-2xl sm:text-3xl font-black"
+                                    style={{ background: "linear-gradient(135deg, #34d399, #10b981)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                  >
+                                    ₹{minPrice}
+                                  </p>
                                 </div>
                               </div>
                             </motion.div>
@@ -1758,62 +1622,53 @@ export default function App() {
                         })}
                       </div>
 
-                      {/* Expandable ride options */}
                       <AnimatePresence>
                         {selectedPlatform && (
                           <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
+                            variants={fadeMobile} initial="hidden" animate="show" exit="hidden"
                             className="space-y-4"
                           >
                             <div className="flex items-center justify-between px-1">
-                              <h3 className="text-2xl font-black capitalize text-white">
-                                {selectedPlatform}{" "}
-                                <span style={{ color: "#34d399" }}>Options</span>
+                              <h3 className="text-xl sm:text-2xl font-black capitalize text-white">
+                                {selectedPlatform} <span style={{ color: "#34d399" }}>Options</span>
                               </h3>
                               <button
                                 onClick={() => setSelectedPlatform(null)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full transition-all"
+                                className="w-9 h-9 flex items-center justify-center rounded-full"
                                 style={{ background: "rgba(255,255,255,0.08)", color: "rgba(226,232,240,0.6)" }}
                               >
                                 ✕
                               </button>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5">
                               {Object.entries(result.platforms[selectedPlatform]).map(([type, ride], idx) => {
                                 const typeIcons = { car: "🚗", bike: "🏍", auto: "🛺" };
                                 return (
                                   <motion.div
                                     key={type}
-                                    initial={{ opacity: 0, y: 16 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.1 }}
-                                    className="group relative overflow-hidden rounded-2xl"
+                                    variants={fadeMobile} initial="hidden" animate="show"
+                                    transition={{ delay: idx * 0.08 }}
+                                    className="relative overflow-hidden rounded-2xl"
                                     style={{
                                       background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(10,12,28,0.8))",
                                       border: "1px solid rgba(99,102,241,0.2)",
                                     }}
                                   >
-                                    <div className="relative p-6 flex flex-col">
-                                      <div className="flex items-center gap-3 mb-5">
-                                        <div className="text-4xl">{typeIcons[type] || "🚗"}</div>
+                                    <div className="p-5">
+                                      <div className="flex items-center gap-3 mb-4">
+                                        <div className="text-3xl">{typeIcons[type] || "🚗"}</div>
                                         <h4 className="font-black text-lg capitalize text-white">{type}</h4>
                                       </div>
-                                      <div className="flex items-center gap-2 mb-3" style={{ color: "rgba(226,232,240,0.6)" }}>
-                                        <span className="text-sm">⏱</span>
-                                        <span className="text-sm font-medium">{ride.time} mins</span>
-                                      </div>
-                                      <div className="mb-6 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                                        <p className="text-xs mb-2 uppercase tracking-wider" style={{ color: "rgba(226,232,240,0.4)" }}>Price</p>
+                                      <div className="text-sm mb-3" style={{ color: "rgba(226,232,240,0.6)" }}>⏱ {ride.time} mins</div>
+                                      <div className="mb-5 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                                         <p className="text-3xl font-black"
                                           style={{ background: "linear-gradient(135deg, #34d399, #10b981)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                                         >
                                           ₹{ride.price}
                                         </p>
                                       </div>
-                                      <button className="mt-auto w-full py-3 px-4 rounded-xl font-black text-white uppercase tracking-wide text-sm transition-all duration-300 group-hover:scale-105"
-                                        style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 16px rgba(16,185,129,0.3)" }}
+                                      <button className="w-full py-3 px-4 rounded-xl font-black text-white text-sm"
+                                        style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 14px rgba(16,185,129,0.3)" }}
                                       >
                                         Book Now
                                       </button>
@@ -1829,12 +1684,12 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── RIGHT: Grocery Panel ── */}
+                {/* RIGHT: Grocery */}
                 {serviceType === "grocery" && result && (
                   <GroceryPanel
                     platforms={[
-                      { name: "Instamart", price: result.basket?.[0]?.instamart, time: 14, url: "https://www.swiggy.com/instamart", color: "orange", borderClass: dm ? "border-orange-500/40" : "border-orange-400" },
-                      { name: "JioMart", price: result.basket?.[0]?.jiomart, time: 25, url: "https://www.jiomart.com/", color: "blue", borderClass: dm ? "border-blue-500/40" : "border-blue-400" },
+                      { name: "Instamart", price: result.basket?.[0]?.instamart, time: 14, url: "https://www.swiggy.com/instamart", color: "orange" },
+                      { name: "JioMart", price: result.basket?.[0]?.jiomart, time: 25, url: "https://www.jiomart.com/", color: "blue" },
                     ]}
                     basket={result.basket}
                     groceryImages={groceryImages}
@@ -1842,10 +1697,11 @@ export default function App() {
                     dm={dm}
                     title="More Stores"
                     titleColor="text-blue-400"
+                    isMobile={isMobile}
                   />
                 )}
 
-                {/* ── RIGHT: Swiggy Panel ── */}
+                {/* RIGHT: Swiggy */}
                 {serviceType === "food" && result?.swiggyList && (
                   <PlatformPanel
                     show={mobilePlatform === "swiggy"}
@@ -1861,80 +1717,73 @@ export default function App() {
                     favourites={favourites}
                     city={city}
                     addFavourite={addFavourite}
+                    isMobile={isMobile}
                   />
                 )}
 
                 {serviceType === "ecommerce" && result && (
-                  <div className="flex flex-col gap-6 w-full max-w-md">
+                  <div className="flex flex-col gap-4 w-full max-w-md">
                     <PlatformPanel
-                      platform="flipkart"
-                      label="Flipkart"
-                      color="blue"
-                      list={result.flipkartList || []}
-                      item={item}
-                      loading={loading}
-                      dm={dm}
-                      favourites={favourites}
-                      city={city}
-                      addFavourite={addFavourite}
+                      platform="flipkart" label="Flipkart" color="blue"
+                      list={result.flipkartList || []} item={item} loading={loading}
+                      dm={dm} favourites={favourites} city={city} addFavourite={addFavourite}
+                      isMobile={isMobile}
                     />
                     <PlatformPanel
-                      platform="myntra"
-                      label="Myntra"
-                      color="pink"
-                      list={result.myntraList || []}
-                      item={item}
-                      loading={loading}
-                      dm={dm}
-                      favourites={favourites}
-                      city={city}
-                      addFavourite={addFavourite}
+                      platform="myntra" label="Myntra" color="pink"
+                      list={result.myntraList || []} item={item} loading={loading}
+                      dm={dm} favourites={favourites} city={city} addFavourite={addFavourite}
+                      isMobile={isMobile}
                     />
                   </div>
                 )}
               </div>
 
-              {/* ── Login Popup ── */}
+              {/* Login Popup */}
               <AnimatePresence>
                 {showLoginPopup && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 flex items-center justify-center z-50 p-4"
-                    style={{ background: "rgba(6,8,24,0.75)", backdropFilter: "blur(12px)" }}
+                    variants={fadeMobile} initial="hidden" animate="show" exit="hidden"
+                    className="fixed inset-0 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+                    style={{ background: "rgba(6,8,24,0.8)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+                    onClick={(e) => e.target === e.currentTarget && setShowLoginPopup(false)}
                   >
                     <motion.div
-                      initial={{ opacity: 0, y: 40, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 40, scale: 0.9 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 24 }}
-                      className="w-full max-w-sm rounded-3xl overflow-hidden"
+                      initial={{ y: isMobile ? "100%" : 40, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: isMobile ? "100%" : 40, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 280, damping: 26 }}
+                      className="w-full sm:max-w-sm overflow-hidden"
                       style={{
                         background: dm
-                          ? "linear-gradient(145deg, rgba(13,17,40,0.98), rgba(8,10,24,0.99))"
+                          ? "linear-gradient(145deg, rgba(13,17,40,0.99), rgba(8,10,24,1))"
                           : "rgba(255,255,255,0.97)",
                         border: `1px solid ${dm ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.15)"}`,
-                        boxShadow: "0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1)",
+                        boxShadow: "0 -8px 40px rgba(0,0,0,0.4)",
+                        borderRadius: isMobile ? "24px 24px 0 0" : "24px",
                       }}
                     >
-                      {/* Top strip */}
+                      {/* Drag handle on mobile */}
+                      {isMobile && (
+                        <div className="flex justify-center pt-3 pb-1">
+                          <div className="w-10 h-1 rounded-full" style={{ background: dm ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)" }} />
+                        </div>
+                      )}
                       <div className="h-[2px]"
                         style={{ background: "linear-gradient(90deg, #6366f1, #a855f7, #f97316)" }}
                       />
-                      <div className="p-8">
-                        {/* Icon */}
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                      <div className="p-6 sm:p-8">
+                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
                           style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}
                         >
-                          <span className="text-2xl">{isRegisterMode ? "✨" : "👋"}</span>
+                          <span className="text-xl">{isRegisterMode ? "✨" : "👋"}</span>
                         </div>
-                        <h2 className="brand text-2xl font-black mb-1 text-center"
+                        <h2 className="brand text-xl sm:text-2xl font-black mb-1 text-center"
                           style={{ color: dm ? "#e2e8f0" : "#1e1b4b" }}
                         >
                           {isRegisterMode ? "Create Account" : "Welcome Back"}
                         </h2>
-                        <p className="text-xs text-center mb-6"
+                        <p className="text-xs text-center mb-5"
                           style={{ color: dm ? "rgba(226,232,240,0.4)" : "rgba(30,27,75,0.5)" }}
                         >
                           {isRegisterMode ? "Sign up to save your comparisons" : "Login to compare prices"}
@@ -1947,26 +1796,31 @@ export default function App() {
                               placeholder="Full Name"
                               value={name}
                               onChange={(e) => setName(e.target.value)}
-                              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+                              className="w-full px-4 py-3.5 rounded-xl text-sm outline-none"
                               style={{
                                 background: dm ? "rgba(255,255,255,0.04)" : "rgba(99,102,241,0.04)",
                                 border: `1px solid ${dm ? "rgba(255,255,255,0.08)" : "rgba(99,102,241,0.12)"}`,
                                 color: dm ? "#e2e8f0" : "#1e1b4b",
+                                fontSize: "16px",
                               }}
                             />
                           )}
-                          {["email", "password"].map((field) => (
+                          {[
+                            { field: "email", type: "email", placeholder: "Email address", val: email, setter: setEmail },
+                            { field: "password", type: "password", placeholder: "Password", val: password, setter: setPassword },
+                          ].map(({ field, type, placeholder, val, setter }) => (
                             <input
                               key={field}
-                              type={field}
-                              placeholder={field === "email" ? "Email address" : "Password"}
-                              value={field === "email" ? email : password}
-                              onChange={(e) => field === "email" ? setEmail(e.target.value) : setPassword(e.target.value)}
-                              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+                              type={type}
+                              placeholder={placeholder}
+                              value={val}
+                              onChange={(e) => setter(e.target.value)}
+                              className="w-full px-4 py-3.5 rounded-xl text-sm outline-none"
                               style={{
                                 background: dm ? "rgba(255,255,255,0.04)" : "rgba(99,102,241,0.04)",
                                 border: `1px solid ${dm ? "rgba(255,255,255,0.08)" : "rgba(99,102,241,0.12)"}`,
                                 color: dm ? "#e2e8f0" : "#1e1b4b",
+                                fontSize: "16px",
                               }}
                             />
                           ))}
@@ -1984,20 +1838,17 @@ export default function App() {
                           </div>
                         )}
 
-                        <motion.button
+                        <button
                           onClick={isRegisterMode ? handleSignup : handleLogin}
                           disabled={loginLoading}
-                          whileTap={{ scale: 0.97 }}
                           className="w-full mt-4 btn-primary py-3.5 rounded-xl text-white font-black text-sm flex items-center justify-center gap-2 disabled:opacity-60"
-                          style={{ boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}
+                          style={{ boxShadow: "0 4px 16px rgba(99,102,241,0.3)" }}
                         >
-                          {loginLoading && (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          )}
+                          {loginLoading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                           {loginLoading
                             ? isRegisterMode ? "Creating..." : "Logging in..."
                             : isRegisterMode ? "Create Account" : "Login"}
-                        </motion.button>
+                        </button>
 
                         <div className="flex items-center gap-3 my-4 text-xs"
                           style={{ color: dm ? "rgba(226,232,240,0.25)" : "rgba(30,27,75,0.3)" }}
@@ -2025,9 +1876,7 @@ export default function App() {
                                 setIsLoggedIn(true);
                                 setShowLoginPopup(false);
                                 setHistory(userRes.data.searchHistory || []);
-                              } catch (err) {
-                                console.log("Google login failed");
-                              }
+                              } catch { console.log("Google login failed"); }
                             }}
                             onError={() => console.log("Google Login Failed")}
                           />
@@ -2048,14 +1897,8 @@ export default function App() {
 
                         <button
                           onClick={() => { setShowLoginPopup(false); setIsRegisterMode(false); }}
-                          className="w-full mt-3 text-xs py-2 rounded-xl transition-all"
+                          className="w-full mt-3 text-xs py-3 rounded-xl transition-colors duration-150"
                           style={{ color: dm ? "rgba(226,232,240,0.3)" : "rgba(30,27,75,0.4)" }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = dm ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "transparent";
-                          }}
                         >
                           Cancel
                         </button>
@@ -2065,7 +1908,6 @@ export default function App() {
                 )}
               </AnimatePresence>
 
-              {/* ── Floating AI ── */}
               <FloatingAI
                 setItem={setItem}
                 setCity={setCity}
@@ -2086,81 +1928,58 @@ export default function App() {
 }
 
 /* ─── Platform Panel ─── */
-function PlatformPanel({ show = true, platform, label, color, list, item, loading, winner, dm, favourites, city, addFavourite }) {
-  const logos = {
-    amazon: amazonLogo,
-    flipkart: flipkartLogo,
-    myntra: myntraLogo,
-    zomato: zomatoLogo,
-    swiggy: swiggyLogo,
-  };
-
+function PlatformPanel({ show = true, platform, label, color, list, item, loading, winner, dm, favourites, city, addFavourite, isMobile }) {
+  const logos = { amazon: amazonLogo, flipkart: flipkartLogo, myntra: myntraLogo, zomato: zomatoLogo, swiggy: swiggyLogo };
   const isWinner = winner === platform;
 
   const accentMap = {
-    red: { main: "#f43f5e", dim: "rgba(244,63,94,0.12)", border: "rgba(244,63,94,0.3)", glow: "rgba(244,63,94,0.2)" },
-    orange: { main: "#f97316", dim: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.3)", glow: "rgba(249,115,22,0.2)" },
-    blue: { main: "#3b82f6", dim: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", glow: "rgba(59,130,246,0.2)" },
-    yellow: { main: "#f59e0b", dim: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)", glow: "rgba(245,158,11,0.2)" },
-    pink: { main: "#ec4899", dim: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.3)", glow: "rgba(236,72,153,0.2)" },
+    red:    { main: "#f43f5e", dim: "rgba(244,63,94,0.12)", border: "rgba(244,63,94,0.3)", glow: "rgba(244,63,94,0.15)" },
+    orange: { main: "#f97316", dim: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.3)", glow: "rgba(249,115,22,0.15)" },
+    blue:   { main: "#3b82f6", dim: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", glow: "rgba(59,130,246,0.15)" },
+    yellow: { main: "#f59e0b", dim: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)", glow: "rgba(245,158,11,0.15)" },
+    pink:   { main: "#ec4899", dim: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.3)", glow: "rgba(236,72,153,0.15)" },
   };
   const accent = accentMap[color] || accentMap.orange;
 
   return (
     <div
-      className={`${show ? "block" : "hidden"} lg:block w-full lg:w-80 rounded-2xl overflow-hidden transition-all duration-500`}
+      className={`${show ? "block" : "hidden"} lg:block w-full lg:w-80 rounded-2xl overflow-hidden`}
       style={{
         background: dm
-          ? "linear-gradient(145deg, rgba(13,17,40,0.95), rgba(10,12,28,0.97))"
-          : "rgba(255,255,255,0.9)",
+          ? "linear-gradient(145deg, rgba(13,17,40,0.97), rgba(10,12,28,0.99))"
+          : "rgba(255,255,255,0.92)",
         border: `1px solid ${isWinner ? accent.border : dm ? "rgba(255,255,255,0.06)" : "rgba(99,102,241,0.1)"}`,
         boxShadow: isWinner
-          ? `0 0 50px ${accent.glow}, 0 8px 32px rgba(0,0,0,0.3)`
-          : dm
-          ? "0 8px 32px rgba(0,0,0,0.4)"
-          : "0 8px 32px rgba(99,102,241,0.06)",
-        backdropFilter: "blur(20px)",
+          ? `0 0 32px ${accent.glow}`
+          : dm ? "0 4px 24px rgba(0,0,0,0.35)" : "0 4px 24px rgba(99,102,241,0.06)",
+        backdropFilter: isMobile ? "blur(8px)" : "blur(20px)",
+        WebkitBackdropFilter: isMobile ? "blur(8px)" : "blur(20px)",
       }}
     >
-      {/* Top accent strip */}
       <div className="h-[2px]" style={{ background: accent.main }} />
 
-      {/* Platform Header */}
       <div
-        className="sticky top-0 z-10 flex items-center justify-center gap-2 py-3.5 backdrop-blur-xl"
+        className="sticky top-0 z-10 flex items-center justify-center gap-2 py-3 backdrop-blur-sm"
         style={{
-          background: dm ? "rgba(13,17,40,0.9)" : "rgba(255,255,255,0.92)",
+          background: dm ? "rgba(13,17,40,0.92)" : "rgba(255,255,255,0.92)",
           borderBottom: `1px solid ${dm ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}`,
         }}
       >
-        <img
-          src={logos[platform]}
-          alt={platform}
-          className="h-9 object-contain"
+        <img src={logos[platform]} alt={platform} className="h-8 object-contain"
           style={{ filter: dm ? "brightness(1.1)" : "none" }}
         />
         {isWinner && (
-          <span
-            className="text-xs px-2.5 py-1 rounded-full font-bold"
-            style={{
-              background: "rgba(16,185,129,0.12)",
-              color: "#10b981",
-              border: "1px solid rgba(16,185,129,0.25)",
-            }}
+          <span className="text-xs px-2.5 py-1 rounded-full font-bold"
+            style={{ background: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }}
           >
             🏆 Winner
           </span>
         )}
       </div>
 
-      {/* Products */}
       <div className="p-3 space-y-3 platform-scroll">
         {loading ? (
-          <>
-            <SkeletonCard dm={dm} />
-            <SkeletonCard dm={dm} />
-            <SkeletonCard dm={dm} />
-          </>
+          <><SkeletonCard dm={dm} /><SkeletonCard dm={dm} /><SkeletonCard dm={dm} /></>
         ) : list && list.length > 0 ? (
           [...list]
             .sort((a, b) => (a.price || Infinity) - (b.price || Infinity))
@@ -2176,15 +1995,14 @@ function PlatformPanel({ show = true, platform, label, color, list, item, loadin
                 favourites={favourites}
                 addFavourite={addFavourite}
                 accent={accent}
+                isMobile={isMobile}
               />
             ))
         ) : (
-          <div
-            className="text-center py-10 text-sm"
+          <div className="text-center py-10 text-sm"
             style={{ color: dm ? "rgba(226,232,240,0.35)" : "rgba(30,27,75,0.4)" }}
           >
-            <div className="text-3xl mb-2">🔍</div>
-            No products found
+            <div className="text-3xl mb-2">🔍</div>No products found
           </div>
         )}
       </div>
@@ -2193,117 +2011,93 @@ function PlatformPanel({ show = true, platform, label, color, list, item, loadin
 }
 
 /* ─── Restaurant / Product Card ─── */
-function RestaurantCard({ rest, index, platform, item, city, dm, favourites, addFavourite, accent }) {
+function RestaurantCard({ rest, index, platform, item, city, dm, favourites, addFavourite, accent, isMobile }) {
   const isFav = favourites.includes(rest.name + platform + city);
   const isBest = index === 0;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.06 }}
-      className="relative rounded-2xl overflow-hidden cursor-pointer card-lift"
+    <div
+      className="relative rounded-2xl overflow-hidden card-lift"
       style={{
         background: dm
-          ? isBest
-            ? `linear-gradient(145deg, ${accent.dim}, rgba(255,255,255,0.02))`
-            : "rgba(255,255,255,0.03)"
-          : isBest
-          ? `linear-gradient(145deg, ${accent.dim}, rgba(255,255,255,0.5))`
-          : "rgba(255,255,255,0.7)",
+          ? isBest ? `linear-gradient(145deg, ${accent.dim}, rgba(255,255,255,0.02))` : "rgba(255,255,255,0.03)"
+          : isBest ? `linear-gradient(145deg, ${accent.dim}, rgba(255,255,255,0.5))` : "rgba(255,255,255,0.7)",
         border: `1px solid ${isBest ? accent.border : dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-        boxShadow: isBest ? `0 4px 20px ${accent.glow}` : "none",
+        boxShadow: isBest ? `0 2px 12px ${accent.glow}` : "none",
       }}
     >
       {/* Image */}
-      <div className="relative h-36 overflow-hidden">
+      <div className="relative h-32 sm:h-36 overflow-hidden">
         <img
           src={rest.image || `https://loremflickr.com/600/400/${item}?random=${index}`}
           onError={(e) => { e.target.src = `https://loremflickr.com/600/400/${item}?random=${index}`; }}
           alt={rest.name}
           className="w-full h-full object-cover img-zoom"
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0"
-          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)" }}
+          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.08) 60%, transparent 100%)" }}
         />
 
         {isBest && (
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="absolute top-2 left-2 px-2.5 py-1 rounded-full text-white text-[10px] font-black uppercase tracking-wide"
-            style={{ background: accent.main, boxShadow: `0 2px 8px ${accent.glow}` }}
+          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-white text-[10px] font-black uppercase tracking-wide"
+            style={{ background: accent.main }}
           >
             Best Deal
-          </motion.div>
+          </div>
         )}
 
-        <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-white text-[10px] font-semibold"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}
+        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-white text-[10px] font-semibold"
+          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)" }}
         >
           ⭐ {rest.rating || 4.2}
         </div>
 
-        {/* Fav button */}
         <button
           onClick={() => addFavourite(rest.name, platform, city, rest.price, rest.image)}
-          className="absolute top-10 left-2 w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-110"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}
+          className="absolute top-9 left-2 w-8 h-8 flex items-center justify-center rounded-full"
+          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}
         >
-          <motion.span
-            animate={{ scale: isFav ? 1.3 : 1 }}
-            transition={{ type: "spring", stiffness: 400 }}
-            style={{ color: isFav ? "#f43f5e" : "rgba(255,255,255,0.6)" }}
-          >
-            ❤️
-          </motion.span>
+          <span style={{ color: isFav ? "#f43f5e" : "rgba(255,255,255,0.55)", fontSize: 14 }}>❤️</span>
         </button>
 
-        {/* Name overlay */}
         <div className="absolute bottom-2 left-3 right-3">
-          <div className="text-white font-bold text-sm leading-tight line-clamp-1">
-            {rest.name}
-          </div>
+          <div className="text-white font-bold text-sm leading-tight line-clamp-1">{rest.name}</div>
         </div>
       </div>
 
       {/* Details */}
       <div className="p-3">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2 text-xs opacity-70">
-  <span>⏱ {rest.time || 30} mins</span>
-  <span>•</span>
-  <span>📍 {rest.distance || 2} km</span>
-</div>
+          <div className="flex items-center gap-2 text-xs" style={{ opacity: 0.6 }}>
+            <span>⏱ {rest.time || 30}m</span>
+            <span>•</span>
+            <span>📍 {rest.distance || 2}km</span>
+          </div>
           <div className="text-lg font-black" style={{ color: accent.main }}>
-            {rest.price ? (
-              <>₹<CountUp end={rest.price} duration={0.8} /></>
-            ) : (
-              <span className="text-sm" style={{ color: "rgba(226,232,240,0.3)" }}>N/A</span>
-            )}
+            {rest.price ? <>₹<CountUp end={rest.price} duration={isMobile ? 0.4 : 0.8} /></> : <span className="text-sm opacity-30">N/A</span>}
           </div>
         </div>
         <a
           href={rest.link}
           target="_blank"
           rel="noreferrer"
-          className="mt-2.5 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-white text-xs font-black transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+          className="mt-2 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-white text-xs font-black"
           style={{
             background: `linear-gradient(135deg, ${accent.main}, ${accent.main}cc)`,
-            boxShadow: `0 2px 12px ${accent.glow}`,
+            boxShadow: `0 2px 10px ${accent.glow}`,
           }}
         >
           Buy Now →
         </a>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 /* ─── Grocery Panel ─── */
-function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, title, titleColor }) {
+function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, title, titleColor, isMobile }) {
   const titleColorMap = {
     "text-purple-400": "#a855f7",
     "text-blue-400": "#60a5fa",
@@ -2314,24 +2108,21 @@ function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, ti
 
   return (
     <div
-      className="w-full lg:w-72 rounded-2xl overflow-hidden transition-all"
+      className="w-full lg:w-72 rounded-2xl overflow-hidden"
       style={{
         background: dm
-          ? "linear-gradient(145deg, rgba(13,17,40,0.95), rgba(10,12,28,0.97))"
-          : "rgba(255,255,255,0.9)",
+          ? "linear-gradient(145deg, rgba(13,17,40,0.97), rgba(10,12,28,0.99))"
+          : "rgba(255,255,255,0.92)",
         border: `1px solid ${dm ? "rgba(255,255,255,0.06)" : "rgba(99,102,241,0.1)"}`,
-        boxShadow: dm ? "0 8px 32px rgba(0,0,0,0.4)" : "0 8px 32px rgba(99,102,241,0.06)",
-        backdropFilter: "blur(20px)",
+        boxShadow: dm ? "0 4px 24px rgba(0,0,0,0.35)" : "0 4px 24px rgba(99,102,241,0.06)",
+        backdropFilter: isMobile ? "blur(8px)" : "blur(20px)",
+        WebkitBackdropFilter: isMobile ? "blur(8px)" : "blur(20px)",
       }}
     >
-      <div
-        className="py-3.5 text-center font-black text-sm"
+      <div className="py-3 text-center font-black text-[11px] uppercase tracking-wider"
         style={{
           color: titleHex,
           borderBottom: `1px solid ${dm ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}`,
-          letterSpacing: "0.05em",
-          textTransform: "uppercase",
-          fontSize: "11px",
         }}
       >
         {title}
@@ -2339,28 +2130,24 @@ function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, ti
       <div className="p-3 space-y-3">
         {platforms.map((platform, pIndex) => {
           const platformColors = {
-            Zepto: { main: "#a855f7", dim: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.25)" },
-            Blinkit: { main: "#fbbf24", dim: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)" },
-            Instamart: { main: "#f97316", dim: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.25)" },
-            JioMart: { main: "#6366f1", dim: "rgba(99,102,241,0.1)", border: "rgba(99,102,241,0.25)" },
+            Zepto:    { main: "#a855f7", dim: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.25)" },
+            Blinkit:  { main: "#fbbf24", dim: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)" },
+            Instamart:{ main: "#f97316", dim: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.25)" },
+            JioMart:  { main: "#6366f1", dim: "rgba(99,102,241,0.1)", border: "rgba(99,102,241,0.25)" },
           };
           const pc = platformColors[platform.name] || platformColors.Zepto;
 
           return (
-            <div
-              key={platform.name + pIndex}
-              className="rounded-xl p-3 transition-all hover:scale-[1.01]"
+            <div key={platform.name + pIndex}
+              className="rounded-xl p-3"
               style={{
-                background: dm ? pc.dim : "rgba(255,255,255,0.6)",
+                background: dm ? pc.dim : "rgba(255,255,255,0.65)",
                 border: `1px solid ${pc.border}`,
               }}
             >
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-black" style={{ color: pc.main }}>
-                  {platform.name}
-                </span>
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full font-semibold"
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black" style={{ color: pc.main }}>{platform.name}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
                   style={{
                     background: dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
                     color: dm ? "rgba(226,232,240,0.5)" : "rgba(30,27,75,0.5)",
@@ -2370,13 +2157,14 @@ function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, ti
                 </span>
               </div>
 
-              <div className={`${basket?.length > 1 ? "flex gap-2 overflow-x-auto pb-1 scrollbar-hide" : "flex justify-center"}`}>
+              <div className={`${basket?.length > 1 ? "flex gap-2 overflow-x-auto pb-1 scrollbar-hide" : "flex justify-center"}`}
+                style={{ WebkitOverflowScrolling: "touch" }}
+              >
                 {basket?.map((bItem, i) => {
                   const imageKey = bItem.product.toLowerCase().split(" ")[0];
                   return (
-                    <div
-                      key={i}
-                      className={`${basket?.length > 1 ? "min-w-[130px]" : "w-full"} rounded-xl overflow-hidden flex-shrink-0`}
+                    <div key={i}
+                      className={`${basket?.length > 1 ? "min-w-[120px]" : "w-full"} rounded-xl overflow-hidden flex-shrink-0`}
                       style={{
                         background: dm ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.8)",
                         border: `1px solid ${dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
@@ -2385,22 +2173,22 @@ function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, ti
                       <a
                         href={
                           platform.name === "Zepto" ? `https://www.zeptonow.com/search?query=${bItem.product}`
-                            : platform.name === "Blinkit" ? `https://blinkit.com/s/?q=${bItem.product}`
-                            : platform.name === "Instamart" ? `https://www.swiggy.com/instamart/search?query=${bItem.product}`
-                            : `https://www.jiomart.com/search/${bItem.product}`
+                          : platform.name === "Blinkit" ? `https://blinkit.com/s/?q=${bItem.product}`
+                          : platform.name === "Instamart" ? `https://www.swiggy.com/instamart/search?query=${bItem.product}`
+                          : `https://www.jiomart.com/search/${bItem.product}`
                         }
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        target="_blank" rel="noopener noreferrer"
                       >
                         <img
                           src={bItem.image || groceryImages[imageKey]}
                           loading="lazy"
+                          decoding="async"
                           onError={(e) => { e.target.src = groceryImages[imageKey]; }}
-                          className="w-full h-20 object-cover hover:scale-105 transition-transform duration-300"
+                          className="w-full h-16 sm:h-20 object-cover"
                           alt={bItem.product}
                         />
                       </a>
-                      <div className="p-2">
+                      <div className="p-1.5 sm:p-2">
                         <span className={`${categoryColors[bItem.category || "other"]} text-white text-[9px] px-1.5 py-0.5 rounded-full font-black`}>
                           {bItem.category}
                         </span>
@@ -2409,13 +2197,11 @@ function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, ti
                         >
                           {bItem.product}
                         </div>
-                        <div className="flex justify-between items-center text-xs mt-1">
-                          <span className="font-black" style={{ color: pc.main }}>
-                            ₹{platform.name === "Zepto" ? bItem.zepto
-                              : platform.name === "Blinkit" ? bItem.blinkit
-                              : platform.name === "Instamart" ? bItem.instamart
-                              : bItem.jiomart}
-                          </span>
+                        <div className="font-black text-xs mt-0.5" style={{ color: pc.main }}>
+                          ₹{platform.name === "Zepto" ? bItem.zepto
+                            : platform.name === "Blinkit" ? bItem.blinkit
+                            : platform.name === "Instamart" ? bItem.instamart
+                            : bItem.jiomart}
                         </div>
                       </div>
                     </div>
@@ -2425,12 +2211,10 @@ function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, ti
 
               <a
                 href={platform.url}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 flex items-center justify-center gap-1 w-full py-2 text-white text-xs font-black rounded-xl transition-all hover:scale-[1.02] hover:opacity-90"
+                target="_blank" rel="noreferrer"
+                className="mt-2.5 flex items-center justify-center gap-1 w-full py-2.5 text-white text-xs font-black rounded-xl"
                 style={{
                   background: `linear-gradient(135deg, ${pc.main}, ${pc.main}cc)`,
-                  boxShadow: `0 2px 12px ${pc.dim}`,
                 }}
               >
                 Order on {platform.name} →
@@ -2446,11 +2230,10 @@ function GroceryPanel({ platforms, basket, groceryImages, categoryColors, dm, ti
 /* ─── Skeleton Card ─── */
 function SkeletonCard({ dm }) {
   return (
-    <div
-      className="relative rounded-2xl overflow-hidden"
+    <div className="relative rounded-2xl overflow-hidden"
       style={{ background: dm ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)" }}
     >
-      <div className="h-36 relative overflow-hidden"
+      <div className="h-32 sm:h-36 relative overflow-hidden"
         style={{ background: dm ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)" }}
       >
         <div className="absolute inset-0"
@@ -2460,14 +2243,14 @@ function SkeletonCard({ dm }) {
           }}
         />
       </div>
-      <div className="p-3 space-y-2.5">
+      <div className="p-3 space-y-2">
         <div className="h-2.5 w-3/4 rounded-full"
           style={{ background: dm ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)" }}
         />
         <div className="h-2 w-1/2 rounded-full"
           style={{ background: dm ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)" }}
         />
-        <div className="h-9 rounded-xl mt-2"
+        <div className="h-8 rounded-xl mt-1"
           style={{ background: dm ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)" }}
         />
       </div>
@@ -2475,51 +2258,38 @@ function SkeletonCard({ dm }) {
   );
 }
 
-/* ─── Price Card ─── */
+/* ─── Price Card (kept for compatibility) ─── */
 function PriceCard({ name, price, cheapest, maxPrice, logo, time }) {
   const percentage = (price / maxPrice) * 100;
   return (
     <div
-      className="relative overflow-hidden flex flex-col p-5 rounded-2xl transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1"
+      className="relative overflow-hidden flex flex-col p-4 sm:p-5 rounded-2xl"
       style={
         cheapest
-          ? {
-              background: "rgba(16,185,129,0.15)",
-              border: "1px solid rgba(16,185,129,0.4)",
-              boxShadow: "0 8px 32px rgba(16,185,129,0.2)",
-            }
-          : {
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
-            }
+          ? { background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.4)", boxShadow: "0 4px 20px rgba(16,185,129,0.15)" }
+          : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }
       }
     >
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <img src={logo} alt={name} className="w-5 h-5 object-contain" />
-          <span className="text-lg font-bold">{name}</span>
+          <span className="text-base sm:text-lg font-bold">{name}</span>
         </div>
         {cheapest && (
-          <span className="text-xs px-3 py-1 rounded-full text-white font-black"
-            style={{ background: "#10b981" }}
-          >
+          <span className="text-xs px-2.5 py-0.5 rounded-full text-white font-black" style={{ background: "#10b981" }}>
             BEST PRICE
           </span>
         )}
       </div>
-      <div className="mt-3 text-3xl font-black">
-        ₹<CountUp end={price} duration={1} separator="," />
+      <div className="mt-3 text-2xl sm:text-3xl font-black">
+        ₹<CountUp end={price} duration={0.8} separator="," />
       </div>
-      <p className="text-sm mt-1" style={{ color: "rgba(226,232,240,0.6)" }}>⏱ {time} mins</p>
-      <div className="mt-4 h-2 rounded-full overflow-hidden"
+      <p className="text-xs sm:text-sm mt-1" style={{ color: "rgba(226,232,240,0.6)" }}>⏱ {time} mins</p>
+      <div className="mt-3 h-1.5 sm:h-2 rounded-full overflow-hidden"
         style={{ background: "rgba(255,255,255,0.08)" }}
       >
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{
-            width: `${percentage}%`,
-            background: cheapest ? "#10b981" : "#6366f1",
-          }}
+        <div className="h-full rounded-full"
+          style={{ width: `${percentage}%`, background: cheapest ? "#10b981" : "#6366f1", transition: "width 0.6s ease" }}
         />
       </div>
     </div>
