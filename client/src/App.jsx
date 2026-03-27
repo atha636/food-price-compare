@@ -535,10 +535,7 @@ export default function App() {
     if (savedTheme === "dark") setDarkMode(true);
   }, []);
  
-useEffect(() => {
-  // 🔥 Auto detect city on app load
-  handleGetLocation();
-}, []);
+
 
   useEffect(() => {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
