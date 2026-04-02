@@ -97,7 +97,7 @@ Create a .env file in backend:
 MONGO_URI=your_mongodb_url
 JWT_SECRET=your_secret
 GOOGLE_CLIENT_ID=your_google_client_id
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:5173, https://food-price-compare-oxd9.vercel.app/
 
 📈 Future Improvements
 Real API integrations instead of scraping
