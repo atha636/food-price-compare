@@ -78,8 +78,6 @@ State management with hooks
 
 📦 Installation
 1. Clone the repository
-git clone https://github.com/your-username/pricecompare.git
-cd pricecompare
 2. Install dependencies
 Frontend:
 
