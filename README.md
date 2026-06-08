@@ -1,5 +1,5 @@
 🚀 PriceCompare
-A full-stack web application that compares prices across Food Delivery, Grocery, and Ride services in real-time, helping users make smarter and more cost-effective decisions.
+A full-stack web application that compares prices across Food Delivery, Grocery, and Ride , e- commers services in real-time, helping users make smarter and more cost-effective decisions.
 
 🌟 Features
 🍔 Food Comparison
@@ -33,7 +33,7 @@ Compare ride fares based on:
 Pickup & Drop location
 Distance calculation
 Provides the cheapest ride option
-
+And e commerce betweeen amzone meesho etc
 📊 Analytics & Insights
 Tracks user behavior
 
